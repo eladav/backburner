@@ -2,7 +2,7 @@
   "name": "@backburner/cli",
   "version": "0.1.0",
   "type": "module",
-  "description": "Local GitHub-based agent orchestration MVP",
+  "description": "Local GitHub-based agent orchestration CLI",
   "files": [
     "dist/src",
     "README.md"
