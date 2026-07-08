@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.stable/
+.DS_Store
+*.log
+management/
+outputs/
+sample-code-root/
