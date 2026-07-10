@@ -2,19 +2,19 @@ import * as assert from "node:assert/strict";
 import { test } from "node:test";
 import { validateCapabilities } from "../src/capabilities/validator.js";
 import type {
-  AogSensorCapability,
-  AogControllerCapability,
+  BackburnerSensorCapability,
+  BackburnerControllerCapability,
   McpDependency,
   NormalizedCapabilities,
 } from "../src/config/types.js";
 import type { McpStatusRecord } from "../src/state/types.js";
 
 // Test helpers
-function makeSensors(uses: string): AogSensorCapability[] {
+function makeSensors(uses: string): BackburnerSensorCapability[] {
   return [{ name: "s1", uses, observes: "issues-and-prs" }];
 }
 
-function makeControllers(uses: string): AogControllerCapability[] {
+function makeControllers(uses: string): BackburnerControllerCapability[] {
   return [
     {
       name: "c1",
@@ -86,10 +86,10 @@ test("controller referencing declared MCP with ready status is valid", () => {
 });
 
 test("mixed sensors and controllers are both validated", () => {
-  const sensors: AogSensorCapability[] = [
+  const sensors: BackburnerSensorCapability[] = [
     { name: "s1", uses: "mcp-a", observes: "issues-and-prs" },
   ];
-  const controllers: AogControllerCapability[] = [
+  const controllers: BackburnerControllerCapability[] = [
     {
       name: "c1",
       uses: "mcp-b",
@@ -273,11 +273,11 @@ test("validateCapabilities does not expose sensitive mcpUrl from status record",
 });
 
 test("mixed results: some valid, some blocked", () => {
-  const sensors: AogSensorCapability[] = [
+  const sensors: BackburnerSensorCapability[] = [
     { name: "s1", uses: "mcp-a", observes: "issues-and-prs" },
     { name: "s2", uses: "mcp-c", observes: "package-docs" },
   ];
-  const controllers: AogControllerCapability[] = [
+  const controllers: BackburnerControllerCapability[] = [
     {
       name: "c1",
       uses: "mcp-b",

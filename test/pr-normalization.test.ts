@@ -7,9 +7,9 @@ import type { RepoConfig } from "../src/config/types.js";
 test("normalizePullRequest derives defaultBranch and baseClassification from repo metadata + PR base branch", () => {
   const repo: RepoConfig = {
     id: "repo-1",
-    owner: "eladav",
-    name: "agents-over-github",
-    localPath: "agents-over-github",
+    owner: "example-org",
+    name: "example-repo",
+    localPath: "example-repo",
     enabled: true,
     labels: {
       agentInProgress: "agent-in-progress",
@@ -24,10 +24,10 @@ test("normalizePullRequest derives defaultBranch and baseClassification from rep
 
   const metadata: GitHubRepositoryMetadata = {
     id: "REPO_1",
-    owner: "eladav",
-    name: "agents-over-github",
-    nameWithOwner: "eladav/agents-over-github",
-    url: "https://github.com/eladav/agents-over-github",
+    owner: "example-org",
+    name: "example-repo",
+    nameWithOwner: "example-org/example-repo",
+    url: "https://github.com/example-org/example-repo",
     defaultBranch: "production"
   };
 
@@ -36,11 +36,11 @@ test("normalizePullRequest derives defaultBranch and baseClassification from rep
     number: 81,
     title: "Update production classifier",
     body: "PR body",
-    url: "https://github.com/eladav/agents-over-github/pull/81",
+    url: "https://github.com/example-org/example-repo/pull/81",
     state: "OPEN",
     createdAt: "2026-05-08T10:00:00Z",
     updatedAt: "2026-05-08T10:00:00Z",
-    author: { login: "eladav" },
+    author: { login: "example-org" },
     labels: [],
     headRefName: "feature/issue-80",
     headSha: "sha123",
@@ -67,9 +67,9 @@ test("normalizePullRequest derives defaultBranch and baseClassification from rep
 test("normalizePullRequest handles non-default-parent case correctly", () => {
   const repo: RepoConfig = {
     id: "repo-1",
-    owner: "eladav",
-    name: "agents-over-github",
-    localPath: "agents-over-github",
+    owner: "example-org",
+    name: "example-repo",
+    localPath: "example-repo",
     enabled: true,
     labels: {
       agentInProgress: "agent-in-progress",
@@ -84,10 +84,10 @@ test("normalizePullRequest handles non-default-parent case correctly", () => {
 
   const metadata: GitHubRepositoryMetadata = {
     id: "REPO_1",
-    owner: "eladav",
-    name: "agents-over-github",
-    nameWithOwner: "eladav/agents-over-github",
-    url: "https://github.com/eladav/agents-over-github",
+    owner: "example-org",
+    name: "example-repo",
+    nameWithOwner: "example-org/example-repo",
+    url: "https://github.com/example-org/example-repo",
     defaultBranch: "main"
   };
 
@@ -96,11 +96,11 @@ test("normalizePullRequest handles non-default-parent case correctly", () => {
     number: 82,
     title: "Workstream branch PR",
     body: "PR body",
-    url: "https://github.com/eladav/agents-over-github/pull/82",
+    url: "https://github.com/example-org/example-repo/pull/82",
     state: "OPEN",
     createdAt: "2026-05-08T10:00:00Z",
     updatedAt: "2026-05-08T10:00:00Z",
-    author: { login: "eladav" },
+    author: { login: "example-org" },
     labels: [],
     headRefName: "feature/fix-bug",
     headSha: "sha456",

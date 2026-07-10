@@ -3,7 +3,7 @@
  *
  * Fix #1: ConfigurePathsStep must use ctx values as prompt defaults,
  * so when NonInteractivePrompter returns the default, it returns the
- * flag-supplied value rather than a re-hardcoded ~/aog-* path.
+ * flag-supplied value rather than a re-hardcoded ~/backburner-* path.
  *
  * Fix #3: deriveOverallStatus returns "failed" / "requiresUserAction" so
  * the CLI can set process.exitCode = 1.
@@ -93,7 +93,7 @@ test("ConfigurePathsStep: log dir default does not use hardcoded legacy output p
 
   assert.equal(ctx.outputsDir, "/custom/outputs");
   assert.ok(
-    !ctx.logDir.includes("aog-outputs"),
+    !ctx.logDir.includes("backburner-outputs"),
     `logDir must not reference hardcoded legacy outputs, got: ${ctx.logDir}`
   );
 });

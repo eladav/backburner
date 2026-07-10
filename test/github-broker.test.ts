@@ -53,7 +53,7 @@ test("GitHub broker MCP lists tools and returns structured get_issue results", a
     params: {
       name: "get_issue",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         issueNumber: 17
       }
     }
@@ -77,7 +77,7 @@ test("GitHub broker MCP lists tools and returns structured get_issue results", a
   assert.equal(issueResponse.result?.isError, false);
   assert.match(issueResponse.result?.content[0].text, /"title": "Issue title"/);
   assert.match(issueResponse.result?.content[0].text, /"body": "Issue body"/);
-  assert.equal(issueResponse.result?.structuredContent?.repo, "eladaviv/repo-one");
+  assert.equal(issueResponse.result?.structuredContent?.repo, "example-org/repo-one");
   assert.equal(issueResponse.result?.structuredContent?.issue?.number, 17);
   assert.equal(
     loggerMessages.some((message) => message.includes('"toolName":"get_issue"')),
@@ -101,7 +101,7 @@ test("GitHub broker MCP exposes PR details in model-visible text while retaining
     params: {
       name: "get_pr",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         pullRequestNumber: 23
       }
     }
@@ -132,7 +132,7 @@ test("GitHub broker MCP exposes PR comment bodies in model-visible text and reta
     params: {
       name: "get_pr_comments",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         pullRequestNumber: 23
       }
     }
@@ -141,7 +141,7 @@ test("GitHub broker MCP exposes PR comment bodies in model-visible text and reta
   const text = response.result?.content[0].text as string;
   assert.match(text, new RegExp(sentinel));
   assert.match(text, /"totalCount": 1/);
-  assert.notEqual(text, "get_pr_comments succeeded for eladaviv/repo-one");
+  assert.notEqual(text, "get_pr_comments succeeded for example-org/repo-one");
   assert.equal(response.result?.structuredContent?.comments[0].body, sentinel);
   assert.equal(response.result?.structuredContent?.reviews[0].body, "Structured review body");
   assert.equal(response.result?.structuredContent?.reviewComments[0].body, "Inline review body");
@@ -164,7 +164,7 @@ test("GitHub broker MCP marks truncated model-visible PR comment bodies without 
     params: {
       name: "get_pr_comments",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         pullRequestNumber: 23
       }
     }
@@ -193,7 +193,7 @@ test("GitHub broker MCP returns CI check runs for a pull request", async () => {
     params: {
       name: "get_pr_checks",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         pullRequestNumber: 23
       }
     }
@@ -249,7 +249,7 @@ test("GitHub broker hides get_pr_checks when it is excluded from the allow-list"
     method: "tools/call",
     params: {
       name: "get_pr_checks",
-      arguments: { repo: "eladaviv/repo-one", pullRequestNumber: 23 }
+      arguments: { repo: "example-org/repo-one", pullRequestNumber: 23 }
     }
   });
 
@@ -271,7 +271,7 @@ test("GitHub broker get_pr_checks works without capabilities.json (no capability
     method: "tools/call",
     params: {
       name: "get_pr_checks",
-      arguments: { repo: "eladaviv/repo-one", pullRequestNumber: 23 }
+      arguments: { repo: "example-org/repo-one", pullRequestNumber: 23 }
     }
   });
 
@@ -293,7 +293,7 @@ test("GitHub broker returns empty check runs and no error when PR has no head SH
     method: "tools/call",
     params: {
       name: "get_pr_checks",
-      arguments: { repo: "eladaviv/repo-one", pullRequestNumber: 23 }
+      arguments: { repo: "example-org/repo-one", pullRequestNumber: 23 }
     }
   });
 
@@ -356,7 +356,7 @@ test("GitHub broker MCP persists structured tool failures to the broker log", as
       params: {
         name: "get_issue",
         arguments: {
-          repo: "eladaviv/repo-one",
+          repo: "example-org/repo-one",
           issueNumber: 17
         }
       }
@@ -393,7 +393,7 @@ test("GitHub broker MCP replies to inline PR review comments with structured res
     params: {
       name: "post_pr_review_comment_reply",
       arguments: {
-        repo: "eladaviv/repo-one",
+        repo: "example-org/repo-one",
         pullRequestNumber: 23,
         commentId: 3116275997,
         body: "🤖 Addressed inline review feedback."
@@ -402,8 +402,8 @@ test("GitHub broker MCP replies to inline PR review comments with structured res
   });
 
   assert.equal(response.result?.isError, false);
-  assert.equal(response.result?.content[0].text, "post_pr_review_comment_reply succeeded for eladaviv/repo-one");
-  assert.equal(response.result?.structuredContent?.repo, "eladaviv/repo-one");
+  assert.equal(response.result?.content[0].text, "post_pr_review_comment_reply succeeded for example-org/repo-one");
+  assert.equal(response.result?.structuredContent?.repo, "example-org/repo-one");
   assert.equal(response.result?.structuredContent?.pullRequestNumber, 23);
   assert.equal(response.result?.structuredContent?.commentId, 3116275997);
   assert.equal(response.result?.structuredContent?.reply?.body, "🤖 Addressed inline review feedback.");
@@ -412,7 +412,7 @@ test("GitHub broker MCP replies to inline PR review comments with structured res
 function baseRepoConfig(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     defaultBranch: "main",
     localPath: "repo-one",
@@ -511,10 +511,10 @@ class StubGitHubGateway implements GitHubGateway {
   async getRepositoryMetadata(): Promise<GitHubRepositoryMetadata> {
     return {
       id: "repo-1",
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
-      nameWithOwner: "eladaviv/repo-one",
-      url: "https://github.com/eladaviv/repo-one",
+      nameWithOwner: "example-org/repo-one",
+      url: "https://github.com/example-org/repo-one",
       defaultBranch: "main"
     };
   }
@@ -533,7 +533,7 @@ class StubGitHubGateway implements GitHubGateway {
       number: issueNumber,
       title: "Issue title",
       body: "Issue body",
-      url: "https://github.com/eladaviv/repo-one/issues/17",
+      url: "https://github.com/example-org/repo-one/issues/17",
       state: "OPEN",
       createdAt: "2026-04-19T10:00:00.000Z",
       updatedAt: "2026-04-19T10:05:00.000Z",
@@ -548,7 +548,7 @@ class StubGitHubGateway implements GitHubGateway {
       number: prNumber,
       title: "PR title",
       body: "PR body",
-      url: "https://github.com/eladaviv/repo-one/pull/23",
+      url: "https://github.com/example-org/repo-one/pull/23",
       state: "OPEN",
       createdAt: "2026-04-19T10:00:00.000Z",
       updatedAt: "2026-04-19T10:05:00.000Z",
@@ -578,13 +578,13 @@ class StubGitHubGateway implements GitHubGateway {
           name: "broker.ts",
           path: "src/github/broker.ts",
           sha: "abc123",
-          url: "https://api.github.com/repos/eladaviv/repo-one/contents/src/github/broker.ts",
-          gitUrl: "https://api.github.com/repos/eladaviv/repo-one/git/blobs/abc123",
-          htmlUrl: "https://github.com/eladaviv/repo-one/blob/main/src/github/broker.ts",
+          url: "https://api.github.com/repos/example-org/repo-one/contents/src/github/broker.ts",
+          gitUrl: "https://api.github.com/repos/example-org/repo-one/git/blobs/abc123",
+          htmlUrl: "https://github.com/example-org/repo-one/blob/main/src/github/broker.ts",
           repository: {
             id: 1,
-            fullName: "eladaviv/repo-one",
-            htmlUrl: "https://github.com/eladaviv/repo-one"
+            fullName: "example-org/repo-one",
+            htmlUrl: "https://github.com/example-org/repo-one"
           }
         }
       ]
@@ -594,7 +594,7 @@ class StubGitHubGateway implements GitHubGateway {
   async postIssueComment(): Promise<GhIssueCommentMutationResult> {
     return {
       id: 9001,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-9001",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-9001",
       body: "hello",
       createdAt: "2026-04-19T10:06:00.000Z",
       updatedAt: "2026-04-19T10:06:00.000Z",
@@ -605,7 +605,7 @@ class StubGitHubGateway implements GitHubGateway {
   async updateIssueComment(input: { body: string }): Promise<GhIssueCommentMutationResult> {
     return {
       id: 9001,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-9001",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-9001",
       body: input.body,
       createdAt: "2026-04-19T10:06:00.000Z",
       updatedAt: "2026-04-19T10:06:00.000Z",
@@ -616,7 +616,7 @@ class StubGitHubGateway implements GitHubGateway {
   async postPullRequestReviewCommentReply(): Promise<GhPullRequestReviewCommentReplyResult> {
     return {
       id: 9002,
-      url: "https://github.com/eladaviv/repo-one/pull/23#discussion_r9002",
+      url: "https://github.com/example-org/repo-one/pull/23#discussion_r9002",
       body: "🤖 Addressed inline review feedback.",
       createdAt: "2026-04-19T10:07:00.000Z",
       updatedAt: "2026-04-19T10:07:00.000Z",
@@ -627,7 +627,7 @@ class StubGitHubGateway implements GitHubGateway {
   async submitPullRequestReview(): Promise<GhPullRequestReviewSubmissionResult> {
     return {
       id: 9003,
-      url: "https://github.com/eladaviv/repo-one/pull/23#pullrequestreview-9003",
+      url: "https://github.com/example-org/repo-one/pull/23#pullrequestreview-9003",
       body: "🤖 Review submitted.",
       state: "COMMENTED",
       submittedAt: "2026-04-19T10:08:00.000Z",
@@ -651,7 +651,7 @@ class StubGitHubGateway implements GitHubGateway {
     return [
       {
         id: "PR_COMMENT_1",
-        url: "https://github.com/eladaviv/repo-one/pull/23#issuecomment-1",
+        url: "https://github.com/example-org/repo-one/pull/23#issuecomment-1",
         body: this.options.pullRequestCommentBody ?? "Default PR comment body",
         createdAt: "2026-04-19T10:10:00.000Z",
         updatedAt: "2026-04-19T10:11:00.000Z",
@@ -664,7 +664,7 @@ class StubGitHubGateway implements GitHubGateway {
     return [
       {
         id: "REVIEW_1",
-        url: "https://github.com/eladaviv/repo-one/pull/23#pullrequestreview-1",
+        url: "https://github.com/example-org/repo-one/pull/23#pullrequestreview-1",
         body: "Structured review body",
         submittedAt: "2026-04-19T10:12:00.000Z",
         state: "COMMENTED",
@@ -677,7 +677,7 @@ class StubGitHubGateway implements GitHubGateway {
     return [
       {
         id: 1001,
-        html_url: "https://github.com/eladaviv/repo-one/pull/23#discussion_r1001",
+        html_url: "https://github.com/example-org/repo-one/pull/23#discussion_r1001",
         body: "Inline review body",
         created_at: "2026-04-19T10:13:00.000Z",
         updated_at: "2026-04-19T10:14:00.000Z",
@@ -705,7 +705,7 @@ class StubGitHubGateway implements GitHubGateway {
         name: "CI / build",
         status: "completed",
         conclusion: "success",
-        url: "https://github.com/eladaviv/repo-one/actions/runs/1001",
+        url: "https://github.com/example-org/repo-one/actions/runs/1001",
         startedAt: "2026-04-19T10:00:00.000Z",
         completedAt: "2026-04-19T10:05:00.000Z"
       },
@@ -714,7 +714,7 @@ class StubGitHubGateway implements GitHubGateway {
         name: "CI / test",
         status: "completed",
         conclusion: "failure",
-        url: "https://github.com/eladaviv/repo-one/actions/runs/1002",
+        url: "https://github.com/example-org/repo-one/actions/runs/1002",
         startedAt: "2026-04-19T10:00:00.000Z",
         completedAt: "2026-04-19T10:07:00.000Z"
       }

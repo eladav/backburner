@@ -38,7 +38,7 @@ test("deriveAttentionRecords creates attention for a human packet PR comment", (
       currentWaveIndex: 0
     },
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-17",
+      branchName: "agent/example-org-repo-one/issue-17",
       prNumber: 100
     }
   };
@@ -46,7 +46,7 @@ test("deriveAttentionRecords creates attention for a human packet PR comment", (
   const packetPr = basePullRequest({
     number: 101,
     headBranch: "packet/t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-17",
+    baseBranch: "agent/example-org-repo-one/issue-17",
     baseClassification: "non_default_parent"
   });
 
@@ -56,7 +56,7 @@ test("deriveAttentionRecords creates attention for a human packet PR comment", (
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     }
   });
 
@@ -279,7 +279,7 @@ test("deriveAttentionRecords treats a generated packet plan as satisfying plan-b
       currentWaveIndex: 0,
       source: {
         kind: "plan_breakdown_result" as const,
-        workstreamId: `eladaviv/repo-one:issue:${issue.number}`,
+        workstreamId: `example-org/repo-one:issue:${issue.number}`,
         generatedAt: "2026-04-20T09:30:00.000Z"
       }
     }
@@ -330,7 +330,7 @@ test("deriveAttentionRecords is deterministic across repeated identical runs", (
     prs: [basePullRequest({ number: 23, labels: ["agent-review"], headSha: "old-head-sha" })],
     tasks: [
       {
-        id: "task:review_pr:pull_request:eladaviv/repo-one:23",
+        id: "task:review_pr:pull_request:example-org/repo-one:23",
         kind: "review_pr",
         status: "completed",
         executionPermission: "read-only",
@@ -341,15 +341,15 @@ test("deriveAttentionRecords is deterministic across repeated identical runs", (
         },
         repoId: "repo-1",
         repoName: "repo-one",
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         sourceKind: "pull_request",
-        sourceId: "pull_request:eladaviv/repo-one:23",
-        sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+        sourceId: "pull_request:example-org/repo-one:23",
+        sourceUrl: "https://github.com/example-org/repo-one/pull/23",
         relevant: true,
         reason: "review",
         summary: "review",
         context: {
-          repoIdentifier: "eladaviv/repo-one",
+          repoIdentifier: "example-org/repo-one",
           labels: ["agent-review"],
           instruction: "review"
         },
@@ -394,7 +394,7 @@ test("deriveAttentionRecords is deterministic across repeated identical runs", (
       ],
       issueNumber: 17,
       pullRequestNumbers: [23],
-      commentIds: ["comment:eladaviv/repo-one:pull_request_comment:6001"],
+      commentIds: ["comment:example-org/repo-one:pull_request_comment:6001"],
       lastObservedAt: "2026-04-20T10:00:00.000Z",
       currentPullRequestHeadSha: "head-sha-23",
       lastHandledReviewHeadSha: "old-head-sha"
@@ -413,7 +413,7 @@ test("deriveAttentionRecords records same-cycle completed review tasks from the 
   } satisfies PersistedState;
 
   const completedTask = {
-    id: "task:review_pr:pull_request:eladaviv/repo-one:23",
+    id: "task:review_pr:pull_request:example-org/repo-one:23",
     kind: "review_pr" as const,
     status: "completed" as const,
     executionPermission: "read-only" as const,
@@ -424,15 +424,15 @@ test("deriveAttentionRecords records same-cycle completed review tasks from the 
     },
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request" as const,
-    sourceId: "pull_request:eladaviv/repo-one:23",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+    sourceId: "pull_request:example-org/repo-one:23",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/23",
     relevant: true,
     reason: "review",
     summary: "review",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       labels: ["agent-review"],
       instruction: "review"
     },
@@ -480,14 +480,14 @@ test("deriveAttentionRecords ignores bot-prefixed comments and treats human retr
     currentPullRequests: [],
     currentComments: [
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:9999",
+        id: "comment:example-org/repo-one:issue_comment:9999",
         sourceId: "9999",
         body: "🤖 Technical failure. Reply with `retry: <url-of-this-comment>`."
       }),
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:human-1",
+        id: "comment:example-org/repo-one:issue_comment:human-1",
         sourceId: "human-1",
-        body: "retry: https://github.com/eladaviv/repo-one/issues/17#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/issues/17#issuecomment-9999"
       })
     ],
     tasks: [],
@@ -501,7 +501,7 @@ test("deriveAttentionRecords ignores bot-prefixed comments and treats human retr
       needsAction: true,
       reasons: ["issue_comment_added", "retry_requested"],
       issueNumber: 17,
-      commentIds: ["comment:eladaviv/repo-one:issue_comment:human-1"],
+      commentIds: ["comment:example-org/repo-one:issue_comment:human-1"],
       retryTargetCommentId: "9999",
       lastObservedAt: "2026-04-21T08:05:00.000Z"
     }
@@ -514,7 +514,7 @@ test("deriveAttentionRecords keeps all packet retry comments and records the fir
     ...issueWorkstream(issue.number),
     phase: "implementing" as const,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-17",
+      branchName: "agent/example-org-repo-one/issue-17",
       prNumber: 100
     },
     packetPlan: {
@@ -532,7 +532,7 @@ test("deriveAttentionRecords keeps all packet retry comments and records the fir
     basePullRequest({
       number,
       headBranch: `packet/t${index + 1}`,
-      baseBranch: "agent/eladaviv-repo-one/issue-17",
+      baseBranch: "agent/example-org-repo-one/issue-17",
       baseClassification: "non_default_parent"
     })
   );
@@ -544,16 +544,16 @@ test("deriveAttentionRecords keeps all packet retry comments and records the fir
         parentWorkstreamId: workstream.id,
         packetId,
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       }
     })
   );
   const comments = [101, 102, 103].map((parentNumber, index) =>
     basePrComment({
-      id: `comment:eladaviv/repo-one:pull_request_comment:70${index + 1}`,
+      id: `comment:example-org/repo-one:pull_request_comment:70${index + 1}`,
       sourceId: `70${index + 1}`,
       parentNumber,
-      body: `retry: https://github.com/eladaviv/repo-one/pull/${parentNumber}#issuecomment-90${index + 1}`
+      body: `retry: https://github.com/example-org/repo-one/pull/${parentNumber}#issuecomment-90${index + 1}`
     })
   );
 
@@ -583,7 +583,7 @@ test("deriveAttentionRecords keeps all packet retry comments and records the fir
 function baseRepo(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -602,16 +602,16 @@ function baseRepo(): RepoConfig {
 function baseIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:17",
+    id: "issue:example-org/repo-one:17",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 17,
-    key: "eladaviv/repo-one:issue:17",
+    key: "example-org/repo-one:issue:17",
     sourceId: "ISSUE_17",
-    url: "https://github.com/eladaviv/repo-one/issues/17",
+    url: "https://github.com/example-org/repo-one/issues/17",
     title: "Need attention records",
     body: "body",
     labels: [],
@@ -627,16 +627,16 @@ function basePullRequest(overrides: Partial<NormalizedPullRequest> = {}): Normal
   const number = overrides.number ?? 21;
   return {
     kind: "pull_request",
-    id: `pull_request:eladaviv/repo-one:${number}`,
+    id: `pull_request:example-org/repo-one:${number}`,
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number,
-    key: `eladaviv/repo-one:pull_request:${number}`,
+    key: `example-org/repo-one:pull_request:${number}`,
     sourceId: `PR_${number}`,
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     title: `PR ${number}`,
     body: "body",
     labels: [],
@@ -658,7 +658,7 @@ function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   return {
     id: "wt:1",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
     branchName: "branch",
     path: "/path",
@@ -675,17 +675,17 @@ function baseIssueComment(overrides: Partial<NormalizedComment> = {}): Normalize
   return {
     kind: "comment",
     commentKind: "issue_comment",
-    id: "comment:eladaviv/repo-one:issue_comment:5001",
+    id: "comment:example-org/repo-one:issue_comment:5001",
     sourceId: "5001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "issue",
     parentNumber: 17,
-    parentKey: "eladaviv/repo-one:issue:17",
-    url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-5001",
+    parentKey: "example-org/repo-one:issue:17",
+    url: "https://github.com/example-org/repo-one/issues/17#issuecomment-5001",
     body: "Please update this.",
     author: "reviewer",
     createdAt: "2026-04-20T09:10:00.000Z",
@@ -699,17 +699,17 @@ function basePrComment(overrides: Partial<NormalizedComment> = {}): NormalizedCo
   return {
     kind: "comment",
     commentKind: "pull_request_comment",
-    id: "comment:eladaviv/repo-one:pull_request_comment:6001",
+    id: "comment:example-org/repo-one:pull_request_comment:6001",
     sourceId: "6001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "pull_request",
     parentNumber,
-    parentKey: `eladaviv/repo-one:pull_request:${parentNumber}`,
-    url: `https://github.com/eladaviv/repo-one/pull/${parentNumber}#issuecomment-6001`,
+    parentKey: `example-org/repo-one:pull_request:${parentNumber}`,
+    url: `https://github.com/example-org/repo-one/pull/${parentNumber}#issuecomment-6001`,
     body: "Please address this review note.",
     author: "reviewer",
     createdAt: "2026-04-20T09:10:00.000Z",
@@ -724,8 +724,8 @@ function issueWorkstream(
   phase: WorkstreamRecord["phase"] = "issue_triage"
 ): WorkstreamRecord {
   return {
-    id: `eladaviv/repo-one:issue:${issueNumber}`,
-    repoKey: "eladaviv/repo-one",
+    id: `example-org/repo-one:issue:${issueNumber}`,
+    repoKey: "example-org/repo-one",
     origin: {
       type: "issue",
       number: issueNumber
@@ -742,8 +742,8 @@ function issueWorkstream(
 
 function prWorkstream(prNumber: number): WorkstreamRecord {
   return {
-    id: `eladaviv/repo-one:pr:${prNumber}`,
-    repoKey: "eladaviv/repo-one",
+    id: `example-org/repo-one:pr:${prNumber}`,
+    repoKey: "example-org/repo-one",
     origin: {
       type: "pr",
       number: prNumber

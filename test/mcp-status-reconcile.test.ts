@@ -19,7 +19,7 @@ test("reconcileMcpStatus: creates new record for first-seen handle with connecti
       providerMcpId: "github",
       status: "ready",
       connection: { 
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         namespace: "ns",
         transport: "http", 
@@ -41,7 +41,7 @@ test("reconcileMcpStatus: creates new record for first-seen handle with connecti
   assert.strictEqual(records.length, 1);
   assert.strictEqual(records[0]!.handle, "gh");
   assert.strictEqual(records[0]!.status, "ready");
-  assert.strictEqual(records[0]!.connection?.localConnectionIdentity, "aog-gh-123");
+  assert.strictEqual(records[0]!.connection?.localConnectionIdentity, "backburner-gh-123");
   assert.strictEqual(records[0]!.connection?.providerConnectionId, "p-123");
   assert.strictEqual(records[0]!.connection?.namespace, "ns");
   assert.strictEqual(records[0]!.connection?.transport, "http");
@@ -60,7 +60,7 @@ test("reconcileMcpStatus: updates record when connection identity changes", () =
       status: "ready",
       lastCheckedAt: "2026-06-08T09:00:00Z",
       connection: {
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readinessProof: "connected"
       }
@@ -74,7 +74,7 @@ test("reconcileMcpStatus: updates record when connection identity changes", () =
       providerMcpId: "github",
       status: "ready",
       connection: { 
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-456", // changed
         readiness: "connected"
       },
@@ -102,7 +102,7 @@ test("reconcileMcpStatus: unchanged connection is detected as unchanged", () => 
       status: "ready",
       lastCheckedAt: "2026-06-08T09:00:00Z",
       connection: {
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readinessProof: "connected"
       }
@@ -116,7 +116,7 @@ test("reconcileMcpStatus: unchanged connection is detected as unchanged", () => 
       providerMcpId: "github",
       status: "ready",
       connection: { 
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readiness: "connected"
       },
@@ -173,7 +173,7 @@ test("reconcileMcpStatus: removes stale connection proof when status changes to 
       status: "ready",
       lastCheckedAt: "2026-06-08T09:00:00Z",
       connection: {
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readinessProof: "connected",
         readinessCheckedAt: "2026-06-08T09:00:00Z"
@@ -208,7 +208,7 @@ test("reconcileMcpStatus: removes stale connection proof when status changes to 
       status: "ready",
       lastCheckedAt: "2026-06-08T09:00:00Z",
       connection: {
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readinessProof: "connected"
       }
@@ -222,7 +222,7 @@ test("reconcileMcpStatus: removes stale connection proof when status changes to 
       providerMcpId: "github",
       status: "resolved",
       connection: {
-        localConnectionIdentity: "aog-gh-123",
+        localConnectionIdentity: "backburner-gh-123",
         providerConnectionId: "p-123",
         readiness: "disconnected"
       }
@@ -299,7 +299,7 @@ test("reconcileMcpStatus: never persists ready proof for non-ready statuses", ()
 
 
 test("StateStore: writeMcpStatusState persists and load() returns mcpStatuses", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-state-store-mcp-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-state-store-mcp-"));
   try {
     const store = new StateStore(tempDir);
     const records: McpStatusRecord[] = [

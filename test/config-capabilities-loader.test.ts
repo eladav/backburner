@@ -28,7 +28,7 @@ async function setupFullManagementDir(prefix: string) {
 }
 
 test("loadCapabilitiesConfig returns empty when capabilities.json is missing", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-missing-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-missing-");
   try {
     const result = await loadCapabilitiesConfig(managementDir);
     assert.deepEqual(result, { sensors: [], controllers: [] });
@@ -38,7 +38,7 @@ test("loadCapabilitiesConfig returns empty when capabilities.json is missing", a
 });
 
 test("loadCapabilitiesConfig parses sensor and adds name from key", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-sensor-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-sensor-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -68,7 +68,7 @@ test("loadCapabilitiesConfig parses sensor and adds name from key", async () => 
 });
 
 test("loadCapabilitiesConfig parses sensor without optional fields", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-sensor-minimal-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-sensor-minimal-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -89,7 +89,7 @@ test("loadCapabilitiesConfig parses sensor without optional fields", async () =>
 });
 
 test("loadCapabilitiesConfig parses controller and adds name from key", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-controller-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-controller-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -117,7 +117,7 @@ test("loadCapabilitiesConfig parses controller and adds name from key", async ()
 });
 
 test("loadCapabilitiesConfig defaults controller approval to required", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-approval-default-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-approval-default-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -136,7 +136,7 @@ test("loadCapabilitiesConfig defaults controller approval to required", async ()
 });
 
 test("loadCapabilitiesConfig parses mixed sensors and controllers", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-mixed-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-mixed-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -161,7 +161,7 @@ test("loadCapabilitiesConfig parses mixed sensors and controllers", async () => 
 });
 
 test("loadCapabilitiesConfig throws with file path prefix on invalid file", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -182,7 +182,7 @@ test("loadCapabilitiesConfig throws with file path prefix on invalid file", asyn
 });
 
 test("loadConfig includes capabilities in returned object", async () => {
-  const { tempDir, managementDir } = await setupFullManagementDir("aog-cap-loadconfig-");
+  const { tempDir, managementDir } = await setupFullManagementDir("backburner-cap-loadconfig-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -204,7 +204,7 @@ test("loadConfig includes capabilities in returned object", async () => {
 });
 
 test("loadConfig returns empty capabilities when capabilities.json is missing", async () => {
-  const { tempDir, managementDir } = await setupFullManagementDir("aog-cap-loadconfig-missing-");
+  const { tempDir, managementDir } = await setupFullManagementDir("backburner-cap-loadconfig-missing-");
   try {
     const config = await loadConfig(managementDir);
     assert.deepEqual(config.capabilities, { sensors: [], controllers: [] });
@@ -214,7 +214,7 @@ test("loadConfig returns empty capabilities when capabilities.json is missing", 
 });
 
 test("loadCapabilitiesConfig returns empty for empty capabilities.json object", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-cap-empty-file-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-cap-empty-file-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),

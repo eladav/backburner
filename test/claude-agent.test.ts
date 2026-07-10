@@ -401,14 +401,14 @@ function baseTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
     },
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "issue",
     sourceId: "issue:1",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/1",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/1",
     relevant: true,
     reason: "test",
     summary: "test",
-    workstreamId: "eladaviv/repo-one:issue:1",
+    workstreamId: "example-org/repo-one:issue:1",
     context: baseContext(),
     createdAt: "2026-05-17T10:00:00.000Z",
     updatedAt: "2026-05-17T10:00:00.000Z",
@@ -418,7 +418,7 @@ function baseTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
 
 function baseContext(overrides: Partial<BuiltContext> = {}): BuiltContext {
   return {
-    repoIdentifier: "eladaviv/repo-one",
+    repoIdentifier: "example-org/repo-one",
     localRepoPath: "/tmp/code-root/repo-one",
     instruction: "Do things.",
     labels: [],

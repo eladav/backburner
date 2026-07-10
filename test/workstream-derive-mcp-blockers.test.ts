@@ -11,8 +11,8 @@ import type { RepoConfig } from "../src/config/types.js";
 
 const mockRepo = {
   id: "repo-1",
-  owner: "eladav",
-  name: "agents-over-github",
+  owner: "example-org",
+  name: "example-repo",
   labels: {
     agentInProgress: "agent-in-progress",
     agentPlanApproved: "agent-plan-approved",
@@ -35,15 +35,15 @@ const mockRepo = {
 const mockIssue = {
   id: "issue-1",
   repoId: "repo-1",
-  repoOwner: "eladav",
-  repoName: "agents-over-github",
-  repoSlug: "eladav/agents-over-github",
-  repoKey: "eladav/agents-over-github",
+  repoOwner: "example-org",
+  repoName: "example-repo",
+  repoSlug: "example-org/example-repo",
+  repoKey: "example-org/example-repo",
   number: 310,
   title: "Test Issue",
   state: "open",
-  author: "eladav",
-  url: "https://github.com/eladav/agents-over-github/issues/310",
+  author: "example-org",
+  url: "https://github.com/example-org/example-repo/issues/310",
   labels: ["agent-active"],
   createdAt: "2026-06-30T10:00:00Z",
   updatedAt: "2026-06-30T10:00:00Z",
@@ -74,10 +74,10 @@ const mockExclusion = {
 
 test("deriveWorkstreams carries forward mcpBlockers and mcpSkipExclusions for issue-origin workstreams", () => {
   const previousWorkstream = {
-    id: "eladav/agents-over-github:issue:310",
-    owner: "eladav",
-    repo: "agents-over-github",
-    repoKey: "eladav/agents-over-github",
+    id: "example-org/example-repo:issue:310",
+    owner: "example-org",
+    repo: "example-repo",
+    repoKey: "example-org/example-repo",
     issueNumber: 310,
     origin: {
       type: "issue",
@@ -110,15 +110,15 @@ test("deriveWorkstreams carries forward mcpBlockers and mcpSkipExclusions for PR
   const mockPr = {
     id: "pr-1",
     repoId: "repo-1",
-    repoOwner: "eladav",
-    repoName: "agents-over-github",
-    repoSlug: "eladav/agents-over-github",
-    repoKey: "eladav/agents-over-github",
+    repoOwner: "example-org",
+    repoName: "example-repo",
+    repoSlug: "example-org/example-repo",
+    repoKey: "example-org/example-repo",
     number: 320,
     title: "Test PR",
     state: "open",
-    author: "eladav",
-    url: "https://github.com/eladav/agents-over-github/pull/320",
+    author: "example-org",
+    url: "https://github.com/example-org/example-repo/pull/320",
     labels: ["agent-active"],
     headBranch: "some-head",
     headSha: "abc123sha",
@@ -130,10 +130,10 @@ test("deriveWorkstreams carries forward mcpBlockers and mcpSkipExclusions for PR
   } as any as NormalizedPullRequest;
 
   const previousWorkstream = {
-    id: "eladav/agents-over-github:pr:320",
-    owner: "eladav",
-    repo: "agents-over-github",
-    repoKey: "eladav/agents-over-github",
+    id: "example-org/example-repo:pr:320",
+    owner: "example-org",
+    repo: "example-repo",
+    repoKey: "example-org/example-repo",
     prNumber: 320,
     origin: {
       type: "pr",

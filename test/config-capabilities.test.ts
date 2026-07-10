@@ -29,7 +29,7 @@ async function setupManagementDir(prefix: string) {
 }
 
 test("loadConfig returns empty sensors/controllers when capabilities.json is missing", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-missing-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-missing-");
   try {
     const config = await loadConfig(managementDir);
     assert.deepEqual(config.capabilities.sensors, []);
@@ -40,7 +40,7 @@ test("loadConfig returns empty sensors/controllers when capabilities.json is mis
 });
 
 test("loadConfig parses valid sensor capability", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-sensor-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-sensor-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -73,7 +73,7 @@ test("loadConfig parses valid sensor capability", async () => {
 });
 
 test("loadConfig parses valid controller capability", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-controller-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-controller-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -104,7 +104,7 @@ test("loadConfig parses valid controller capability", async () => {
 });
 
 test("loadConfig parses mixed sensors and controllers", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-mixed-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-mixed-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -130,7 +130,7 @@ test("loadConfig parses mixed sensors and controllers", async () => {
 });
 
 test("loadConfig rejects duplicate capability names across sensors and controllers", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-dup-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-dup-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -155,7 +155,7 @@ test("loadConfig rejects duplicate capability names across sensors and controlle
 });
 
 test("loadConfig rejects unknown top-level fields in capabilities.json", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-top-unknown-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-top-unknown-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -176,7 +176,7 @@ test("loadConfig rejects unknown top-level fields in capabilities.json", async (
 });
 
 test("loadConfig rejects unknown fields inside a sensor object", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-sensor-unknown-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-sensor-unknown-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -198,7 +198,7 @@ test("loadConfig rejects unknown fields inside a sensor object", async () => {
 });
 
 test("loadConfig rejects unknown fields inside a controller object", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-controller-unknown-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-controller-unknown-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -220,7 +220,7 @@ test("loadConfig rejects unknown fields inside a controller object", async () =>
 });
 
 test("loadConfig rejects sensor with 'grants' field", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-sensor-grants-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-sensor-grants-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -242,7 +242,7 @@ test("loadConfig rejects sensor with 'grants' field", async () => {
 });
 
 test("loadConfig rejects controller with 'observes' field", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-controller-obs-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-controller-obs-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -264,7 +264,7 @@ test("loadConfig rejects controller with 'observes' field", async () => {
 });
 
 test("loadConfig rejects sensor missing 'observes'", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-sensor-missing-obs-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-sensor-missing-obs-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -286,7 +286,7 @@ test("loadConfig rejects sensor missing 'observes'", async () => {
 });
 
 test("loadConfig rejects controller missing 'grants'", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-controller-missing-grants-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-controller-missing-grants-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -308,7 +308,7 @@ test("loadConfig rejects controller missing 'grants'", async () => {
 });
 
 test("loadConfig rejects unknown 'observes' value", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-obs-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-obs-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -330,7 +330,7 @@ test("loadConfig rejects unknown 'observes' value", async () => {
 });
 
 test("loadConfig rejects unknown 'grants' value", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-grants-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-grants-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -352,7 +352,7 @@ test("loadConfig rejects unknown 'grants' value", async () => {
 });
 
 test("loadConfig rejects unknown 'scope' value", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-scope-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-scope-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -374,7 +374,7 @@ test("loadConfig rejects unknown 'scope' value", async () => {
 });
 
 test("loadConfig rejects unknown 'cadence' value", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-cadence-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-cadence-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -396,7 +396,7 @@ test("loadConfig rejects unknown 'cadence' value", async () => {
 });
 
 test("loadConfig rejects unknown 'approval' value", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-approval-invalid-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-approval-invalid-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -418,7 +418,7 @@ test("loadConfig rejects unknown 'approval' value", async () => {
 });
 
 test("loadConfig rejects credential-like fields in capability objects", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-creds-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-creds-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -440,7 +440,7 @@ test("loadConfig rejects credential-like fields in capability objects", async ()
 });
 
 test("loadConfig rejects provider/url fields in capability objects", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-loc-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-loc-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -462,7 +462,7 @@ test("loadConfig rejects provider/url fields in capability objects", async () =>
 });
 
 test("loadConfig accepts empty sensors/controllers maps", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-empty-maps-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-empty-maps-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -482,7 +482,7 @@ test("loadConfig accepts empty sensors/controllers maps", async () => {
 });
 
 test("loadConfig rejects empty capability names", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-empty-name-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-empty-name-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),
@@ -504,7 +504,7 @@ test("loadConfig rejects empty capability names", async () => {
 });
 
 test("loadConfig rejects whitespace capability names", async () => {
-  const { tempDir, managementDir } = await setupManagementDir("aog-caps-ws-name-");
+  const { tempDir, managementDir } = await setupManagementDir("backburner-caps-ws-name-");
   try {
     await writeFile(
       path.join(managementDir, "capabilities.json"),

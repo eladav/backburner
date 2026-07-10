@@ -12,9 +12,9 @@ test("Task.getSourceCommentId prioritizes sourceReactionTargetId", () => {
     handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:12345",
+    sourceId: "comment:example-org/repo-one:12345",
     sourceUrl: "url",
     relevant: true,
     reason: "reason",
@@ -35,7 +35,7 @@ test("Task.getSourceCommentId prioritizes sourceReactionTargetId", () => {
   const recordWithoutReaction: TaskRecord = {
     ...recordWithReaction,
     sourceReactionTargetId: undefined,
-    sourceId: "comment:eladaviv/repo-one:999"
+    sourceId: "comment:example-org/repo-one:999"
   };
 
   const task2 = Task.from(recordWithoutReaction);

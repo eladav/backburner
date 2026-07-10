@@ -60,8 +60,8 @@ test("TaskLifecycleNotifier posts a comment on queueing due to limited provider"
   const notifier = new GitHubTaskLifecycleNotifier(mockGateway, [
     {
       id: "repo-1",
-      owner: "eladav",
-      name: "agents-over-github",
+      owner: "example-org",
+      name: "example-repo",
       localPath: "/tmp/repo",
       enabled: true,
       labels: {
@@ -87,7 +87,7 @@ test("TaskLifecycleNotifier posts a comment on queueing due to limited provider"
     sourceKind: "issue",
     sourceId: "repo-1:42",
     context: {
-      repoIdentifier: "eladav/agents-over-github",
+      repoIdentifier: "example-org/example-repo",
       labels: [],
       instruction: "Do it"
     }
@@ -103,8 +103,8 @@ test("TaskLifecycleNotifier posts a comment on queueing due to limited provider"
   await notifier.notifyQueued(taskRecord, error.limitedProviders);
 
   assert.ok(postedComment);
-  assert.equal(postedComment.owner, "eladav");
-  assert.equal(postedComment.name, "agents-over-github");
+  assert.equal(postedComment.owner, "example-org");
+  assert.equal(postedComment.name, "example-repo");
   assert.equal(postedComment.issueNumber, 42);
   assert.match(postedComment.body, /queued/);
   assert.match(postedComment.body, /claude/);

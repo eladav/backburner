@@ -115,7 +115,7 @@ test("runCli records partial failures, dispatches pending tasks, and persists au
             failures: [
               {
                 repoId: "repo-2",
-                repoSlug: "eladaviv/repo-two",
+                repoSlug: "example-org/repo-two",
                 step: "list_issues" as const,
                 scope: "repo",
                 message: "gh unavailable"
@@ -127,7 +127,7 @@ test("runCli records partial failures, dispatches pending tasks, and persists au
       failures: [
         {
           repoId: "repo-2",
-          repoSlug: "eladaviv/repo-two",
+          repoSlug: "example-org/repo-two",
           step: "list_issues" as const,
           scope: "repo",
           message: "gh unavailable"
@@ -233,7 +233,7 @@ test("runCli records partial failures, dispatches pending tasks, and persists au
 
     assert.equal(issuesState.metadata.entityCount, 1);
     assert.equal(issuesState.metadata.partialFailures.length, 1);
-    assert.equal(issuesState.issues[0]?.repoSlug, "eladaviv/repo-one");
+    assert.equal(issuesState.issues[0]?.repoSlug, "example-org/repo-one");
     assert.equal(prsState.prs[0]?.headBranch, "feature/scan");
     assert.equal(commentsState.comments[0]?.commentKind, "pull_request_comment");
     assert.equal(reposState.repos[1]?.githubScan?.status, "failed");
@@ -245,8 +245,8 @@ test("runCli records partial failures, dispatches pending tasks, and persists au
       tasksState.tasks.map((task) => task.status),
       ["completed", "completed"]
     );
-    assert.equal(tasksState.tasks[0]?.lastExecutionId, "exec:task:implement_plan:pull_request:eladaviv/repo-one:23:mock");
-    assert.equal(tasksState.tasks[0]?.context.pullRequestUrl, "https://github.com/eladaviv/repo-one/pull/23");
+    assert.equal(tasksState.tasks[0]?.lastExecutionId, "exec:task:implement_plan:pull_request:example-org/repo-one:23:mock");
+    assert.equal(tasksState.tasks[0]?.context.pullRequestUrl, "https://github.com/example-org/repo-one/pull/23");
     assert.equal(executionsState.executions.length, 2);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -364,7 +364,7 @@ test("runCli materializes product-approved issue into a worktree record and writ
     assert.equal(writeProductSpecTask?.status, "completed");
     assert.match(
       writeProductSpecTask?.context.productSpecDocumentPath ?? "",
-      /docs\/agents\/agent-eladaviv-repo-one-issue-17\/issue-17-product-spec\.md$/
+      /docs\/agents\/agent-example-org-repo-one-issue-17\/issue-17-product-spec\.md$/
     );
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -418,34 +418,34 @@ test("runCli maps a plan-approved PR to an implement_plan task using the linked 
         {
           worktrees: [
             {
-              id: "worktree:eladaviv/repo-one:issue:17",
+              id: "worktree:example-org/repo-one:issue:17",
               repoId: "repo-1",
-              repoSlug: "eladaviv/repo-one",
+              repoSlug: "example-org/repo-one",
               repoName: "repo-one",
-              issueId: "issue:eladaviv/repo-one:17",
+              issueId: "issue:example-org/repo-one:17",
               issueNumber: 17,
-              branchName: "agent/eladaviv-repo-one/issue-17",
-              path: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17"),
+              branchName: "agent/example-org-repo-one/issue-17",
+              path: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
               planDocumentPath: path.join(
                 codeRoot,
                 "_worktrees",
-                "eladaviv",
+                "example-org",
                 "repo-one",
                 "issue-17",
                 "docs",
                 "agents",
-                "agent-eladaviv-repo-one-issue-17",
+                "agent-example-org-repo-one-issue-17",
                 "issue-17-agent-plan.md"
               ),
               logDocumentPath: path.join(
                 codeRoot,
                 "_worktrees",
-                "eladaviv",
+                "example-org",
                 "repo-one",
                 "issue-17",
                 "docs",
                 "agents",
-                "agent-eladaviv-repo-one-issue-17",
+                "agent-example-org-repo-one-issue-17",
                 "issue-17-agent-log.md"
               ),
               status: "awaiting_plan_approval",
@@ -467,18 +467,18 @@ test("runCli maps a plan-approved PR to an implement_plan task using the linked 
       gitGateway: new TestGitGateway(),
       gitHubGateway: new TestGitHubGateway({
         existingByHeadBranch: {
-          "agent/eladaviv-repo-one/issue-17": {
-            id: "pull_request:eladaviv/repo-one:23",
+          "agent/example-org-repo-one/issue-17": {
+            id: "pull_request:example-org/repo-one:23",
             number: 23,
             title: "Implement workflow",
             body: "Body",
-            url: "https://github.com/eladaviv/repo-one/pull/23",
+            url: "https://github.com/example-org/repo-one/pull/23",
             state: "OPEN",
             createdAt: "2026-04-18T11:00:00.000Z",
             updatedAt: "2026-04-18T11:00:00.000Z",
             author: { login: "owner" },
             labels: [],
-            headRefName: "agent/eladaviv-repo-one/issue-17",
+            headRefName: "agent/example-org-repo-one/issue-17",
             headSha: "abc123",
             baseRefName: "main",
             isDraft: false
@@ -503,7 +503,7 @@ test("runCli maps a plan-approved PR to an implement_plan task using the linked 
             prs: [
               samplePullRequest({
                 labels: ["agent-plan-approved"],
-                headBranch: "agent/eladaviv-repo-one/issue-17"
+                headBranch: "agent/example-org-repo-one/issue-17"
               })
             ],
             comments: [],
@@ -554,10 +554,10 @@ test("runCli maps a plan-approved PR to an implement_plan task using the linked 
 
     const implementTask = dispatched.find((task) => task.kind === "implement_plan");
     assert.equal(summary.taskCount, 1);
-    assert.equal(implementTask?.context.localRepoPath?.includes("_worktrees/eladaviv/repo-one/issue-17"), true);
+    assert.equal(implementTask?.context.localRepoPath?.includes("_worktrees/example-org/repo-one/issue-17"), true);
     assert.equal(
       implementTask?.context.planDocumentPath?.endsWith(
-        "docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md"
+        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md"
       ),
       true
     );
@@ -610,19 +610,19 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
         {
           worktrees: [
             {
-              id: "worktree:eladaviv/repo-one:issue:17",
+              id: "worktree:example-org/repo-one:issue:17",
               repoId: "repo-1",
-              repoSlug: "eladaviv/repo-one",
+              repoSlug: "example-org/repo-one",
               repoName: "repo-one",
-              issueId: "issue:eladaviv/repo-one:17",
+              issueId: "issue:example-org/repo-one:17",
               issueNumber: 17,
-              prId: "pull_request:eladaviv/repo-one:23",
+              prId: "pull_request:example-org/repo-one:23",
               prNumber: 23,
-              prUrl: "https://github.com/eladaviv/repo-one/pull/23",
-              branchName: "agent/eladaviv-repo-one/issue-17",
-              path: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17"),
-              planDocumentPath: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17", "docs", "agents", "agent-eladaviv-repo-one-issue-17", "issue-17-agent-plan.md"),
-              logDocumentPath: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17", "docs", "agents", "agent-eladaviv-repo-one-issue-17", "issue-17-agent-log.md"),
+              prUrl: "https://github.com/example-org/repo-one/pull/23",
+              branchName: "agent/example-org-repo-one/issue-17",
+              path: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
+              planDocumentPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17", "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-plan.md"),
+              logDocumentPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17", "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-log.md"),
               status: "implementation_ready",
               createdAt: "2026-04-18T11:00:00.000Z",
               updatedAt: "2026-04-18T11:00:00.000Z"
@@ -641,18 +641,18 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
       gitGateway,
       gitHubGateway: new TestGitHubGateway({
         existingByHeadBranch: {
-          "agent/eladaviv-repo-one/issue-17": {
-            id: "pull_request:eladaviv/repo-one:23",
+          "agent/example-org-repo-one/issue-17": {
+            id: "pull_request:example-org/repo-one:23",
             number: 23,
             title: "Implement workflow",
             body: "Body",
-            url: "https://github.com/eladaviv/repo-one/pull/23",
+            url: "https://github.com/example-org/repo-one/pull/23",
             state: "OPEN",
             createdAt: "2026-04-18T11:00:00.000Z",
             updatedAt: "2026-04-18T11:00:00.000Z",
             author: { login: "owner" },
             labels: [],
-            headRefName: "agent/eladaviv-repo-one/issue-17",
+            headRefName: "agent/example-org-repo-one/issue-17",
             headSha: "abc123",
             baseRefName: "main",
             isDraft: false
@@ -671,7 +671,7 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
             prs: [
               samplePullRequest({
                 labels: ["agent-plan-approved"],
-                headBranch: "agent/eladaviv-repo-one/issue-17"
+                headBranch: "agent/example-org-repo-one/issue-17"
               })
             ],
             comments: [],
@@ -715,14 +715,14 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
 
     assert.deepEqual(gitGateway.commitAllCalls, [
       {
-        localPath: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17"),
+        localPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
         message: "feat(agent): capture implementation updates for #17"
       }
     ]);
     assert.deepEqual(gitGateway.pushBranchCalls, [
       {
-        localPath: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17"),
-        branch: "agent/eladaviv-repo-one/issue-17"
+        localPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
+        branch: "agent/example-org-repo-one/issue-17"
       }
     ]);
 
@@ -739,7 +739,7 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
 function baseRepoConfig(id: string, name: string, localPath: string): RepoConfig {
   return {
     id,
-    owner: "eladaviv",
+    owner: "example-org",
     name,
     localPath,
     enabled: true,
@@ -765,7 +765,7 @@ function createRepoResult(
   return {
     repoId: id,
     repoName: name,
-    repoSlug: `eladaviv/${name}`,
+    repoSlug: `example-org/${name}`,
     localPath: path.join(codeRoot, name),
     codeRoot,
     status,
@@ -784,16 +784,16 @@ function createRepoResult(
 function sampleIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:17",
+    id: "issue:example-org/repo-one:17",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 17,
-    key: "eladaviv/repo-one:issue:17",
+    key: "example-org/repo-one:issue:17",
     sourceId: "ISSUE_17",
-    url: "https://github.com/eladaviv/repo-one/issues/17",
+    url: "https://github.com/example-org/repo-one/issues/17",
     title: "Need scan coverage",
     body: "Track comments and labels.",
     labels: ["agent-in-progress"],
@@ -810,16 +810,16 @@ function sampleIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue 
 function samplePullRequest(overrides: Partial<NormalizedPullRequest> = {}): NormalizedPullRequest {
   return {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:23",
+    id: "pull_request:example-org/repo-one:23",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 23,
-    key: "eladaviv/repo-one:pull_request:23",
+    key: "example-org/repo-one:pull_request:23",
     sourceId: "PR_23",
-    url: "https://github.com/eladaviv/repo-one/pull/23",
+    url: "https://github.com/example-org/repo-one/pull/23",
     title: "Implement scanning",
     body: "Open PR body",
     labels: ["agent-plan-approved"],
@@ -843,17 +843,17 @@ function sampleComment(): NormalizedComment {
   return {
     kind: "comment",
     commentKind: "pull_request_comment",
-    id: "comment:eladaviv/repo-one:pull_request_comment:9001",
+    id: "comment:example-org/repo-one:pull_request_comment:9001",
     sourceId: "9001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "pull_request",
     parentNumber: 23,
-    parentKey: "eladaviv/repo-one:pull_request:23",
-    url: "https://github.com/eladaviv/repo-one/pull/23#issuecomment-9001",
+    parentKey: "example-org/repo-one:pull_request:23",
+    url: "https://github.com/example-org/repo-one/pull/23#issuecomment-9001",
     body: "Please handle the new review note.",
     author: "reviewer",
     createdAt: "2026-04-18T08:41:00.000Z",
@@ -868,7 +868,7 @@ class TestGitGateway implements GitGateway {
   async cloneRepository(): Promise<void> {}
   async fetchRepository(): Promise<void> {}
   async getCurrentBranch(localPath: string): Promise<string | null> {
-    if (localPath.includes("issue-17")) return "agent/eladaviv-repo-one/issue-17";
+    if (localPath.includes("issue-17")) return "agent/example-org-repo-one/issue-17";
     return "main";
   }
   async getRemoteDefaultBranch(_localPath: string): Promise<string> {
@@ -1037,7 +1037,7 @@ test("runCli: prepare_pr_for_merge fails if normal push fails after agent comple
     );
 
     const pr = samplePullRequest({
-      id: "pull_request:eladaviv/repo-one:101",
+      id: "pull_request:example-org/repo-one:101",
       number: 101,
       labels: ["prepare-for-merge"],
       headSha: "abc123456789"
@@ -1140,10 +1140,10 @@ class TestGitHubGateway implements GitHubGateway {
   async getRepositoryMetadata(): Promise<GitHubRepositoryMetadata> {
     return {
       id: "repo-meta",
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
-      nameWithOwner: "eladaviv/repo-one",
-      url: "https://github.com/eladaviv/repo-one",
+      nameWithOwner: "example-org/repo-one",
+      url: "https://github.com/example-org/repo-one",
       defaultBranch: "main"
     };
   }
@@ -1156,7 +1156,7 @@ class TestGitHubGateway implements GitHubGateway {
       number: issueNumber,
       title: "Need scan coverage",
       body: "Track comments and labels.",
-      url: `https://github.com/eladaviv/repo-one/issues/${issueNumber}`,
+      url: `https://github.com/example-org/repo-one/issues/${issueNumber}`,
       state: "OPEN",
       createdAt: "2026-04-18T08:00:00.000Z",
       updatedAt: "2026-04-18T08:30:00.000Z",
@@ -1170,7 +1170,7 @@ class TestGitHubGateway implements GitHubGateway {
       number: prNumber,
       title: "Implement scanning",
       body: "Open PR body",
-      url: `https://github.com/eladaviv/repo-one/pull/${prNumber}`,
+      url: `https://github.com/example-org/repo-one/pull/${prNumber}`,
       state: "OPEN",
       createdAt: "2026-04-18T08:10:00.000Z",
       updatedAt: "2026-04-18T08:40:00.000Z",
@@ -1198,11 +1198,11 @@ class TestGitHubGateway implements GitHubGateway {
     body: string;
   }): Promise<GhPullRequestSummary> {
     return {
-      id: "pull_request:eladaviv/repo-one:101",
+      id: "pull_request:example-org/repo-one:101",
       number: 101,
       title: input.title,
       body: input.body,
-      url: "https://github.com/eladaviv/repo-one/pull/101",
+      url: "https://github.com/example-org/repo-one/pull/101",
       state: "OPEN",
       createdAt: "2026-04-18T11:00:00.000Z",
       updatedAt: "2026-04-18T11:00:00.000Z",
@@ -1227,7 +1227,7 @@ class TestGitHubGateway implements GitHubGateway {
   async postIssueComment(): Promise<GhIssueCommentMutationResult> {
     return {
       id: 1,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-1",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-1",
       body: "comment",
       createdAt: "2026-04-18T11:00:00.000Z",
       updatedAt: "2026-04-18T11:00:00.000Z",
@@ -1237,7 +1237,7 @@ class TestGitHubGateway implements GitHubGateway {
   async updateIssueComment(input: { body: string }): Promise<GhIssueCommentMutationResult> {
     return {
       id: 1,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-1",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-1",
       body: input.body,
       createdAt: "2026-04-18T11:00:00.000Z",
       updatedAt: "2026-04-18T11:00:00.000Z",
@@ -1247,7 +1247,7 @@ class TestGitHubGateway implements GitHubGateway {
   async postPullRequestReviewCommentReply(): Promise<GhPullRequestReviewCommentReplyResult> {
     return {
       id: 2,
-      url: "https://github.com/eladaviv/repo-one/pull/17#discussion_r2",
+      url: "https://github.com/example-org/repo-one/pull/17#discussion_r2",
       body: "🤖 reply",
       createdAt: "2026-04-18T11:00:00.000Z",
       updatedAt: "2026-04-18T11:00:00.000Z",
@@ -1257,7 +1257,7 @@ class TestGitHubGateway implements GitHubGateway {
   async submitPullRequestReview(): Promise<GhPullRequestReviewSubmissionResult> {
     return {
       id: 3,
-      url: "https://github.com/eladaviv/repo-one/pull/17#pullrequestreview-3",
+      url: "https://github.com/example-org/repo-one/pull/17#pullrequestreview-3",
       body: "🤖 Approved.",
       state: "APPROVED",
       submittedAt: "2026-04-18T11:00:00.000Z",

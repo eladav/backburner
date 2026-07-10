@@ -14,22 +14,22 @@ function baseTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
   const kind = overrides.kind ?? "plan_breakdown";
   const executionPolicy = workflowRegistry.resolveTaskExecutionPolicy(kind);
   return {
-    id: "task:plan_breakdown:issue:eladaviv/repo-one:11",
+    id: "task:plan_breakdown:issue:example-org/repo-one:11",
     kind,
     status: "pending",
     executionPermission: executionPolicy.executionPermission,
     handoffPolicy: executionPolicy.handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "issue",
-    sourceId: "issue:eladaviv/repo-one:11",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11",
+    sourceId: "issue:example-org/repo-one:11",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11",
     relevant: true,
     reason: "Breakdown needed.",
     summary: "Break down the implementation",
     context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         localRepoPath: "/tmp/code-root/repo-one",
         labels: ["plan-breakdown-needed"],
         instruction: "Break down the issue."
@@ -123,8 +123,8 @@ test("dispatchPendingTasks publishes structured plan breakdown outcomes", async 
     const task = baseTask({
         kind: "plan_breakdown",
         status: "pending",
-        sourceId: "issue:eladaviv/repo-one:11",
-        sourceUrl: "https://github.com/eladaviv/repo-one/issues/11",
+        sourceId: "issue:example-org/repo-one:11",
+        sourceUrl: "https://github.com/example-org/repo-one/issues/11",
     });
     const store = new StateStore(tempDir);
     const comments: Array<Record<string, unknown>> = [];
@@ -139,7 +139,7 @@ test("dispatchPendingTasks publishes structured plan breakdown outcomes", async 
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           defaultBranch: "main",

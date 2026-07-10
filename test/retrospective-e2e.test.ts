@@ -50,7 +50,7 @@ const scopeConfig: ScopeValidationConfig = {
 };
 
 test("retrospective e2e audit-only vertical slice", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-retro-e2e-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-retro-e2e-"));
 
   try {
     const managementRoot = path.join(tempDir, "management");
@@ -58,7 +58,7 @@ test("retrospective e2e audit-only vertical slice", async () => {
 
     const workstream: WorkstreamRecord = {
       id: "workstream-1",
-      repoKey: "eladav/agents-over-github",
+      repoKey: "example-org/example-repo",
       origin: { type: "issue", number: 232 },
       linkedPrs: [],
       phase: "resolved",
@@ -73,17 +73,17 @@ test("retrospective e2e audit-only vertical slice", async () => {
       id: "issue-232",
       kind: "issue",
       repoId: "repo-1",
-      repoKey: "eladav/agents-over-github",
-      repoSlug: "eladav/agents-over-github",
-      repoOwner: "eladav",
-      repoName: "agents-over-github",
+      repoKey: "example-org/example-repo",
+      repoSlug: "example-org/example-repo",
+      repoOwner: "example-org",
+      repoName: "example-repo",
       number: 232,
       title: "Retrospective MVP",
       body: "Self improvement retrospective MVP",
-      url: "https://github.com/eladav/agents-over-github/issues/232",
+      url: "https://github.com/example-org/example-repo/issues/232",
       labels: [],
       state: "closed",
-      author: "eladav",
+      author: "example-org",
       createdAt: now,
       updatedAt: now,
       lastSeenAt: now,
@@ -330,7 +330,7 @@ test("retrospective threshold failure blocks investigation derivation", () => {
 });
 
 test("retrospective e2e mocked git-backed materialization opens management PR", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-retro-mgmt-pr-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-retro-mgmt-pr-"));
 
   try {
     const managementRoot = tempDir;
@@ -358,7 +358,7 @@ test("retrospective e2e mocked git-backed materialization opens management PR", 
         gitCommands.push(args);
 
         if (args[0] === "remote" && args[1] === "get-url") {
-          return { exitCode: 0, stdout: "https://github.com/eladav/aog-management.git\n", stderr: "" };
+          return { exitCode: 0, stdout: "https://github.com/example-org/backburner-management.git\n", stderr: "" };
         }
         if (args[0] === "checkout") {
           return { exitCode: 0, stdout: "", stderr: "" };
@@ -388,7 +388,7 @@ test("retrospective e2e mocked git-backed materialization opens management PR", 
         return {
           id: "pr-1",
           number: 42,
-          url: "https://github.com/eladav/aog-management/pull/42",
+          url: "https://github.com/example-org/backburner-management/pull/42",
         } as any;
       },
     };
@@ -415,8 +415,8 @@ test("retrospective e2e mocked git-backed materialization opens management PR", 
     assert.equal(result.managementPrs[0]?.branchName, branchName);
     assert.deepEqual(pushedBranches, [branchName]);
     assert.equal(pullRequestInputs.length, 1);
-    assert.equal(pullRequestInputs[0].owner, "eladav");
-    assert.equal(pullRequestInputs[0].name, "aog-management");
+    assert.equal(pullRequestInputs[0].owner, "example-org");
+    assert.equal(pullRequestInputs[0].name, "backburner-management");
     assert.equal(pullRequestInputs[0].baseBranch, "main");
     assert.match(pullRequestInputs[0].body, /Retrospective Summary/);
     assert.match(pullRequestInputs[0].body, /Selected Scope/);
@@ -429,7 +429,7 @@ test("retrospective e2e mocked git-backed materialization opens management PR", 
 });
 
 test("retrospective learning overlays load broad-to-narrow approved guidance", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-retro-overlays-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-retro-overlays-"));
 
   try {
     await mkdir(path.join(tempDir, "learnings", "repo-task-kinds", "repo-1"), { recursive: true });
@@ -457,7 +457,7 @@ test("retrospective learning overlays load broad-to-narrow approved guidance", a
 });
 
 test("retrospective state initializes old state and writes readable JSON", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-retro-state-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-retro-state-"));
 
   try {
     const store = new StateStore(tempDir);
@@ -510,15 +510,15 @@ function baseCandidate(): RetrospectiveCandidateRecord {
     id: "retrospective-candidate-1",
     sourceWorkstreamId: "workstream-1",
     repoId: "repo-1",
-    repoSlug: "eladav/agents-over-github",
-    repoKey: "eladav/agents-over-github",
+    repoSlug: "example-org/example-repo",
+    repoKey: "example-org/example-repo",
     origin: { type: "issue", number: 232 },
     terminalResolution: "merged",
     detectedAt: now,
     resolvedAt: now,
     status: "extracted",
     title: "Retrospective MVP",
-    url: "https://github.com/eladav/agents-over-github/issues/232",
+    url: "https://github.com/example-org/example-repo/issues/232",
     labels: [],
     sourceSummary: "Completed retrospective MVP workstream",
     taskSummary: { total: 1, completed: 1, failed: 0, kinds: ["write_plan"], taskIds: ["task-1"] },
@@ -605,7 +605,7 @@ function throwingCommandRunner(): CommandRunner {
 }
 
 test("retrospective e2e semantic normalization", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-retro-semantic-e2e-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-retro-semantic-e2e-"));
 
   try {
     const candidate = baseCandidate();

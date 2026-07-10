@@ -24,7 +24,7 @@ test("runCli uses ClaudeCodeCliAgent when Claude agents are enabled", async () =
           repos: [
             {
               id: "repo-1",
-              owner: "eladaviv",
+              owner: "example-org",
               name: "repo-one",
               localPath: "repo-one",
               enabled: true,
@@ -72,7 +72,7 @@ test("runCli uses ClaudeCodeCliAgent when Claude agents are enabled", async () =
           return {
             repoId: "repo-1",
             repoName: "repo-one",
-            repoSlug: "eladaviv/repo-one",
+            repoSlug: "example-org/repo-one",
             localPath: path.join(codeRoot, "repo-one"),
             codeRoot,
             status: "synced",
@@ -94,16 +94,16 @@ test("runCli uses ClaudeCodeCliAgent when Claude agents are enabled", async () =
             issues: [
               {
                 kind: "issue",
-                id: "issue:eladaviv/repo-one:1",
+                id: "issue:example-org/repo-one:1",
                 repoId: "repo-1",
-                repoKey: "eladaviv/repo-one",
-                repoOwner: "eladaviv",
+                repoKey: "example-org/repo-one",
+                repoOwner: "example-org",
                 repoName: "repo-one",
-                repoSlug: "eladaviv/repo-one",
+                repoSlug: "example-org/repo-one",
                 number: 1,
-                key: "eladaviv/repo-one:issue:1",
+                key: "example-org/repo-one:issue:1",
                 sourceId: "I1",
-                url: "https://github.com/eladaviv/repo-one/issues/1",
+                url: "https://github.com/example-org/repo-one/issues/1",
                 title: "Test",
                 body: "Body",
                 labels: ["agent-in-progress"],

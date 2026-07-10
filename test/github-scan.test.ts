@@ -85,10 +85,10 @@ test("normalization generates repo-qualified ids and carries local timestamps", 
     previousComments: new Map()
   });
 
-  assert.equal(createEntityKey("issue", metadata.nameWithOwner, 7), "eladaviv/repo-one:issue:7");
-  assert.equal(issueComments[0]?.id, "comment:eladaviv/repo-one:issue_comment:3001");
+  assert.equal(createEntityKey("issue", metadata.nameWithOwner, 7), "example-org/repo-one:issue:7");
+  assert.equal(issueComments[0]?.id, "comment:example-org/repo-one:issue_comment:3001");
   assert.equal(issueComments[0]?.lastHandledAt, "2026-04-18T07:10:00.000Z");
-  assert.equal(normalizedIssue.id, "issue:eladaviv/repo-one:7");
+  assert.equal(normalizedIssue.id, "issue:example-org/repo-one:7");
   assert.equal(normalizedIssue.lastHandledAt, "2026-04-18T07:00:00.000Z");
   assert.equal(normalizedIssue.lastCommentAt, "2026-04-18T08:30:00.000Z");
 });
@@ -141,33 +141,33 @@ test("GitHubScanService handles empty results and per-repo failures without abor
   const repoResults = [baseRepoResult(repoOne), baseRepoResult(repoTwo)];
   const gateway = new FakeGitHubGateway({
     repoMetadata: new Map([
-      ["eladaviv/repo-one", baseMetadata()],
+      ["example-org/repo-one", baseMetadata()],
       [
-        "eladaviv/repo-two",
+        "example-org/repo-two",
         {
           ...baseMetadata(),
           id: "REPO_2",
           name: "repo-two",
-          nameWithOwner: "eladaviv/repo-two",
-          url: "https://github.com/eladaviv/repo-two"
+          nameWithOwner: "example-org/repo-two",
+          url: "https://github.com/example-org/repo-two"
         }
       ]
     ]),
     issues: new Map([
-      ["eladaviv/repo-one", [sampleIssue()]],
-      ["eladaviv/repo-two", []]
+      ["example-org/repo-one", [sampleIssue()]],
+      ["example-org/repo-two", []]
     ]),
     pullRequests: new Map([
-      ["eladaviv/repo-one", [samplePullRequest()]],
-      ["eladaviv/repo-two", []]
+      ["example-org/repo-one", [samplePullRequest()]],
+      ["example-org/repo-two", []]
     ]),
-    issueComments: new Map([["eladaviv/repo-one#7", []]]),
-    pullRequestComments: new Map([["eladaviv/repo-one#13", [samplePullRequestComment()]]]),
-    pullRequestReviews: new Map([["eladaviv/repo-one#13", [samplePullRequestReview()]]]),
+    issueComments: new Map([["example-org/repo-one#7", []]]),
+    pullRequestComments: new Map([["example-org/repo-one#13", [samplePullRequestComment()]]]),
+    pullRequestReviews: new Map([["example-org/repo-one#13", [samplePullRequestReview()]]]),
     pullRequestReviewComments: new Map(),
     failures: [
       {
-        repoSlug: "eladaviv/repo-two",
+        repoSlug: "example-org/repo-two",
         step: "list_issues",
         message: "gh issue list failed"
       }
@@ -284,23 +284,23 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from open PR s
     ...samplePullRequest(),
     number: 100,
     id: "PR_100",
-    url: "https://github.com/eladaviv/repo-one/pull/100",
-    headRefName: "agent/eladaviv-repo-one/issue-7"
+    url: "https://github.com/example-org/repo-one/pull/100",
+    headRefName: "agent/example-org-repo-one/issue-7"
   };
   const mergedPacketPr = {
     ...samplePullRequest(),
     number: 101,
     id: "PR_101",
-    url: "https://github.com/eladaviv/repo-one/pull/101",
+    url: "https://github.com/example-org/repo-one/pull/101",
     state: "MERGED" as const,
-    headRefName: "agent/eladaviv-repo-one/workstream-issue-7/packet-t1",
-    baseRefName: "agent/eladaviv-repo-one/issue-7"
+    headRefName: "agent/example-org-repo-one/workstream-issue-7/packet-t1",
+    baseRefName: "agent/example-org-repo-one/issue-7"
   };
   const unrelatedMergedPr = {
     ...samplePullRequest(),
     number: 202,
     id: "PR_202",
-    url: "https://github.com/eladaviv/repo-one/pull/202",
+    url: "https://github.com/example-org/repo-one/pull/202",
     state: "MERGED" as const,
     headRefName: "untracked/merged"
   };
@@ -314,10 +314,10 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from open PR s
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
   const result = await service.scanRepositories([repo], [baseRepoResult(repo)], previousState);
 
-  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "eladaviv/repo-one", prNumber: 101 }]);
+  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "example-org/repo-one", prNumber: 101 }]);
   assert.deepEqual(result.prs.map((pr) => pr.number), [100, 101]);
   assert.equal(result.prs.find((pr) => pr.number === 101)?.state, "merged");
-  assert.equal(result.prs.find((pr) => pr.number === 101)?.baseBranch, "agent/eladaviv-repo-one/issue-7");
+  assert.equal(result.prs.find((pr) => pr.number === 101)?.baseBranch, "agent/example-org-repo-one/issue-7");
 });
 
 test("GitHubScanService does not direct-fetch untracked closed pull requests", async () => {
@@ -351,7 +351,7 @@ test("GitHubScanService does not direct-fetch packet PRs already marked merged_t
     number: 101,
     id: "PR_101",
     state: "MERGED" as const,
-    headRefName: "agent/eladaviv-repo-one/workstream-issue-7/packet-t1"
+    headRefName: "agent/example-org-repo-one/workstream-issue-7/packet-t1"
   };
   const previousState = stateWithTrackedPacketPullRequest(101);
   previousState.workstreams[0]!.packetPlan!.packets.T1!.status = "merged_to_parent";
@@ -388,7 +388,7 @@ test("GitHubScanService records failure for tracked missing PR direct-fetch with
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
   const result = await service.scanRepositories([repo], [baseRepoResult(repo)], previousState);
 
-  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "eladaviv/repo-one", prNumber: 101 }]);
+  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "example-org/repo-one", prNumber: 101 }]);
   assert.equal(result.prs.length, 0);
   assert.equal(result.failures.length, 1);
   assert.equal(result.failures[0]?.step, "get_pull_request");
@@ -400,7 +400,7 @@ test("GitHubScanService carries forward repo entities when repository metadata f
   const previousState = stateWithPullRequest();
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    failures: [{ repoSlug: "eladaviv/repo-one", step: "repo_metadata", message: "repo metadata failed" }]
+    failures: [{ repoSlug: "example-org/repo-one", step: "repo_metadata", message: "repo metadata failed" }]
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
 
@@ -418,8 +418,8 @@ test("GitHubScanService carries forward previous issues and issue comments when 
   const previousState = baseState();
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    failures: [{ repoSlug: "eladaviv/repo-one", step: "list_issues", message: "issue list failed" }]
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    failures: [{ repoSlug: "example-org/repo-one", step: "list_issues", message: "issue list failed" }]
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
 
@@ -439,20 +439,20 @@ test("GitHubScanService carries forward only issue comments for the issue whose 
       ...baseState().comments,
       {
         ...baseState().comments[0]!,
-        id: "comment:eladaviv/repo-one:issue_comment:unrelated",
+        id: "comment:example-org/repo-one:issue_comment:unrelated",
         sourceId: "unrelated",
         parentNumber: 99,
-        parentKey: "eladaviv/repo-one:issue:99"
+        parentKey: "example-org/repo-one:issue:99"
       }
     ]
   };
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
     failures: [
       {
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         step: "issue_comments",
         scope: "issue#7",
         message: "issue comments failed"
@@ -465,7 +465,7 @@ test("GitHubScanService carries forward only issue comments for the issue whose 
 
   assert.equal(result.issues[0]?.sourceId, "ISSUE_7");
   assert.equal(result.comments.length, 1);
-  assert.equal(result.comments[0]?.id, "comment:eladaviv/repo-one:issue_comment:3001");
+  assert.equal(result.comments[0]?.id, "comment:example-org/repo-one:issue_comment:3001");
   assert.equal(result.repoResults[0]?.githubScan?.status, "partial");
 });
 
@@ -474,8 +474,8 @@ test("GitHubScanService carries forward previous PRs and PR comments when PR lis
   const previousState = stateWithPullRequest();
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    failures: [{ repoSlug: "eladaviv/repo-one", step: "list_pull_requests", message: "pr list failed" }]
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    failures: [{ repoSlug: "example-org/repo-one", step: "list_pull_requests", message: "pr list failed" }]
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
 
@@ -494,12 +494,12 @@ test("GitHubScanService merges fresh and carried PR comments when a PR comment s
   const previousState = stateWithPullRequest();
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    pullRequests: new Map([["eladaviv/repo-one", [samplePullRequest()]]]),
-    pullRequestComments: new Map([["eladaviv/repo-one#13", [samplePullRequestComment()]]]),
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    pullRequests: new Map([["example-org/repo-one", [samplePullRequest()]]]),
+    pullRequestComments: new Map([["example-org/repo-one#13", [samplePullRequestComment()]]]),
     failures: [
       {
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         step: "pull_request_review_comments",
         scope: "pull_request#13",
         message: "review comments failed"
@@ -514,8 +514,8 @@ test("GitHubScanService merges fresh and carried PR comments when a PR comment s
   assert.deepEqual(
     result.comments.filter((comment) => comment.parentType === "pull_request").map((comment) => comment.id).sort(),
     [
-      "comment:eladaviv/repo-one:pull_request_comment:4001",
-      "comment:eladaviv/repo-one:pull_request_review_comment:5001"
+      "comment:example-org/repo-one:pull_request_comment:4001",
+      "comment:example-org/repo-one:pull_request_review_comment:5001"
     ]
   );
   assert.equal(result.repoResults[0]?.githubScan?.status, "partial");
@@ -523,7 +523,7 @@ test("GitHubScanService merges fresh and carried PR comments when a PR comment s
 
 test("GitHubScanService direct-fetches tracked packet PRs missing from the open PR scan and includes merged state", async () => {
   const repo = baseRepo();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
   const parentPr = basePullRequest({
     number: 100,
     headBranch: integrationBranch,
@@ -534,7 +534,7 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from the open 
     state: "merged",
     baseBranch: integrationBranch,
     baseClassification: "non_default_parent",
-    headBranch: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    headBranch: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     labels: ["agent-review"]
   });
   const parentWorkstream = baseIssueWorkstream({
@@ -552,7 +552,7 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from the open 
           blocks: [],
           status: "pr_open",
           prNumber: 101,
-          branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1"
+          branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1"
         }
       },
       waves: [["T1"]],
@@ -569,21 +569,21 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from the open 
     activePrNumber: 100
   });
   const parentWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:17",
-    issueId: "issue:eladaviv/repo-one:17",
+    id: "worktree:example-org/repo-one:issue:17",
+    issueId: "issue:example-org/repo-one:17",
     issueNumber: 17,
     branchName: integrationBranch,
     prNumber: 100
   });
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:17:packet:t1",
+    id: "worktree:example-org/repo-one:issue:17:packet:t1",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
       parentIntegrationBranch: integrationBranch
     },
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     prNumber: 101
   });
   delete parentWorktree.issueId;
@@ -600,16 +600,16 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from the open 
 
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
-    pullRequests: new Map([["eladaviv/repo-one", [ghPullRequestSummary(parentPr), ghPullRequestSummary(mergedPacketPr)]]])
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
+    pullRequests: new Map([["example-org/repo-one", [ghPullRequestSummary(parentPr), ghPullRequestSummary(mergedPacketPr)]]])
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
   const scan = await service.scanRepositories([repo], [baseRepoResult(repo)], previousState);
 
   assert.equal(scan.prs.map((pr) => pr.number).sort((a, b) => a - b).join(","), "100,101");
   assert.equal(scan.prs.find((pr) => pr.number === 101)?.state, "merged");
-  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "eladaviv/repo-one", prNumber: 101 }]);
+  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "example-org/repo-one", prNumber: 101 }]);
 
   const workstreams = deriveWorkstreams({
     repos: [repo],
@@ -621,12 +621,12 @@ test("GitHubScanService direct-fetches tracked packet PRs missing from the open 
   });
 
   assert.equal(workstreams[0]?.packetPlan?.packets.T1?.status, "merged_to_parent");
-  assert.equal(workstreams.find((ws) => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find((ws) => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("GitHubScanService direct-fetches a tracked packet PR that is closed but not merged without marking it merged_to_parent", async () => {
   const repo = baseRepo();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
   const parentPr = basePullRequest({
     number: 100,
     headBranch: integrationBranch,
@@ -637,7 +637,7 @@ test("GitHubScanService direct-fetches a tracked packet PR that is closed but no
     state: "closed",
     baseBranch: integrationBranch,
     baseClassification: "non_default_parent",
-    headBranch: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    headBranch: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     labels: ["agent-review"]
   });
   const parentWorkstream = baseIssueWorkstream({
@@ -655,7 +655,7 @@ test("GitHubScanService direct-fetches a tracked packet PR that is closed but no
           blocks: [],
           status: "pr_open",
           prNumber: 101,
-          branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1"
+          branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1"
         }
       },
       waves: [["T1"]],
@@ -672,21 +672,21 @@ test("GitHubScanService direct-fetches a tracked packet PR that is closed but no
     activePrNumber: 100
   });
   const parentWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:17",
-    issueId: "issue:eladaviv/repo-one:17",
+    id: "worktree:example-org/repo-one:issue:17",
+    issueId: "issue:example-org/repo-one:17",
     issueNumber: 17,
     branchName: integrationBranch,
     prNumber: 100
   });
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:17:packet:t1",
+    id: "worktree:example-org/repo-one:issue:17:packet:t1",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
       parentIntegrationBranch: integrationBranch
     },
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     prNumber: 101
   });
   delete parentWorktree.issueId;
@@ -703,9 +703,9 @@ test("GitHubScanService direct-fetches a tracked packet PR that is closed but no
 
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
-    pullRequests: new Map([["eladaviv/repo-one", [ghPullRequestSummary(parentPr), ghPullRequestSummary(closedPacketPr)]]])
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
+    pullRequests: new Map([["example-org/repo-one", [ghPullRequestSummary(parentPr), ghPullRequestSummary(closedPacketPr)]]])
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
   const scan = await service.scanRepositories([repo], [baseRepoResult(repo)], previousState);
@@ -722,7 +722,7 @@ test("GitHubScanService direct-fetches a tracked packet PR that is closed but no
   });
 
   assert.equal(workstreams[0]?.packetPlan?.packets.T1?.status, "pr_open");
-  assert.equal(workstreams.find((ws) => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find((ws) => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("GitHubScanService does not direct-fetch unrelated closed non-packet PRs from prior state", async () => {
@@ -740,8 +740,8 @@ test("GitHubScanService does not direct-fetch unrelated closed non-packet PRs fr
     prs: [unrelatedClosedPr],
     workstreams: [
       {
-        id: "eladaviv/repo-one:pr:201",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:pr:201",
+        repoKey: "example-org/repo-one",
         origin: { type: "pr" as const, number: 201 },
         linkedPrs: [{ number: 201, status: "closed" as const }],
         activePrNumber: 201,
@@ -753,7 +753,7 @@ test("GitHubScanService does not direct-fetch unrelated closed non-packet PRs fr
     ],
     worktrees: [
       baseWorktree({
-        id: "worktree:eladaviv/repo-one:pr:201",
+        id: "worktree:example-org/repo-one:pr:201",
         branchName: "feature/old-work",
         prNumber: 201
       })
@@ -762,9 +762,9 @@ test("GitHubScanService does not direct-fetch unrelated closed non-packet PRs fr
 
   const gateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
-    pullRequests: new Map([["eladaviv/repo-one", []]])
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
+    pullRequests: new Map([["example-org/repo-one", []]])
   });
   const service = new GitHubScanService(gateway, () => "2026-04-18T09:10:00.000Z");
 
@@ -781,11 +781,11 @@ test("partial scan carry-forward prevents old comments from being reclassified a
   };
   const failureGateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
     failures: [
       {
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         step: "issue_comments",
         scope: "issue#7",
         message: "issue comments failed"
@@ -838,9 +838,9 @@ test("partial scan carry-forward prevents old comments from being reclassified a
   };
   const successGateway = new FakeGitHubGateway({
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", [sampleIssue()]]]),
-    issueComments: new Map([["eladaviv/repo-one#7", [sampleIssueComment()]]])
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", [sampleIssue()]]]),
+    issueComments: new Map([["example-org/repo-one#7", [sampleIssueComment()]]])
   });
   const successScan = await new GitHubScanService(successGateway, () => "2026-04-18T09:20:00.000Z")
     .scanRepositories([repo], [baseRepoResult(repo)], cycleBState);
@@ -906,16 +906,16 @@ test("StateStore writes readable entity snapshots", async () => {
       issues: [
         {
           kind: "issue",
-          id: "issue:eladaviv/repo-one:7",
+          id: "issue:example-org/repo-one:7",
           repoId: "repo-1",
-          repoKey: "eladaviv/repo-one",
-          repoOwner: "eladaviv",
+          repoKey: "example-org/repo-one",
+          repoOwner: "example-org",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           number: 7,
-          key: "eladaviv/repo-one:issue:7",
+          key: "example-org/repo-one:issue:7",
           sourceId: "ISSUE_7",
-          url: "https://github.com/eladaviv/repo-one/issues/7",
+          url: "https://github.com/example-org/repo-one/issues/7",
           title: "Track work",
           body: "Issue body",
           labels: ["agent-in-progress"],
@@ -943,16 +943,16 @@ test("StateStore writes readable entity snapshots", async () => {
         '  "issues": [\n' +
         '    {\n' +
         '      "kind": "issue",\n' +
-        '      "id": "issue:eladaviv/repo-one:7",\n' +
+        '      "id": "issue:example-org/repo-one:7",\n' +
         '      "repoId": "repo-1",\n' +
-        '      "repoKey": "eladaviv/repo-one",\n' +
-        '      "repoOwner": "eladaviv",\n' +
+        '      "repoKey": "example-org/repo-one",\n' +
+        '      "repoOwner": "example-org",\n' +
         '      "repoName": "repo-one",\n' +
-        '      "repoSlug": "eladaviv/repo-one",\n' +
+        '      "repoSlug": "example-org/repo-one",\n' +
         '      "number": 7,\n' +
-        '      "key": "eladaviv/repo-one:issue:7",\n' +
+        '      "key": "example-org/repo-one:issue:7",\n' +
         '      "sourceId": "ISSUE_7",\n' +
-        '      "url": "https://github.com/eladaviv/repo-one/issues/7",\n' +
+        '      "url": "https://github.com/example-org/repo-one/issues/7",\n' +
         '      "title": "Track work",\n' +
         '      "body": "Issue body",\n' +
         '      "labels": [\n' +
@@ -976,16 +976,16 @@ test("GitHubScanService re-fetches a non-packet (integration) worktree PR when i
   // The integration PR was merged and no longer returned by listOpenPullRequests.
   // The scanner should re-fetch it so the workstream can detect the merged state.
   const repo = baseRepo();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
   const integrationPr = basePullRequest({
     number: 100,
     state: "merged",
     headBranch: integrationBranch
   });
   const integrationWorktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
     issueNumber: 17,
     branchName: integrationBranch,
@@ -1006,16 +1006,16 @@ test("GitHubScanService re-fetches a non-packet (integration) worktree PR when i
 
   const gatewayFixtures = {
     ...emptyFixtures(),
-    repoMetadata: new Map([["eladaviv/repo-one", baseMetadata()]]),
-    issues: new Map([["eladaviv/repo-one", []]]),
-    pullRequests: new Map([["eladaviv/repo-one", [toGhPullRequest(integrationPr)]]]) // includes merged PR for getPullRequest
+    repoMetadata: new Map([["example-org/repo-one", baseMetadata()]]),
+    issues: new Map([["example-org/repo-one", []]]),
+    pullRequests: new Map([["example-org/repo-one", [toGhPullRequest(integrationPr)]]]) // includes merged PR for getPullRequest
   };
   const gateway = new FakeGitHubGateway(gatewayFixtures);
-  const service = new GitHubScanService(new SecurityFilteredGitHubGateway(gateway, ["eladaviv"]), () => "2026-04-18T09:00:00.000Z");
+  const service = new GitHubScanService(new SecurityFilteredGitHubGateway(gateway, ["example-org"]), () => "2026-04-18T09:00:00.000Z");
 
   const result = await service.scanRepositories([repo], [baseRepoResult(repo)], previousState);
 
-  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "eladaviv/repo-one", prNumber: 100 }]);
+  assert.deepEqual(gateway.getPullRequestCalls, [{ repoSlug: "example-org/repo-one", prNumber: 100 }]);
   const fetchedPr = result.prs.find((pr) => pr.number === 100);
   assert.ok(fetchedPr, "integration PR should be present in scan results");
   assert.equal(fetchedPr?.state, "merged");
@@ -1043,7 +1043,7 @@ function toGhPullRequest(pr: NormalizedPullRequest): GhPullRequestSummary {
 function baseRepo(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -1062,10 +1062,10 @@ function baseRepo(): RepoConfig {
 function baseMetadata(): GitHubRepositoryMetadata {
   return {
     id: "REPO_1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
-    nameWithOwner: "eladaviv/repo-one",
-    url: "https://github.com/eladaviv/repo-one",
+    nameWithOwner: "example-org/repo-one",
+    url: "https://github.com/example-org/repo-one",
     defaultBranch: "main"
   };
 }
@@ -1098,16 +1098,16 @@ function baseState(): PersistedState {
     issues: [
       {
         kind: "issue",
-        id: "issue:eladaviv/repo-one:7",
+        id: "issue:example-org/repo-one:7",
         repoId: "repo-1",
-        repoKey: "eladaviv/repo-one",
-        repoOwner: "eladaviv",
+        repoKey: "example-org/repo-one",
+        repoOwner: "example-org",
         repoName: "repo-one",
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         number: 7,
-        key: "eladaviv/repo-one:issue:7",
+        key: "example-org/repo-one:issue:7",
         sourceId: "ISSUE_7",
-        url: "https://github.com/eladaviv/repo-one/issues/7",
+        url: "https://github.com/example-org/repo-one/issues/7",
         title: "Track work",
         body: "Issue body",
         labels: [],
@@ -1124,17 +1124,17 @@ function baseState(): PersistedState {
       {
         kind: "comment",
         commentKind: "issue_comment",
-        id: "comment:eladaviv/repo-one:issue_comment:3001",
+        id: "comment:example-org/repo-one:issue_comment:3001",
         sourceId: "3001",
         repoId: "repo-1",
-        repoKey: "eladaviv/repo-one",
-        repoOwner: "eladaviv",
+        repoKey: "example-org/repo-one",
+        repoOwner: "example-org",
         repoName: "repo-one",
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         parentType: "issue",
         parentNumber: 7,
-        parentKey: "eladaviv/repo-one:issue:7",
-        url: "https://github.com/eladaviv/repo-one/issues/7#issuecomment-3001",
+        parentKey: "example-org/repo-one:issue:7",
+        url: "https://github.com/example-org/repo-one/issues/7#issuecomment-3001",
         body: "Existing comment",
         author: "owner",
         createdAt: "2026-04-18T08:30:00.000Z",
@@ -1164,16 +1164,16 @@ function baseState(): PersistedState {
 function stateWithPullRequest(): PersistedState {
   const pullRequest: NormalizedPullRequest = {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:13",
+    id: "pull_request:example-org/repo-one:13",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 13,
-    key: "eladaviv/repo-one:pull_request:13",
+    key: "example-org/repo-one:pull_request:13",
     sourceId: "PR_13",
-    url: "https://github.com/eladaviv/repo-one/pull/13",
+    url: "https://github.com/example-org/repo-one/pull/13",
     title: "Implement scanner",
     body: "PR body",
     labels: ["agent-plan-approved"],
@@ -1192,17 +1192,17 @@ function stateWithPullRequest(): PersistedState {
   const prComment: NormalizedComment = {
     kind: "comment",
     commentKind: "pull_request_comment",
-    id: "comment:eladaviv/repo-one:pull_request_comment:4001",
+    id: "comment:example-org/repo-one:pull_request_comment:4001",
     sourceId: "4001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "pull_request",
     parentNumber: 13,
-    parentKey: "eladaviv/repo-one:pull_request:13",
-    url: "https://github.com/eladaviv/repo-one/pull/13#issuecomment-4001",
+    parentKey: "example-org/repo-one:pull_request:13",
+    url: "https://github.com/example-org/repo-one/pull/13#issuecomment-4001",
     body: "General PR comment",
     author: "reviewer",
     createdAt: "2026-04-18T08:41:00.000Z",
@@ -1212,9 +1212,9 @@ function stateWithPullRequest(): PersistedState {
   const reviewComment: NormalizedComment = {
     ...prComment,
     commentKind: "pull_request_review_comment",
-    id: "comment:eladaviv/repo-one:pull_request_review_comment:5001",
+    id: "comment:example-org/repo-one:pull_request_review_comment:5001",
     sourceId: "5001",
-    url: "https://github.com/eladaviv/repo-one/pull/13#discussion_r5001",
+    url: "https://github.com/example-org/repo-one/pull/13#discussion_r5001",
     body: "Inline review comment",
     reactionTargetId: "5001"
   };
@@ -1227,13 +1227,13 @@ function stateWithPullRequest(): PersistedState {
 }
 
 function stateWithTrackedPacketPullRequest(prNumber: number): PersistedState {
-  const parentWorkstreamId = "eladaviv/repo-one:issue:7";
-  const packetBranch = "agent/eladaviv-repo-one/workstream-issue-7/packet-t1";
-  const parentBranch = "agent/eladaviv-repo-one/issue-7";
+  const parentWorkstreamId = "example-org/repo-one:issue:7";
+  const packetBranch = "agent/example-org-repo-one/workstream-issue-7/packet-t1";
+  const parentBranch = "agent/example-org-repo-one/issue-7";
   const packetWorktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:7:packet:t1",
+    id: "worktree:example-org/repo-one:issue:7:packet:t1",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
     packet: {
       parentWorkstreamId,
@@ -1248,19 +1248,19 @@ function stateWithTrackedPacketPullRequest(prNumber: number): PersistedState {
     logDocumentPath: "/tmp/repo-one/packet-t1/docs/agents/packet-t1/log.md",
     status: "implementing",
     prNumber,
-    prId: `pull_request:eladaviv/repo-one:${prNumber}`,
-    prUrl: `https://github.com/eladaviv/repo-one/pull/${prNumber}`,
+    prId: `pull_request:example-org/repo-one:${prNumber}`,
+    prUrl: `https://github.com/example-org/repo-one/pull/${prNumber}`,
     createdAt: "2026-04-18T08:00:00.000Z",
     updatedAt: "2026-04-18T08:00:00.000Z"
   };
   const workstream: WorkstreamRecord = {
     id: parentWorkstreamId,
-    repoKey: "eladaviv/repo-one",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 7 },
     linkedIssueNumber: 7,
     linkedPrs: [{ number: 100, status: "open", role: "implementation" }],
     activePrNumber: 100,
-    activeWorktreeId: "worktree:eladaviv/repo-one:issue:7",
+    activeWorktreeId: "worktree:example-org/repo-one:issue:7",
     phase: "planning",
     attention: "idle",
     status: "open",
@@ -1300,8 +1300,8 @@ function stateWithTrackedPacketPullRequest(prNumber: number): PersistedState {
 
 function issueWorkstream() {
   return {
-    id: "eladaviv/repo-one:issue:7",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:7",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue" as const, number: 7 },
     linkedIssueNumber: 7,
     linkedPrs: [],
@@ -1338,7 +1338,7 @@ function sampleIssue(): GhIssueSummary {
     number: 7,
     title: "Track work",
     body: "Issue body",
-    url: "https://github.com/eladaviv/repo-one/issues/7",
+    url: "https://github.com/example-org/repo-one/issues/7",
     state: "OPEN",
     createdAt: "2026-04-18T08:00:00.000Z",
     updatedAt: "2026-04-18T08:05:00.000Z",
@@ -1353,7 +1353,7 @@ function samplePullRequest(): GhPullRequestSummary {
     number: 13,
     title: "Implement scanner",
     body: "PR body",
-    url: "https://github.com/eladaviv/repo-one/pull/13",
+    url: "https://github.com/example-org/repo-one/pull/13",
     state: "OPEN",
     createdAt: "2026-04-18T08:10:00.000Z",
     updatedAt: "2026-04-18T08:40:00.000Z",
@@ -1372,16 +1372,16 @@ function basePullRequest(overrides: Partial<NormalizedPullRequest> = {}): Normal
   const baseBranch = overrides.baseBranch ?? "main";
   return {
     kind: "pull_request",
-    id: `pull_request:eladaviv/repo-one:${number}`,
+    id: `pull_request:example-org/repo-one:${number}`,
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number,
-    key: `eladaviv/repo-one:pull_request:${number}`,
+    key: `example-org/repo-one:pull_request:${number}`,
     sourceId: `PR_${number}`,
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     title: "Implement scanner",
     body: "PR body",
     labels: [],
@@ -1421,14 +1421,14 @@ function ghPullRequestSummary(pr: NormalizedPullRequest): GhPullRequestSummary {
 function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   const now = "2026-04-18T08:30:00.000Z";
   return {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-    branchName: "agent/eladaviv-repo-one/issue-17",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/issue-17/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/issue-17/issue-17-agent-log.md",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+    branchName: "agent/example-org-repo-one/issue-17",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/issue-17/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/issue-17/issue-17-agent-log.md",
     status: "implementation_ready",
     createdAt: now,
     updatedAt: now,
@@ -1439,7 +1439,7 @@ function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
 function sampleIssueComment(): GhComment {
   return {
     id: "3001",
-    url: "https://github.com/eladaviv/repo-one/issues/7#issuecomment-3001",
+    url: "https://github.com/example-org/repo-one/issues/7#issuecomment-3001",
     body: "Existing comment",
     createdAt: "2026-04-18T08:30:00.000Z",
     updatedAt: "2026-04-18T08:30:00.000Z",
@@ -1450,7 +1450,7 @@ function sampleIssueComment(): GhComment {
 function samplePullRequestComment(): GhComment {
   return {
     id: "4001",
-    url: "https://github.com/eladaviv/repo-one/pull/13#issuecomment-4001",
+    url: "https://github.com/example-org/repo-one/pull/13#issuecomment-4001",
     body: "General PR comment",
     createdAt: "2026-04-18T08:41:00.000Z",
     updatedAt: "2026-04-18T08:41:00.000Z",
@@ -1461,7 +1461,7 @@ function samplePullRequestComment(): GhComment {
 function samplePullRequestReview(): GhPullRequestReview {
   return {
     id: "REVIEW_99",
-    url: "https://github.com/eladaviv/repo-one/pull/13#pullrequestreview-99",
+    url: "https://github.com/example-org/repo-one/pull/13#pullrequestreview-99",
     body: "Review summary",
     submittedAt: "2026-04-18T08:42:00.000Z",
     updatedAt: "2026-04-18T08:42:00.000Z",

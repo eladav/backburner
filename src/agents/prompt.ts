@@ -72,7 +72,7 @@ export function renderPrompt(
       : [];
 
   return [
-    `You are ${providerIdentity} running inside the local GitHub-based orchestrator MVP.`,
+    `You are ${providerIdentity} running inside the Backburner local GitHub-driven orchestrator.`,
     "Work only from the prompt packet below. Keep actions aligned with the task and current repository state.",
     "",
     "Execution rules:",

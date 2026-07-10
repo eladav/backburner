@@ -19,7 +19,7 @@ describe("validateWorkspaceOwnership", () => {
   });
 
   test("Rejects a canonical repo clone", () => {
-    const workspacePath = path.join(codeRoot, "agents-over-github");
+    const workspacePath = path.join(codeRoot, "example-repo");
     const result = validateWorkspaceOwnership(workspacePath, codeRoot);
     assert.strictEqual(result.valid, false);
     assert.ok(result.reason.includes("not within an orchestrator-owned workspace root"));

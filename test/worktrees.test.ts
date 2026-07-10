@@ -28,10 +28,10 @@ import type { WorkstreamRecord } from "../src/state/types.js";
 test("worktree helpers generate deterministic branch names and code-root-safe paths", () => {
   const repo = baseRepo();
 
-  assert.equal(buildWorktreeBranchName(repo, 17), "agent/eladaviv-repo-one/issue-17");
+  assert.equal(buildWorktreeBranchName(repo, 17), "agent/example-org-repo-one/issue-17");
   assert.equal(
     buildWorktreeRelativePath(repo, 17),
-    path.join("_worktrees", "eladaviv", "repo-one", "issue-17")
+    path.join("_worktrees", "example-org", "repo-one", "issue-17")
   );
 });
 
@@ -51,27 +51,27 @@ test("packet worktree helpers generate deterministic branch names and paths", ()
 
   assert.equal(
     buildPacketWorktreeBranchName({ repo, parentWorkstream: workstream, packetId: "T1" }),
-    "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d"
+    "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d"
   );
   assert.equal(
     buildPacketWorktreeBranchName({ repo, parentWorkstream: workstream, packetId: "FE-1: auth UI" }),
-    "agent/eladaviv-repo-one/workstream-issue-17/packet-fe-1-auth-ui-47ac303b"
+    "agent/example-org-repo-one/workstream-issue-17/packet-fe-1-auth-ui-47ac303b"
   );
   assert.equal(
     buildPacketWorktreeRelativePath({ repo, parentWorkstream: workstream, packetId: "T1" }),
-    path.join("_worktrees", "eladaviv", "repo-one", "workstream-issue-17", "packet-t1-1f93603d")
+    path.join("_worktrees", "example-org", "repo-one", "workstream-issue-17", "packet-t1-1f93603d")
   );
   assert.equal(
     buildPacketWorktreeRelativePath({ repo, parentWorkstream: workstream, packetId: "FE-1: auth UI" }),
-    path.join("_worktrees", "eladaviv", "repo-one", "workstream-issue-17", "packet-fe-1-auth-ui-47ac303b")
+    path.join("_worktrees", "example-org", "repo-one", "workstream-issue-17", "packet-fe-1-auth-ui-47ac303b")
   );
   assert.equal(
     buildPacketWorktreeId({ repo, parentWorkstream: workstream, packetId: "T1" }),
-    "worktree:eladaviv/repo-one:issue:17:packet:t1-1f93603d"
+    "worktree:example-org/repo-one:issue:17:packet:t1-1f93603d"
   );
   assert.equal(
     buildPacketWorktreeId({ repo, parentWorkstream: workstream, packetId: "FE-1: auth UI" }),
-    "worktree:eladaviv/repo-one:issue:17:packet:fe-1-auth-ui-47ac303b"
+    "worktree:example-org/repo-one:issue:17:packet:fe-1-auth-ui-47ac303b"
   );
 });
 
@@ -94,7 +94,7 @@ test("ensurePacketPlanningWorktreesForCurrentWave creates worktrees for undispat
       attention: "idle",
       status: "open",
       resolution: "unresolved",
-      integration: { branchName: "agent/eladaviv-repo-one/issue-17" },
+      integration: { branchName: "agent/example-org-repo-one/issue-17" },
       packetPlan: {
         status: "proposed",
         packets: {
@@ -136,8 +136,8 @@ test("ensurePacketPlanningWorktreesForCurrentWave creates worktrees for undispat
 
     assert.equal(results.length, 1);
     assert.equal(results[0]?.worktree.packet?.packetId, "T1");
-    assert.equal(results[0]?.worktree.branchName, "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d");
-    assert.equal(results[0]?.worktree.baseBranch, "agent/eladaviv-repo-one/issue-17");
+    assert.equal(results[0]?.worktree.branchName, "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d");
+    assert.equal(results[0]?.worktree.baseBranch, "agent/example-org-repo-one/issue-17");
     assert.equal(results[0]?.created, true);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -158,15 +158,15 @@ test("ensurePacketPlanningWorktreesForCurrentWave reuses existing packet worktre
 
     const existingWorktree: WorktreeRecord = {
       ...baseWorktree({
-        id: "worktree:eladaviv/repo-one:issue:17:packet:t1-1f93603d",
-        branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+        id: "worktree:example-org/repo-one:issue:17:packet:t1-1f93603d",
+        branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
         planDocumentPath: path.join(codeRoot, "legacy", "packet-plan.md"),
         logDocumentPath: path.join(codeRoot, "legacy", "packet-log.md"),
         packet: {
           parentWorkstreamId: "repo-1:issue:17",
           packetId: "T1",
           waveIndex: 0,
-          parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+          parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
         }
       })
     };
@@ -182,7 +182,7 @@ test("ensurePacketPlanningWorktreesForCurrentWave reuses existing packet worktre
     assert.equal(results.length, 1);
     assert.equal(results[0]?.created, false);
     assert.equal(results[0]?.worktree.packet?.packetId, "T1");
-    assert.equal(results[0]?.worktree.packet?.parentIntegrationBranch, "agent/eladaviv-repo-one/issue-17");
+    assert.equal(results[0]?.worktree.packet?.parentIntegrationBranch, "agent/example-org-repo-one/issue-17");
     assert.equal(results[0]?.worktree.planDocumentPath, existingWorktree.planDocumentPath);
     assert.equal(results[0]?.worktree.logDocumentPath, existingWorktree.logDocumentPath);
     assert.equal(gitGateway.createWorktreeCalls, 0);
@@ -194,21 +194,21 @@ test("ensurePacketPlanningWorktreesForCurrentWave reuses existing packet worktre
 test("new packet documents do not collide when long branch names differ after slug truncation", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "orchestrator-packet-document-scope-"));
   const codeRoot = path.join(tempDir, "code-root");
-  const repoPath = path.join(codeRoot, "agents-over-github");
+  const repoPath = path.join(codeRoot, "example-repo");
   await mkdir(repoPath, { recursive: true });
 
   try {
     const repo: RepoConfig = {
       ...baseRepo(),
-      owner: "eladav",
-      name: "agents-over-github"
+      owner: "example-org",
+      name: "example-repo"
     };
     const createWorkstream = (issueNumber: number): WorkstreamRecord => ({
       ...baseIssueWorkstreamWithPlan(),
-      id: `eladav/agents-over-github:issue:${issueNumber}`,
+      id: `example-org/example-repo:issue:${issueNumber}`,
       origin: { type: "issue", number: issueNumber },
       linkedIssueNumber: issueNumber,
-      integration: { branchName: `agent/eladav-agents-over-github/issue-${issueNumber}` }
+      integration: { branchName: `agent/example-org-example-repo/issue-${issueNumber}` }
     });
     const service = new ImplementationWorkflowService(new FakeGitGateway(), new FakeGitHubGateway());
 
@@ -230,7 +230,7 @@ test("new packet documents do not collide when long branch names differ after sl
     assert.notEqual(first[0]?.worktree.planDocumentPath, second[0]?.worktree.planDocumentPath);
     assert.match(
       await readFile(second[0]!.worktree.planDocumentPath, "utf8"),
-      /Parent workstream: eladav\/agents-over-github:issue:204/
+      /Parent workstream: example-org\/example-repo:issue:204/
     );
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -253,7 +253,7 @@ test("ensurePacketPlanningWorktreesForCurrentWave recovers packet metadata by br
     const existingWorktree: WorktreeRecord = {
       ...baseWorktree({
         id: "some-other-id",
-        branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d"
+        branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d"
       })
     };
 
@@ -269,7 +269,7 @@ test("ensurePacketPlanningWorktreesForCurrentWave recovers packet metadata by br
     assert.equal(results[0]?.created, false);
     assert.ok(results[0]?.worktree.packet, "Gained packet metadata");
     assert.equal(results[0]?.worktree.packet?.packetId, "T1");
-    assert.equal(results[0]?.worktree.packet?.parentIntegrationBranch, "agent/eladaviv-repo-one/issue-17");
+    assert.equal(results[0]?.worktree.packet?.parentIntegrationBranch, "agent/example-org-repo-one/issue-17");
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -299,8 +299,8 @@ test("product approval label creates Product Specification worktree metadata and
     });
 
     assert.equal(result.worktrees.length, 1);
-    assert.equal(result.worktrees[0]?.branchName, "agent/eladaviv-repo-one/issue-17");
-    assert.match(result.worktrees[0]?.path ?? "", /_worktrees\/eladaviv\/repo-one\/issue-17$/);
+    assert.equal(result.worktrees[0]?.branchName, "agent/example-org-repo-one/issue-17");
+    assert.match(result.worktrees[0]?.path ?? "", /_worktrees\/example-org\/repo-one\/issue-17$/);
     assert.equal(result.worktrees[0]?.prNumber, 101);
     assert.equal(result.worktrees[0]?.status, "product_specification");
     assert.equal(result.tasks.some((task) => task.kind === "write_product_spec"), true);
@@ -308,13 +308,13 @@ test("product approval label creates Product Specification worktree metadata and
     const writePlanTask = result.tasks.find((task) => task.kind === "write_product_spec");
     assert.equal(
       writePlanTask?.context.productSpecDocumentPath?.endsWith(
-        "docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-product-spec.md"
+        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-product-spec.md"
       ),
       true
     );
     assert.equal(
       writePlanTask?.context.logDocumentPath?.endsWith(
-        "docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md"
+        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md"
       ),
       true
     );
@@ -371,7 +371,7 @@ test("product approval retries PR creation for existing worktree without PR meta
 
     assert.equal(gitHubGateway.createPullRequestCalls, 2);
     assert.equal(secondResult.worktrees[0]?.prNumber, 101);
-    assert.equal(secondResult.worktrees[0]?.prUrl, "https://github.com/eladaviv/repo-one/pull/101");
+    assert.equal(secondResult.worktrees[0]?.prUrl, "https://github.com/example-org/repo-one/pull/101");
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }
@@ -381,7 +381,7 @@ test("Product Spec worktree task construction compacts issue body and uses full 
   const longBody = `${"A".repeat(2400)} final text that should be truncated`;
   const worktree = baseWorktree({
     status: "product_specification",
-    productSpecDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-product-spec.md"
+    productSpecDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-product-spec.md"
   });
   delete worktree.packet;
 
@@ -418,28 +418,28 @@ test("comment-originated Product Discovery replies do not create implementation 
       },
       tasks: [
         {
-          id: "task:respond_issue_comment:comment:eladaviv/repo-one:issue_comment:5001",
+          id: "task:respond_issue_comment:comment:example-org/repo-one:issue_comment:5001",
           kind: "respond_issue_comment",
           status: "completed",
           executionPermission: workflowRegistry.resolveTaskExecutionPolicy("respond_issue_comment").executionPermission,
           handoffPolicy: workflowRegistry.resolveTaskExecutionPolicy("respond_issue_comment").handoffPolicy,
           repoId: repo.id,
           repoName: repo.name,
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "comment",
-          sourceId: "comment:eladaviv/repo-one:issue_comment:5001",
-          sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+          sourceId: "comment:example-org/repo-one:issue_comment:5001",
+          sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
           parentSourceKind: "issue",
           parentSourceId: issue.id,
           relevant: false,
           reason: "Comment is newly seen and needs a response path for issue #11.",
           summary: "Respond to issue comment on #11: Need plan-first workflow",
           context: {
-            repoIdentifier: "eladaviv/repo-one",
+            repoIdentifier: "example-org/repo-one",
             localRepoPath: repoPath,
             labels: [],
             issueUrl: issue.url,
-            commentUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+            commentUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
             relevantCommentText: "Please implement the plan-first workflow for this issue.",
             instruction:
               'Read the issue and comment, then return a JSON decision with "answer_only" or "start_implementation".'
@@ -464,16 +464,16 @@ test("StateStore persists worktree metadata as readable JSON", async () => {
   try {
     const store = new StateStore(tempDir);
     const record: WorktreeRecord = {
-      id: "worktree:eladaviv/repo-one:issue:17",
+      id: "worktree:example-org/repo-one:issue:17",
       repoId: "repo-1",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       repoName: "repo-one",
-      issueId: "issue:eladaviv/repo-one:17",
+      issueId: "issue:example-org/repo-one:17",
       issueNumber: 17,
-      branchName: "agent/eladaviv-repo-one/issue-17",
-      path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-      planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-      logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
+      branchName: "agent/example-org-repo-one/issue-17",
+      path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+      planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+      logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
       status: "planning",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z"
@@ -482,7 +482,7 @@ test("StateStore persists worktree metadata as readable JSON", async () => {
     await store.writeWorktreeState([record]);
 
     const persisted = await readFile(path.join(tempDir, "worktrees.json"), "utf8");
-    assert.match(persisted, /"branchName": "agent\/eladaviv-repo-one\/issue-17"/);
+    assert.match(persisted, /"branchName": "agent\/example-org-repo-one\/issue-17"/);
     assert.match(persisted, /"planDocumentPath":/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -499,17 +499,17 @@ test("product approval reuses an existing PR for the branch instead of creating 
     const issue: NormalizedIssue = { ...baseIssue(), labels: ["agent-product-approved"] };
     const gitHubGateway = new RecordingGitHubGateway({
       existingPullRequest: {
-        id: "pull_request:eladaviv/repo-one:88",
+        id: "pull_request:example-org/repo-one:88",
         number: 88,
         title: "agent: plan for issue #17 - Need plan-first workflow",
         body: "body",
-        url: "https://github.com/eladaviv/repo-one/pull/88",
+        url: "https://github.com/example-org/repo-one/pull/88",
         state: "OPEN",
         createdAt: "2026-04-18T10:00:00.000Z",
         updatedAt: "2026-04-18T10:00:00.000Z",
         author: { login: "owner" },
         labels: [],
-        headRefName: "agent/eladaviv-repo-one/issue-17",
+        headRefName: "agent/example-org-repo-one/issue-17",
         headSha: "abc123",
         baseRefName: "main",
         isDraft: false
@@ -540,16 +540,16 @@ test("deriveTasks attaches worktree plan docs to implement_plan once the approva
   const repoSync = baseRepoSync();
   const pr: NormalizedPullRequest = {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:23",
+    id: "pull_request:example-org/repo-one:23",
     repoId: repo.id,
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 23,
-    key: "eladaviv/repo-one:pull_request:23",
+    key: "example-org/repo-one:pull_request:23",
     sourceId: "PR_23",
-    url: "https://github.com/eladaviv/repo-one/pull/23",
+    url: "https://github.com/example-org/repo-one/pull/23",
     title: "Implement workflow",
     body: "Body",
     labels: ["agent-plan-approved"],
@@ -558,7 +558,7 @@ test("deriveTasks attaches worktree plan docs to implement_plan once the approva
     updatedAt: "2026-04-18T10:00:00.000Z",
     lastSeenAt: "2026-04-18T10:00:00.000Z",
     state: "open",
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     headSha: "abc123",
     baseBranch: "main",
     defaultBranch: "main",
@@ -575,19 +575,19 @@ test("deriveTasks attaches worktree plan docs to implement_plan once the approva
     currentComments: [],
     worktrees: [
       {
-        id: "worktree:eladaviv/repo-one:issue:17",
+        id: "worktree:example-org/repo-one:issue:17",
         repoId: repo.id,
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         repoName: "repo-one",
-        issueId: "issue:eladaviv/repo-one:17",
+        issueId: "issue:example-org/repo-one:17",
         issueNumber: 17,
         prId: pr.id,
         prNumber: pr.number,
         prUrl: pr.url,
         branchName: pr.headBranch,
-        path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-        planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-        logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
+        path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+        planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+        logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
         status: "awaiting_plan_approval",
         createdAt: "2026-04-18T10:00:00.000Z",
         updatedAt: "2026-04-18T10:00:00.000Z"
@@ -599,10 +599,10 @@ test("deriveTasks attaches worktree plan docs to implement_plan once the approva
 
   assert.equal(tasks.length, 1);
   const implementTask = tasks.find((task) => task.kind === "implement_plan");
-  assert.equal(implementTask?.context.localRepoPath, "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17");
+  assert.equal(implementTask?.context.localRepoPath, "/tmp/code-root/_worktrees/example-org/repo-one/issue-17");
   assert.equal(
     implementTask?.context.planDocumentPath,
-    "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md"
+    "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md"
   );
 });
 
@@ -610,38 +610,38 @@ test("linkPullRequests downgrades implementation-ready worktrees when plan appro
   const service = new ImplementationWorkflowService(new FakeGitGateway(), new FakeGitHubGateway());
   const repo = baseRepo();
   const worktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: repo.id,
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    issueId: "issue:eladaviv/repo-one:17",
+    issueId: "issue:example-org/repo-one:17",
     issueNumber: 17,
-    prId: "pull_request:eladaviv/repo-one:23",
+    prId: "pull_request:example-org/repo-one:23",
     prNumber: 23,
-    prUrl: "https://github.com/eladaviv/repo-one/pull/23",
-    branchName: "agent/eladaviv-repo-one/issue-17",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
+    prUrl: "https://github.com/example-org/repo-one/pull/23",
+    branchName: "agent/example-org-repo-one/issue-17",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
     status: "implementation_ready",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:05:00.000Z"
   };
   const pr: NormalizedPullRequest = {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:23",
+    id: "pull_request:example-org/repo-one:23",
     repoId: repo.id,
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 23,
-    key: "eladaviv/repo-one:pull_request:23",
+    key: "example-org/repo-one:pull_request:23",
     sourceId: "PR_23",
-    url: "https://github.com/eladaviv/repo-one/pull/23",
+    url: "https://github.com/example-org/repo-one/pull/23",
     title: "Implement workflow",
     body: "Body",
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     headSha: "abc123",
     baseBranch: "main",
     defaultBranch: "main",
@@ -665,7 +665,7 @@ test("linkPullRequests preserves implementation_done despite lingering plan appr
   const repo = baseRepo();
   const worktree = baseWorktree({
     status: "implementation_done",
-    branchName: "agent/eladaviv-repo-one/issue-17"
+    branchName: "agent/example-org-repo-one/issue-17"
   });
   const pr: NormalizedPullRequest = {
     ...basePullRequestForWorktree(worktree, repo),
@@ -682,7 +682,7 @@ test("linkPullRequests keeps Product Specification worktree until Product Spec i
   const repo = baseRepo();
   const worktree = baseWorktree({
     status: "product_specification",
-    branchName: "agent/eladaviv-repo-one/issue-17"
+    branchName: "agent/example-org-repo-one/issue-17"
   });
   delete worktree.packet;
   const pr: NormalizedPullRequest = {
@@ -700,7 +700,7 @@ test("linkPullRequests promotes Product Specification worktree after Product Spe
   const repo = baseRepo();
   const worktree = baseWorktree({
     status: "product_specification",
-    branchName: "agent/eladaviv-repo-one/issue-17",
+    branchName: "agent/example-org-repo-one/issue-17",
     productSpecWrittenAt: "2026-04-18T10:03:00.000Z"
   });
   delete worktree.packet;
@@ -719,7 +719,7 @@ test("linkPullRequests ignores early plan approval until a plan has been written
   const repo = baseRepo();
   const worktree = baseWorktree({
     status: "planning",
-    branchName: "agent/eladaviv-repo-one/issue-17",
+    branchName: "agent/example-org-repo-one/issue-17",
     productSpecWrittenAt: "2026-04-18T10:03:00.000Z"
   });
   delete worktree.packet;
@@ -740,12 +740,12 @@ test("linkPullRequests ignores early plan approval until a plan has been written
     ...baseWorktree({
       prNumber: 500,
       prId: "pull_request:500",
-      prUrl: "https://github.com/eladaviv/repo-one/pull/500",
+      prUrl: "https://github.com/example-org/repo-one/pull/500",
       packet: {
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       }
     })
   };
@@ -763,18 +763,18 @@ test("ensurePullRequestForPacketWorktree reuses existing remote PR", async () =>
   const github = new RecordingGitHubGateway({
     existingPullRequest: {
       ...baseGhPullRequest(600),
-      headRefName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d"
+      headRefName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d"
     }
   });
   const service = new ImplementationWorkflowService(new FakeGitGateway(), github);
   const repo = baseRepo();
   const worktree = baseWorktree({
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
     packet: {
       parentWorkstreamId: "repo-1:issue:17",
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     }
   });
 
@@ -789,7 +789,7 @@ test("ensurePullRequestForPacketWorktree reuses existing remote PR", async () =>
   assert.equal(result.worktree.prId,
  "pull_request:600");
   assert.equal(result.worktree.prUrl,
- "https://github.com/eladaviv/repo-one/pull/600");
+ "https://github.com/example-org/repo-one/pull/600");
   assert.equal(github.createPullRequestCalls, 0);
 });
 
@@ -798,12 +798,12 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
   const service = new ImplementationWorkflowService(new FakeGitGateway(), github);
   const repo = baseRepo();
   const worktree = baseWorktree({
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
     packet: {
       parentWorkstreamId: "repo-1:issue:17",
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     }
   });
 
@@ -816,9 +816,9 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
   assert.equal(result.worktree.prNumber,
  101);
   assert.equal(github.createPullRequestCalls, 1);
-  assert.equal(github.lastCreatePullRequestOptions?.baseBranch, "agent/eladaviv-repo-one/issue-17");
+  assert.equal(github.lastCreatePullRequestOptions?.baseBranch, "agent/example-org-repo-one/issue-17");
   assert.equal(result.worktree.baseBranch,
- "agent/eladaviv-repo-one/issue-17");
+ "agent/example-org-repo-one/issue-17");
   });
 
   test("linkPullRequests backfills metadata but does NOT mark approved packet worktree implementation_ready", () => {
@@ -828,17 +828,17 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
     parentWorkstreamId: "repo-1:issue:17",
     packetId: "T1",
     waveIndex: 0,
-    parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+    parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
   };
   const worktree: WorktreeRecord = {
     ...baseWorktree({
       id: "packet-wt-1",
       packet: packetMetadata,
-      baseBranch: "agent/eladaviv-repo-one/issue-17",
+      baseBranch: "agent/example-org-repo-one/issue-17",
       prId: "pull_request:105",
       prNumber: 105,
-      prUrl: "https://github.com/eladaviv/repo-one/pull/105",
-      branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+      prUrl: "https://github.com/example-org/repo-one/pull/105",
+      branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
       status: "planning"
     })
   };
@@ -851,7 +851,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
 
   assert.equal(linked[0]?.status, "planning");
   assert.deepEqual(linked[0]?.packet, packetMetadata);
-  assert.equal(linked[0]?.baseBranch, "agent/eladaviv-repo-one/issue-17");
+  assert.equal(linked[0]?.baseBranch, "agent/example-org-repo-one/issue-17");
   });
 
   test("linkPullRequests backfills approved packet PR metadata by branch but stays planning", () => {
@@ -863,9 +863,9 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
-      branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+      branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
       status: "planning"
     });
     // Manually remove PR metadata to test backfill
@@ -877,7 +877,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       ...basePullRequestForWorktree(worktree, repo),
       id: "pull_request:200",
       number: 200,
-      url: "https://github.com/eladaviv/repo-one/pull/200",
+      url: "https://github.com/example-org/repo-one/pull/200",
       labels: [repo.labels.agentPlanApproved]
     };
 
@@ -885,7 +885,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
 
     assert.equal(linked[0]?.prId, "pull_request:200");
     assert.equal(linked[0]?.prNumber, 200);
-    assert.equal(linked[0]?.prUrl, "https://github.com/eladaviv/repo-one/pull/200");
+    assert.equal(linked[0]?.prUrl, "https://github.com/example-org/repo-one/pull/200");
     assert.equal(linked[0]?.status, "planning");
   });
 
@@ -898,22 +898,22 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
-      branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+      branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
       status: "planning"
     });
     delete worktree.baseBranch;
 
     const pr: NormalizedPullRequest = {
       ...basePullRequestForWorktree(worktree, repo),
-      baseBranch: "agent/eladaviv-repo-one/issue-17",
+      baseBranch: "agent/example-org-repo-one/issue-17",
       labels: [repo.labels.agentPlanApproved]
     };
 
     const linked = service.linkPullRequests([worktree], [pr], [repo]);
 
-    assert.equal(linked[0]?.baseBranch, "agent/eladaviv-repo-one/issue-17");
+    assert.equal(linked[0]?.baseBranch, "agent/example-org-repo-one/issue-17");
     assert.equal(linked[0]?.status, "planning");
   });
 
@@ -926,7 +926,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "planning"
     });
@@ -941,7 +941,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const reconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -963,7 +963,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "planning"
     });
@@ -978,7 +978,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const reconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -999,7 +999,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_ready"
     });
@@ -1014,7 +1014,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const reconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -1035,7 +1035,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_ready"
     });
@@ -1058,7 +1058,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_done"
     });
@@ -1073,7 +1073,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const reconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -1094,7 +1094,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementing"
     });
@@ -1109,7 +1109,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const reconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -1125,12 +1125,12 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
     const service = new ImplementationWorkflowService(new FakeGitGateway(), new FakeGitHubGateway());
     const repo = baseRepo();
     const worktree: WorktreeRecord = baseWorktree({
-      branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+      branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
       packet: {
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "planning"
     });
@@ -1152,7 +1152,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_ready"
     });
@@ -1164,15 +1164,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         instruction: "instruction",
         labels: []
       },
@@ -1193,7 +1193,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       parentWorkstream: baseIssueWorkstreamWithPlan(),
       packet: baseIssueWorkstreamWithPlan().packetPlan!.packets["T1"]!,
       packetWorktree: worktree,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     };
 
     const projectionReconciled = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -1222,15 +1222,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         instruction: "instruction",
         labels: []
       },
@@ -1384,7 +1384,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_ready"
     });
@@ -1397,15 +1397,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         instruction: "instruction",
         labels: []
       },
@@ -1428,7 +1428,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementing"
     });
@@ -1441,15 +1441,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         localRepoPath: worktree.path,
         instruction: "instruction",
         labels: []
@@ -1472,22 +1472,22 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
     delete worktree.packet;
 
     const implementTask: TaskRecord = {
-      id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+      id: "task:implement_plan:pull_request:example-org/repo-one:23",
       kind: "implement_plan",
       status: "completed",
       executionPermission: "workspace-write",
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "pull_request",
-      sourceId: "pull_request:eladaviv/repo-one:23",
-      sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+      sourceId: "pull_request:example-org/repo-one:23",
+      sourceUrl: "https://github.com/example-org/repo-one/pull/23",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         localRepoPath: worktree.path,
         instruction: "instruction",
         labels: []
@@ -1509,7 +1509,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementing"
     });
@@ -1522,15 +1522,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         localRepoPath: worktree.path,
         instruction: "instruction",
         labels: []
@@ -1552,7 +1552,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
         parentWorkstreamId: "repo-1:issue:17",
         packetId: "T1",
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
       },
       status: "implementation_ready"
     });
@@ -1565,15 +1565,15 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
       handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
       repoId: "repo-1",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       sourceKind: "issue",
-      sourceId: "issue:eladaviv/repo-one:17",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      sourceId: "issue:example-org/repo-one:17",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/17",
       relevant: true,
       reason: "reason",
       summary: "summary",
       context: {
-        repoIdentifier: "eladaviv/repo-one",
+        repoIdentifier: "example-org/repo-one",
         instruction: "instruction",
         labels: []
       },
@@ -1619,7 +1619,7 @@ test("ensurePullRequestForPacketWorktree creates new PR if none exists", async (
 function baseRepo(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -1639,7 +1639,7 @@ function baseRepoSync(): RepoSyncRecord {
   return {
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     localPath: "/tmp/code-root/repo-one",
     codeRoot: "/tmp/code-root",
     status: "synced",
@@ -1658,16 +1658,16 @@ function baseRepoSync(): RepoSyncRecord {
 function baseIssue(): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:17",
+    id: "issue:example-org/repo-one:17",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 17,
-    key: "eladaviv/repo-one:issue:17",
+    key: "example-org/repo-one:issue:17",
     sourceId: "ISSUE_17",
-    url: "https://github.com/eladaviv/repo-one/issues/17",
+    url: "https://github.com/example-org/repo-one/issues/17",
     title: "Need plan-first workflow",
     body: "Plan first",
     labels: [],
@@ -1681,17 +1681,17 @@ function baseIssue(): NormalizedIssue {
 
 function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   return {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    issueId: "issue:eladaviv/repo-one:17",
+    issueId: "issue:example-org/repo-one:17",
     issueNumber: 17,
     prNumber: 24,
-    branchName: "agent/eladaviv-repo-one/issue-17",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
+    branchName: "agent/example-org-repo-one/issue-17",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
     status: "planning",
     createdAt: "2026-04-20T10:00:00.000Z",
     updatedAt: "2026-04-20T10:00:00.000Z",
@@ -1710,8 +1710,8 @@ function completedProductSpecTask(worktree: WorktreeRecord): TaskRecord {
     repoName: worktree.repoName,
     repoSlug: worktree.repoSlug,
     sourceKind: "issue",
-    sourceId: worktree.issueId ?? "issue:eladaviv/repo-one:17",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+    sourceId: worktree.issueId ?? "issue:example-org/repo-one:17",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/17",
     relevant: true,
     reason: "reason",
     summary: "summary",
@@ -1738,7 +1738,7 @@ function baseIssueWorkstreamWithPlan(): WorkstreamRecord {
     attention: "idle",
     status: "open",
     resolution: "unresolved",
-    integration: { branchName: "agent/eladaviv-repo-one/issue-17" },
+    integration: { branchName: "agent/example-org-repo-one/issue-17" },
     packetPlan: {
       status: "proposed",
       packets: {
@@ -1766,7 +1766,7 @@ function baseGhPullRequest(number: number): GhPullRequestSummary {
     number,
     title: `PR ${number}`,
     body: "body",
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     state: "OPEN",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z",
@@ -1923,10 +1923,10 @@ class FakeGitHubGateway implements GitHubGateway {
   async getRepositoryMetadata(): Promise<GitHubRepositoryMetadata> {
     return {
       id: "repo-meta",
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
-      nameWithOwner: "eladaviv/repo-one",
-      url: "https://github.com/eladaviv/repo-one",
+      nameWithOwner: "example-org/repo-one",
+      url: "https://github.com/example-org/repo-one",
       defaultBranch: "main"
     };
   }
@@ -1939,7 +1939,7 @@ class FakeGitHubGateway implements GitHubGateway {
       number: issueNumber,
       title: "Issue",
       body: "Body",
-      url: `https://github.com/eladaviv/repo-one/issues/${issueNumber}`,
+      url: `https://github.com/example-org/repo-one/issues/${issueNumber}`,
       state: "OPEN",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -1953,7 +1953,7 @@ class FakeGitHubGateway implements GitHubGateway {
       number: prNumber,
       title: "PR",
       body: "Body",
-      url: `https://github.com/eladaviv/repo-one/pull/${prNumber}`,
+      url: `https://github.com/example-org/repo-one/pull/${prNumber}`,
       state: "OPEN",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -1977,11 +1977,11 @@ class FakeGitHubGateway implements GitHubGateway {
     body: string;
   }): Promise<GhPullRequestSummary> {
     return {
-      id: "pull_request:eladaviv/repo-one:101",
+      id: "pull_request:example-org/repo-one:101",
       number: 101,
       title: options.title,
       body: options.body,
-      url: "https://github.com/eladaviv/repo-one/pull/101",
+      url: "https://github.com/example-org/repo-one/pull/101",
       state: "OPEN",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2006,7 +2006,7 @@ class FakeGitHubGateway implements GitHubGateway {
   async postIssueComment(): Promise<GhIssueCommentMutationResult> {
     return {
       id: 1,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-1",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-1",
       body: "comment",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2016,7 +2016,7 @@ class FakeGitHubGateway implements GitHubGateway {
   async updateIssueComment(input: { body: string }): Promise<GhIssueCommentMutationResult> {
     return {
       id: 1,
-      url: "https://github.com/eladaviv/repo-one/issues/17#issuecomment-1",
+      url: "https://github.com/example-org/repo-one/issues/17#issuecomment-1",
       body: input.body,
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2026,7 +2026,7 @@ class FakeGitHubGateway implements GitHubGateway {
   async postPullRequestReviewCommentReply(): Promise<GhPullRequestReviewCommentReplyResult> {
     return {
       id: 2,
-      url: "https://github.com/eladaviv/repo-one/pull/17#discussion_r2",
+      url: "https://github.com/example-org/repo-one/pull/17#discussion_r2",
       body: "🤖 reply",
       createdAt: "2026-04-18T10:00:00.000Z",
       updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2036,7 +2036,7 @@ class FakeGitHubGateway implements GitHubGateway {
   async submitPullRequestReview(): Promise<GhPullRequestReviewSubmissionResult> {
     return {
       id: 3,
-      url: "https://github.com/eladaviv/repo-one/pull/17#pullrequestreview-3",
+      url: "https://github.com/example-org/repo-one/pull/17#pullrequestreview-3",
       body: "🤖 Review submitted.",
       state: "COMMENTED",
       submittedAt: "2026-04-18T10:00:00.000Z",
@@ -2089,15 +2089,15 @@ test("finalizePushableHandoffs skips completed prepare_pr_for_merge tasks", asyn
     handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request",
     sourceId: "pr:42",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/42",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/42",
     relevant: true,
     reason: "reason",
     summary: "summary",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       localRepoPath: worktree.path,
       branchName: worktree.branchName,
       instruction: "instruction",
@@ -2196,15 +2196,15 @@ test("reconcilePacketWorktreeReadinessFromProjections closes packet worktree if 
   const packetWorktree1 = baseWorktree({
     id: "packet-wt-1",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:97",
+      parentWorkstreamId: "example-org/repo-one:issue:97",
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-97"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-97"
     },
     status: "planning"
   });
   const abandonedWorkstream = baseIssueWorkstreamWithPlan();
-  abandonedWorkstream.id = "eladaviv/repo-one:issue:97";
+  abandonedWorkstream.id = "example-org/repo-one:issue:97";
   abandonedWorkstream.phase = "abandoned";
 
   const reconciled1 = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -2221,15 +2221,15 @@ test("reconcilePacketWorktreeReadinessFromProjections closes packet worktree if 
   const packetWorktree2 = baseWorktree({
     id: "packet-wt-2",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:98",
+      parentWorkstreamId: "example-org/repo-one:issue:98",
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-98"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-98"
     },
     status: "planning"
   });
   const activeWorkstream = baseIssueWorkstreamWithPlan();
-  activeWorkstream.id = "eladaviv/repo-one:issue:98";
+  activeWorkstream.id = "example-org/repo-one:issue:98";
   activeWorkstream.phase = "planning";
 
   const closedPr: NormalizedPullRequest = {
@@ -2242,7 +2242,7 @@ test("reconcilePacketWorktreeReadinessFromProjections closes packet worktree if 
     parentWorkstream: activeWorkstream,
     packet: activeWorkstream.packetPlan!.packets["T1"]!,
     packetWorktree: packetWorktree2,
-    parentIntegrationBranch: "agent/eladaviv-repo-one/issue-98"
+    parentIntegrationBranch: "agent/example-org-repo-one/issue-98"
   };
 
   const reconciled2 = service.reconcilePacketWorktreeReadinessFromProjections(
@@ -2259,16 +2259,16 @@ test("reconcilePacketWorktreeReadinessFromProjections closes packet worktree if 
   const packetWorktree3 = baseWorktree({
     id: "packet-wt-3",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:99",
+      parentWorkstreamId: "example-org/repo-one:issue:99",
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-99"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-99"
     },
     status: "planning",
     prNumber: 103
   });
   const activeWorkstream2 = baseIssueWorkstreamWithPlan();
-  activeWorkstream2.id = "eladaviv/repo-one:issue:99";
+  activeWorkstream2.id = "example-org/repo-one:issue:99";
   activeWorkstream2.phase = "planning";
 
   const reconciled3 = service.reconcilePacketWorktreeReadinessFromProjections(

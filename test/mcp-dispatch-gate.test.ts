@@ -13,8 +13,8 @@ import type { CapabilityValidationResult } from "../src/capabilities/types.js";
 
 const mockWorkstream = {
   id: "ws-1",
-  owner: "eladav",
-  repo: "agents-over-github",
+  owner: "example-org",
+  repo: "example-repo",
   issueNumber: 310,
   phase: "implementing",
   status: "open",
@@ -26,7 +26,7 @@ const createTask = (id: string, kind: TaskRecord["kind"]): TaskRecord => ({
   id,
   workstreamId: "ws-1",
   repoId: "repo-1",
-  repoSlug: "eladav/agents-over-github",
+  repoSlug: "example-org/example-repo",
   sourceKind: "issue",
   sourceId: "issue-1",
   kind,

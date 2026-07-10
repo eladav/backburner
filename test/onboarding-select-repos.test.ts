@@ -118,8 +118,8 @@ test("SelectReposStep: returns warning when no repos and manual entry is empty",
 
 test("SelectReposStep: groups repos by account and prompts each separately", async () => {
   const multiOwnerRepos: DiscoveredRepo[] = [
-    { owner: "eladav", name: "repo-a", localPath: "/code/repo-a", isLocalClone: true },
-    { owner: "eladav", name: "repo-b", isLocalClone: false },
+    { owner: "example-org", name: "repo-a", localPath: "/code/repo-a", isLocalClone: true },
+    { owner: "example-org", name: "repo-b", isLocalClone: false },
     { owner: "lama-finance", name: "api", localPath: "/code/api", isLocalClone: true },
     { owner: "lama-finance", name: "frontend", isLocalClone: false }
   ];
@@ -127,7 +127,7 @@ test("SelectReposStep: groups repos by account and prompts each separately", asy
   const ctx = makeCtx(multiOwnerRepos);
   const step = new SelectReposStep();
 
-  // First multiSelect call = eladav/ repos: select index 0 (repo-a)
+  // First multiSelect call = example-org/ repos: select index 0 (repo-a)
   // Second multiSelect call = lama-finance/ repos: select index 0 and 1 (api, frontend)
   const questions: string[] = [];
   const prompter: Prompter = {
@@ -136,7 +136,7 @@ test("SelectReposStep: groups repos by account and prompts each separately", asy
     choose: (_q, _opts, def) => Promise.resolve(def ?? 0),
     multiSelect: (q, _opts, _pre) => {
       questions.push(q);
-      if (q.includes("eladav")) return Promise.resolve([0]);
+      if (q.includes("example-org")) return Promise.resolve([0]);
       if (q.includes("lama-finance")) return Promise.resolve([0, 1]);
       return Promise.resolve([]);
     }
@@ -146,10 +146,10 @@ test("SelectReposStep: groups repos by account and prompts each separately", asy
 
   assert.equal(result.status, "passed");
   assert.equal(ctx.selectedRepos.length, 3);
-  assert.ok(ctx.selectedRepos.some((r) => r.owner === "eladav" && r.name === "repo-a"));
+  assert.ok(ctx.selectedRepos.some((r) => r.owner === "example-org" && r.name === "repo-a"));
   assert.ok(ctx.selectedRepos.some((r) => r.owner === "lama-finance" && r.name === "api"));
   assert.ok(ctx.selectedRepos.some((r) => r.owner === "lama-finance" && r.name === "frontend"));
   // Prompts are phrased per account
-  assert.ok(questions.some((q) => q.includes("eladav/")));
+  assert.ok(questions.some((q) => q.includes("example-org/")));
   assert.ok(questions.some((q) => q.includes("lama-finance/")));
 });

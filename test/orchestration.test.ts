@@ -72,7 +72,7 @@ test("runCli preserves completed task state across repeated stable runs without 
     const taskState = JSON.parse(await readFile(path.join(stateDir, "tasks.json"), "utf8")) as TaskStateFile;
     const uniqueTaskIds = new Set(taskState.tasks.map((task) => task.id));
     const implementTask = taskState.tasks.find(
-      (task) => task.id === "task:implement_plan:pull_request:eladaviv/repo-one:23"
+      (task) => task.id === "task:implement_plan:pull_request:example-org/repo-one:23"
     );
 
     assert.equal(dispatchCount >= 1, true);
@@ -225,47 +225,47 @@ test("runCli resets stale dispatched tasks to pending and redispatches them on t
         {
           tasks: [
             {
-              id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+              id: "task:implement_plan:pull_request:example-org/repo-one:23",
               kind: "implement_plan",
               status: "dispatched",
               repoId: "repo-1",
               repoName: "repo-one",
-              repoSlug: "eladaviv/repo-one",
+              repoSlug: "example-org/repo-one",
               sourceKind: "pull_request",
-              sourceId: "pull_request:eladaviv/repo-one:23",
-              sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+              sourceId: "pull_request:example-org/repo-one:23",
+              sourceUrl: "https://github.com/example-org/repo-one/pull/23",
               relevant: true,
               reason: "Plan is approved.",
               summary: "Implement approved plan for PR #23: Implement scanning",
               context: {
-                repoIdentifier: "eladaviv/repo-one",
-                localRepoPath: path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17"),
+                repoIdentifier: "example-org/repo-one",
+                localRepoPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
                 planDocumentPath: path.join(
                   codeRoot,
                   "_worktrees",
-                  "eladaviv",
+                  "example-org",
                   "repo-one",
                   "issue-17",
                   "docs",
                   "agents",
-                  "agent-eladaviv-repo-one-issue-17",
+                  "agent-example-org-repo-one-issue-17",
                   "issue-17-agent-plan.md"
                 ),
                 logDocumentPath: path.join(
                   codeRoot,
                   "_worktrees",
-                  "eladaviv",
+                  "example-org",
                   "repo-one",
                   "issue-17",
                   "docs",
                   "agents",
-                  "agent-eladaviv-repo-one-issue-17",
+                  "agent-example-org-repo-one-issue-17",
                   "issue-17-agent-log.md"
                 ),
-                pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/23",
+                pullRequestUrl: "https://github.com/example-org/repo-one/pull/23",
                 labels: ["agent-plan-approved"],
                 instruction:
-                  "Implement the approved plan from docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md and continue documenting work in docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md."
+                  "Implement the approved plan from docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md and continue documenting work in docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md."
               },
               createdAt: "2026-04-18T10:00:00.000Z",
               updatedAt: "2026-04-18T10:00:00.000Z"
@@ -334,16 +334,16 @@ test("runCli materializes pre-dispatch failures for unresolved comment tasks whe
 
     const issue = {
       kind: "issue" as const,
-      id: "issue:eladaviv/repo-one:11",
+      id: "issue:example-org/repo-one:11",
       repoId: "repo-1",
-      repoKey: "eladaviv/repo-one",
-      repoOwner: "eladaviv",
+      repoKey: "example-org/repo-one",
+      repoOwner: "example-org",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       number: 11,
-      key: "eladaviv/repo-one:issue:11",
+      key: "example-org/repo-one:issue:11",
       sourceId: "11",
-      url: "https://github.com/eladaviv/repo-one/issues/11",
+      url: "https://github.com/example-org/repo-one/issues/11",
       title: "Just answer this issue",
       body: "Please reply on the issue and do not create a PR.",
       labels: [],
@@ -356,17 +356,17 @@ test("runCli materializes pre-dispatch failures for unresolved comment tasks whe
     const comment = {
       kind: "comment" as const,
       commentKind: "issue_comment" as const,
-      id: "comment:eladaviv/repo-one:issue_comment:5001",
+      id: "comment:example-org/repo-one:issue_comment:5001",
       sourceId: "5001",
       repoId: "repo-1",
-      repoKey: "eladaviv/repo-one",
-      repoOwner: "eladaviv",
+      repoKey: "example-org/repo-one",
+      repoOwner: "example-org",
       repoName: "repo-one",
-      repoSlug: "eladaviv/repo-one",
+      repoSlug: "example-org/repo-one",
       parentType: "issue" as const,
       parentNumber: 11,
-      parentKey: "eladaviv/repo-one:issue:11",
-      url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+      parentKey: "example-org/repo-one:issue:11",
+      url: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
       body: "come on",
       author: "human",
       createdAt: "2026-04-18T09:00:00.000Z",
@@ -484,7 +484,7 @@ test("formatRunSummary reports one bad repo and one good repo clearly", () => {
           failures: [
             {
               repoId: "repo-2",
-              repoSlug: "eladaviv/repo-two",
+              repoSlug: "example-org/repo-two",
               step: "list_issues" as const,
               scope: "repo",
               message: "gh unavailable"
@@ -500,20 +500,20 @@ test("formatRunSummary reports one bad repo and one good repo clearly", () => {
       },
       {
         ...baseImplementTask(),
-        id: "task:review_pr:pull_request:eladaviv/repo-two:9",
+        id: "task:review_pr:pull_request:example-org/repo-two:9",
         kind: "review_pr" as const,
         repoId: "repo-2",
         repoName: "repo-two",
-        repoSlug: "eladaviv/repo-two",
-        sourceId: "pull_request:eladaviv/repo-two:9",
-        sourceUrl: "https://github.com/eladaviv/repo-two/pull/9",
+        repoSlug: "example-org/repo-two",
+        sourceId: "pull_request:example-org/repo-two:9",
+        sourceUrl: "https://github.com/example-org/repo-two/pull/9",
         summary: "Review PR #9: Failing repo",
         status: "failed" as const,
         context: {
-          repoIdentifier: "eladaviv/repo-two",
+          repoIdentifier: "example-org/repo-two",
           localRepoPath: "/tmp/code-root/repo-two",
           labels: [],
-          pullRequestUrl: "https://github.com/eladaviv/repo-two/pull/9",
+          pullRequestUrl: "https://github.com/example-org/repo-two/pull/9",
           instruction: "Review the pull request and determine the next action."
         }
       }
@@ -527,8 +527,8 @@ test("formatRunSummary reports one bad repo and one good repo clearly", () => {
   assert.match(output, /Outputs dir: \/tmp\/outputs/);
   assert.match(output, /State dir: \/tmp\/outputs\/state/);
   assert.match(output, /Log dir: \/tmp\/outputs\/logs/);
-  assert.match(output, /eladaviv\/repo-one \| sync ok/);
-  assert.match(output, /eladaviv\/repo-two \| sync failed \| scan failed \| working tree is dirty/);
+  assert.match(output, /example-org\/repo-one \| sync ok/);
+  assert.match(output, /example-org\/repo-two \| sync failed \| scan failed \| working tree is dirty/);
   assert.match(output, /Failed tasks:/);
   assert.match(output, /Scan failures:/);
   assert.match(output, /Generated state: \/tmp\/outputs\/state\/\{repos,issues,prs,comments,tasks,worktrees,workstreams,attention\}\.json/);
@@ -1265,14 +1265,14 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
     await mkdir(stateDir, { recursive: true });
 
     const workstream1 = {
-      id: "eladaviv/repo-one:issue:123",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:123",
+      repoKey: "example-org/repo-one",
       origin: { type: "issue", number: 123 },
       phase: "implementing",
       linkedPrs: [{ number: 77, status: "open" }],
       activePrNumber: 77,
       integration: {
-        branchName: "agent/eladaviv-repo-one/issue-123",
+        branchName: "agent/example-org-repo-one/issue-123",
         prNumber: 77
       },
       packetPlan: {
@@ -1289,14 +1289,14 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
       }
     };
     const workstream2 = {
-      id: "eladaviv/repo-two:issue:456",
-      repoKey: "eladaviv/repo-two",
+      id: "example-org/repo-two:issue:456",
+      repoKey: "example-org/repo-two",
       origin: { type: "issue", number: 456 },
       phase: "implementing",
       linkedPrs: [{ number: 88, status: "open" }],
       activePrNumber: 88,
       integration: {
-        branchName: "agent/eladaviv-repo-two/issue-456",
+        branchName: "agent/example-org-repo-two/issue-456",
         prNumber: 88
       },
       packetPlan: {
@@ -1310,14 +1310,14 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
       }
     };
     const workstream3 = {
-      id: "eladaviv/repo-one:issue:789",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:789",
+      repoKey: "example-org/repo-one",
       origin: { type: "issue", number: 789 },
       phase: "implementing",
       linkedPrs: [{ number: 99, status: "open" }],
       activePrNumber: 99,
       integration: {
-        branchName: "agent/eladaviv-repo-one/issue-789",
+        branchName: "agent/example-org-repo-one/issue-789",
         prNumber: 99
       },
       packetPlan: {
@@ -1337,9 +1337,9 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
       "utf8"
     );
 
-    const issue123 = sampleIssue({ number: 123, repoSlug: "eladaviv/repo-one" });
-    const issue456 = sampleIssue({ number: 456, repoSlug: "eladaviv/repo-two" });
-    const issue789 = sampleIssue({ number: 789, repoSlug: "eladaviv/repo-one" });
+    const issue123 = sampleIssue({ number: 123, repoSlug: "example-org/repo-one" });
+    const issue456 = sampleIssue({ number: 456, repoSlug: "example-org/repo-two" });
+    const issue789 = sampleIssue({ number: 789, repoSlug: "example-org/repo-one" });
 
     const calls: string[] = [];
     const gitGateway = {
@@ -1392,9 +1392,9 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
           return {
             issues: [issue123, issue456, issue789],
             prs: [
-              samplePullRequest({ number: 77, headBranch: "agent/eladaviv-repo-one/issue-123", repoSlug: "eladaviv/repo-one" }),
-              samplePullRequest({ number: 88, headBranch: "agent/eladaviv-repo-two/issue-456", repoSlug: "eladaviv/repo-two" }),
-              samplePullRequest({ number: 99, headBranch: "agent/eladaviv-repo-one/issue-789", repoSlug: "eladaviv/repo-one" })
+              samplePullRequest({ number: 77, headBranch: "agent/example-org-repo-one/issue-123", repoSlug: "example-org/repo-one" }),
+              samplePullRequest({ number: 88, headBranch: "agent/example-org-repo-two/issue-456", repoSlug: "example-org/repo-two" }),
+              samplePullRequest({ number: 99, headBranch: "agent/example-org-repo-one/issue-789", repoSlug: "example-org/repo-one" })
             ],
             comments: [],
             repoResults: [
@@ -1418,20 +1418,20 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
     assert.equal(summary.parentBranchSyncPreflights.length, 3);
 
     // Sorted by repoKey, then workstreamId
-    // 1. eladaviv/repo-one:issue:123
-    // 2. eladaviv/repo-one:issue:789
-    // 3. eladaviv/repo-two:issue:456
+    // 1. example-org/repo-one:issue:123
+    // 2. example-org/repo-one:issue:789
+    // 3. example-org/repo-two:issue:456
 
     const item1 = summary.parentBranchSyncPreflights[0]!;
-    assert.equal(item1.preflight.workstreamId, "eladaviv/repo-one:issue:123");
+    assert.equal(item1.preflight.workstreamId, "example-org/repo-one:issue:123");
     assert.equal(item1.branchSyncComparison?.status, "behind_default");
 
     const item2 = summary.parentBranchSyncPreflights[1]!;
-    assert.equal(item2.preflight.workstreamId, "eladaviv/repo-one:issue:789");
+    assert.equal(item2.preflight.workstreamId, "example-org/repo-one:issue:789");
     assert.equal(item2.branchSyncComparison?.status, "unknown");
 
     const item3 = summary.parentBranchSyncPreflights[2]!;
-    assert.equal(item3.preflight.workstreamId, "eladaviv/repo-two:issue:456");
+    assert.equal(item3.preflight.workstreamId, "example-org/repo-two:issue:456");
     assert.equal(item3.branchSyncComparisonSkippedReason, "missing_local_path");
 
     // Verify calls:
@@ -1449,8 +1449,8 @@ test("runCli collects parent branch sync preflights in summary and ensures non-m
 
     // Also verify compareBranchSyncStatus was called with expected arguments
     const repo1Path = path.join(codeRoot, "repo-one");
-    assert.ok(calls.includes(`compareBranchSyncStatus:${repo1Path}:agent/eladaviv-repo-one/issue-123:main`));
-    assert.ok(calls.includes(`compareBranchSyncStatus:${repo1Path}:agent/eladaviv-repo-one/issue-789:main`));
+    assert.ok(calls.includes(`compareBranchSyncStatus:${repo1Path}:agent/example-org-repo-one/issue-123:main`));
+    assert.ok(calls.includes(`compareBranchSyncStatus:${repo1Path}:agent/example-org-repo-one/issue-789:main`));
     // repo-two should NOT be called because it has no local path
     assert.ok(!calls.some(c => c.includes("repo-two") && c.startsWith("compareBranchSyncStatus")));
 
@@ -1478,17 +1478,17 @@ test("runCli preserves replanned packet plan through final full-cycle workstream
     }]);
     await mkdir(stateDir, { recursive: true });
 
-    const workstreamId = "eladaviv/repo-one:issue:21";
+    const workstreamId = "example-org/repo-one:issue:21";
     const checkpoint = {
-      id: "wave-assessment-eladaviv-repo-one-issue-21-wave-0-21-abc123",
-      sessionId: "wave-assessment-eladaviv-repo-one-issue-21-wave-0-21-abc123",
+      id: "wave-assessment-example-org-repo-one-issue-21-wave-0-21-abc123",
+      sessionId: "wave-assessment-example-org-repo-one-issue-21-wave-0-21-abc123",
       identity: {
-        repoKey: "eladaviv/repo-one",
+        repoKey: "example-org/repo-one",
         workstreamId,
         waveId: "wave-0",
         parentPrNumber: 21,
         parentHeadSha: "abc123",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-21",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-21",
         defaultBranch: "main",
         planRevision: "rev-old",
         originalPlanningSessionId: "unknown",
@@ -1517,7 +1517,7 @@ test("runCli preserves replanned packet plan through final full-cycle workstream
     };
     const workstream = {
       id: workstreamId,
-      repoKey: "eladaviv/repo-one",
+      repoKey: "example-org/repo-one",
       origin: { type: "issue", number: 21 },
       linkedIssueNumber: 21,
       linkedPrs: [{ number: 21, status: "open" }],
@@ -1527,7 +1527,7 @@ test("runCli preserves replanned packet plan through final full-cycle workstream
       status: "open",
       resolution: "unresolved",
       integration: {
-        branchName: "agent/eladaviv-repo-one/issue-21",
+        branchName: "agent/example-org-repo-one/issue-21",
         prNumber: 21
       },
       packetPlan: {
@@ -1582,12 +1582,12 @@ test("runCli preserves replanned packet plan through final full-cycle workstream
       scanService: {
         async scanRepositories(): Promise<any> {
           return {
-            issues: [sampleIssue({ number: 21, key: "eladaviv/repo-one:issue:21" })],
+            issues: [sampleIssue({ number: 21, key: "example-org/repo-one:issue:21" })],
             prs: [
               samplePullRequest({
                 number: 21,
-                key: "eladaviv/repo-one:pull_request:21",
-                headBranch: "agent/eladaviv-repo-one/issue-21",
+                key: "example-org/repo-one:pull_request:21",
+                headBranch: "agent/example-org-repo-one/issue-21",
                 headSha: "abc123",
                 labels: []
               })
@@ -1676,7 +1676,7 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
     await writeManagementConfig(managementDir, [baseRepoConfig("repo-1", "repo-one")], []);
     await mkdir(stateDir, { recursive: true });
 
-    const workstreamId = "eladaviv/repo-one:issue:31";
+    const workstreamId = "example-org/repo-one:issue:31";
     const planTaskId = "task:plan_breakdown:issue:31";
     await writeFile(
       path.join(stateDir, "tasks.json"),
@@ -1687,15 +1687,15 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
           status: "completed",
           repoId: "repo-1",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "issue",
-          sourceId: "issue:eladaviv/repo-one:31",
-          sourceUrl: "https://github.com/eladaviv/repo-one/issues/31",
+          sourceId: "issue:example-org/repo-one:31",
+          sourceUrl: "https://github.com/example-org/repo-one/issues/31",
           relevant: true,
           reason: "Plan breakdown completed.",
           summary: "Break down plan.",
           workstreamId,
-          context: { repoIdentifier: "eladaviv/repo-one", labels: [] },
+          context: { repoIdentifier: "example-org/repo-one", labels: [] },
           createdAt: "2026-04-18T09:00:00.000Z",
           updatedAt: "2026-04-18T09:10:00.000Z"
         }]
@@ -1711,7 +1711,7 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
           taskKind: "plan_breakdown",
           taskStatus: "completed",
           repoId: "repo-1",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           agentId: "codex-manager",
           agentProvider: "codex",
           command: { executable: "codex", args: [], cwd: codeRoot, timeoutMs: 600000 },
@@ -1732,7 +1732,7 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
       JSON.stringify({
         workstreams: [{
           id: workstreamId,
-          repoKey: "eladaviv/repo-one",
+          repoKey: "example-org/repo-one",
           origin: { type: "issue", number: 31 },
           linkedIssueNumber: 31,
           linkedPrs: [{ number: 31, status: "open" }],
@@ -1741,7 +1741,7 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
           attention: "idle",
           status: "open",
           resolution: "unresolved",
-          integration: { branchName: "agent/eladaviv-repo-one/issue-31", prNumber: 31 },
+          integration: { branchName: "agent/example-org-repo-one/issue-31", prNumber: 31 },
           packetPlan: {
             status: "approved",
             source: {
@@ -1773,12 +1773,12 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
       scanService: {
         async scanRepositories(): Promise<any> {
           return {
-            issues: [sampleIssue({ number: 31, key: "eladaviv/repo-one:issue:31" })],
+            issues: [sampleIssue({ number: 31, key: "example-org/repo-one:issue:31" })],
             prs: [
               samplePullRequest({
                 number: 31,
-                key: "eladaviv/repo-one:pull_request:31",
-                headBranch: "agent/eladaviv-repo-one/issue-31",
+                key: "example-org/repo-one:pull_request:31",
+                headBranch: "agent/example-org-repo-one/issue-31",
                 headSha: "abc123",
                 labels: []
               })
@@ -1791,9 +1791,9 @@ test("runCli runtime wave preflight uses latest plan-breakdown session identity"
       },
       gitGateway: {
         compareBranchSyncStatus: async () => ({
-          parentBranch: "agent/eladaviv-repo-one/issue-31",
+          parentBranch: "agent/example-org-repo-one/issue-31",
           defaultBranch: "main",
-          parentRef: "refs/remotes/origin/agent/eladaviv-repo-one/issue-31",
+          parentRef: "refs/remotes/origin/agent/example-org-repo-one/issue-31",
           defaultRef: "refs/remotes/origin/main",
           status: "up_to_date",
           message: "up to date"
@@ -1823,14 +1823,14 @@ test("runCli defers packet wave advancement after same-cycle parent branch sync"
     await writeManagementConfig(managementDir, [baseRepoConfig("repo-1", "repo-one")], []);
     await mkdir(stateDir, { recursive: true });
 
-    const workstreamId = "eladaviv/repo-one:issue:41";
+    const workstreamId = "example-org/repo-one:issue:41";
     const checkpoint = buildWaveAssessmentCheckpoint({
-      repoKey: "eladaviv/repo-one",
+      repoKey: "example-org/repo-one",
       workstreamId,
       waveId: "wave-0",
       parentPrNumber: 41,
       parentHeadSha: "old-head",
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-41",
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-41",
       defaultBranch: "main",
       planRevision: "rev-41",
       originalPlanningSessionId: "unknown",
@@ -1845,7 +1845,7 @@ test("runCli defers packet wave advancement after same-cycle parent branch sync"
       JSON.stringify({
         workstreams: [{
           id: workstreamId,
-          repoKey: "eladaviv/repo-one",
+          repoKey: "example-org/repo-one",
           origin: { type: "issue", number: 41 },
           linkedIssueNumber: 41,
           linkedPrs: [{ number: 41, status: "open" }],
@@ -1854,7 +1854,7 @@ test("runCli defers packet wave advancement after same-cycle parent branch sync"
           attention: "idle",
           status: "open",
           resolution: "unresolved",
-          integration: { branchName: "agent/eladaviv-repo-one/issue-41", prNumber: 41 },
+          integration: { branchName: "agent/example-org-repo-one/issue-41", prNumber: 41 },
           packetPlan: {
             status: "approved",
             source: {
@@ -1896,12 +1896,12 @@ test("runCli defers packet wave advancement after same-cycle parent branch sync"
       scanService: {
         async scanRepositories(): Promise<any> {
           return {
-            issues: [sampleIssue({ number: 41, key: "eladaviv/repo-one:issue:41" })],
+            issues: [sampleIssue({ number: 41, key: "example-org/repo-one:issue:41" })],
             prs: [
               samplePullRequest({
                 number: 41,
-                key: "eladaviv/repo-one:pull_request:41",
-                headBranch: "agent/eladaviv-repo-one/issue-41",
+                key: "example-org/repo-one:pull_request:41",
+                headBranch: "agent/example-org-repo-one/issue-41",
                 headSha: "old-head",
                 labels: ["agent-sync-parent-branch"]
               })
@@ -1914,9 +1914,9 @@ test("runCli defers packet wave advancement after same-cycle parent branch sync"
       },
       gitGateway: {
         compareBranchSyncStatus: async () => ({
-          parentBranch: "agent/eladaviv-repo-one/issue-41",
+          parentBranch: "agent/example-org-repo-one/issue-41",
           defaultBranch: "main",
-          parentRef: "refs/remotes/origin/agent/eladaviv-repo-one/issue-41",
+          parentRef: "refs/remotes/origin/agent/example-org-repo-one/issue-41",
           defaultRef: "refs/remotes/origin/main",
           status: "up_to_date",
           message: "up to date"
@@ -2190,14 +2190,14 @@ test("StateStore writes tasks, executions, repos, and failures in stable sorted 
           failures: [
             {
               repoId: "repo-2",
-              repoSlug: "eladaviv/repo-two",
+              repoSlug: "example-org/repo-two",
               step: "repo_metadata",
               scope: "repo",
               message: "b"
             },
             {
               repoId: "repo-2",
-              repoSlug: "eladaviv/repo-two",
+              repoSlug: "example-org/repo-two",
               step: "issue_comments",
               scope: "issue#7",
               message: "a"
@@ -2211,13 +2211,13 @@ test("StateStore writes tasks, executions, repos, and failures in stable sorted 
     await store.writeTaskState([
       {
         ...baseImplementTask(),
-        id: "task:review_pr:pull_request:eladaviv/repo-two:9",
+        id: "task:review_pr:pull_request:example-org/repo-two:9",
         kind: "review_pr",
         repoId: "repo-2",
         repoName: "repo-two",
-        repoSlug: "eladaviv/repo-two",
-        sourceId: "pull_request:eladaviv/repo-two:9",
-        sourceUrl: "https://github.com/eladaviv/repo-two/pull/9",
+        repoSlug: "example-org/repo-two",
+        sourceId: "pull_request:example-org/repo-two:9",
+        sourceUrl: "https://github.com/example-org/repo-two/pull/9",
         summary: "Review PR #9"
       },
       baseImplementTask()
@@ -2227,9 +2227,9 @@ test("StateStore writes tasks, executions, repos, and failures in stable sorted 
       {
         ...buildExecution(baseImplementTask(), "/tmp/code-root/repo-one", "codex"),
         id: "exec:z",
-        taskId: "task:review_pr:pull_request:eladaviv/repo-two:9",
+        taskId: "task:review_pr:pull_request:example-org/repo-two:9",
         repoId: "repo-2",
-        repoSlug: "eladaviv/repo-two",
+        repoSlug: "example-org/repo-two",
         startedAt: "2026-04-18T09:11:00.000Z"
       },
       {
@@ -2243,8 +2243,8 @@ test("StateStore writes tasks, executions, repos, and failures in stable sorted 
     const tasksState = await readFile(path.join(tempDir, "tasks.json"), "utf8");
     const executionsState = await readFile(path.join(tempDir, "executions.json"), "utf8");
 
-    assert.ok(reposState.indexOf('"repoSlug": "eladaviv/repo-one"') < reposState.indexOf('"repoSlug": "eladaviv/repo-two"'));
-    assert.ok(tasksState.indexOf('"id": "task:implement_plan:pull_request:eladaviv/repo-one:23"') < tasksState.indexOf('"id": "task:review_pr:pull_request:eladaviv/repo-two:9"'));
+    assert.ok(reposState.indexOf('"repoSlug": "example-org/repo-one"') < reposState.indexOf('"repoSlug": "example-org/repo-two"'));
+    assert.ok(tasksState.indexOf('"id": "task:implement_plan:pull_request:example-org/repo-one:23"') < tasksState.indexOf('"id": "task:review_pr:pull_request:example-org/repo-two:9"'));
     assert.ok(executionsState.indexOf('"id": "exec:a"') < executionsState.indexOf('"id": "exec:z"'));
     assert.ok(reposState.indexOf('"step": "issue_comments"') < reposState.indexOf('"step": "repo_metadata"'));
   } finally {
@@ -2255,7 +2255,7 @@ test("StateStore writes tasks, executions, repos, and failures in stable sorted 
 function baseRepoConfig(id: string, name: string): RepoConfig {
   return {
     id,
-    owner: "eladaviv",
+    owner: "example-org",
     name,
     localPath: name,
     enabled: true,
@@ -2330,7 +2330,7 @@ function createRepoResult(
   return {
     repoId: id,
     repoName: name,
-    repoSlug: `eladaviv/${name}`,
+    repoSlug: `example-org/${name}`,
     localPath: path.join(codeRoot, name),
     codeRoot,
     status,
@@ -2349,16 +2349,16 @@ function createRepoResult(
 function sampleIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:123",
+    id: "issue:example-org/repo-one:123",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 123,
-    key: "eladaviv/repo-one:issue:123",
+    key: "example-org/repo-one:issue:123",
     sourceId: "I_123",
-    url: "https://github.com/eladaviv/repo-one/issues/123",
+    url: "https://github.com/example-org/repo-one/issues/123",
     title: "Issue 123",
     body: "Issue body",
     labels: ["agent-in-progress"],
@@ -2374,16 +2374,16 @@ function sampleIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue 
 function samplePullRequest(overrides: Partial<NormalizedPullRequest> = {}): NormalizedPullRequest {
   return {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:23",
+    id: "pull_request:example-org/repo-one:23",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 23,
-    key: "eladaviv/repo-one:pull_request:23",
+    key: "example-org/repo-one:pull_request:23",
     sourceId: "PR_23",
-    url: "https://github.com/eladaviv/repo-one/pull/23",
+    url: "https://github.com/example-org/repo-one/pull/23",
     title: "Implement scanning",
     body: "Open PR body",
     labels: [],
@@ -2393,7 +2393,7 @@ function samplePullRequest(overrides: Partial<NormalizedPullRequest> = {}): Norm
     lastCommentAt: "2026-04-18T08:41:00.000Z",
     lastSeenAt: "2026-04-18T09:05:00.000Z",
     state: "open",
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     headSha: "abc123",
     baseBranch: "main",
     defaultBranch: "main",
@@ -2407,29 +2407,29 @@ function baseImplementTask(): TaskRecord {
   const executionPolicy = workflowRegistry.resolveTaskExecutionPolicy("implement_plan");
 
   return {
-    id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+    id: "task:implement_plan:pull_request:example-org/repo-one:23",
     kind: "implement_plan",
     status: "pending",
     executionPermission: executionPolicy.executionPermission,
     handoffPolicy: executionPolicy.handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:23",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+    sourceId: "pull_request:example-org/repo-one:23",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/23",
     relevant: true,
     reason: "Plan is approved.",
     summary: "Implement approved plan for PR #23: Implement scanning",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
-      localRepoPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-      planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-      logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/23",
+      repoIdentifier: "example-org/repo-one",
+      localRepoPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+      planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+      logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/23",
       labels: ["agent-plan-approved"],
       instruction:
-        "Implement the approved plan from docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md and continue documenting work in docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md."
+        "Implement the approved plan from docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md and continue documenting work in docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md."
     },
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z"
@@ -2475,16 +2475,16 @@ test("runCli does not write directly to persistent worktree log during merge-pre
     const worktree = {
       id: "worktree:repo-1:head-branch",
       repoId: "repo-1",
-      repoSlug: "eladaviv/repo-one",
-      branchName: "agent/eladaviv-repo-one/issue-17",
+      repoSlug: "example-org/repo-one",
+      branchName: "agent/example-org-repo-one/issue-17",
       path: path.join(codeRoot, "repo-one"),
       logDocumentPath: path.join(codeRoot, "repo-one", "docs/agents/log.md"),
       status: "implementing"
     };
 
     const workstream = {
-      id: "eladaviv/repo-one:pull_request:23",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:pull_request:23",
+      repoKey: "example-org/repo-one",
       origin: { type: "pr", number: 23 },
       phase: "pr_review",
       linkedPrs: [{ number: 23, status: "open" }],
@@ -2540,7 +2540,7 @@ test("runCli does not write directly to persistent worktree log during merge-pre
                 number: 23,
                 labels: ["prepare-for-merge"],
                 headSha: "abc123",
-                headBranch: "agent/eladaviv-repo-one/issue-17"
+                headBranch: "agent/example-org-repo-one/issue-17"
               })
             ],
             comments: [],
@@ -2605,26 +2605,26 @@ test("runCli workspace recovery: persists recovery records to workspace-recovery
       path.join(stateDir, "tasks.json"),
       JSON.stringify({
         tasks: [{
-          id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+          id: "task:implement_plan:pull_request:example-org/repo-one:23",
           kind: "implement_plan",
           status: "failed",
           repoId: "repo-1",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "pull_request",
-          sourceId: "pull_request:eladaviv/repo-one:23",
-          sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+          sourceId: "pull_request:example-org/repo-one:23",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23",
           relevant: true,
           reason: "Plan is approved.",
           summary: "Implement approved plan for PR #23",
-          context: { repoIdentifier: "eladaviv/repo-one", recoveryNeeded: true },
+          context: { repoIdentifier: "example-org/repo-one", recoveryNeeded: true },
           createdAt: "2026-06-14T00:00:00.000Z",
           updatedAt: "2026-06-14T00:00:00.000Z"
         }]
       }, null, 2), "utf8"
     );
 
-    const taskId = "task:implement_plan:pull_request:eladaviv/repo-one:23";
+    const taskId = "task:implement_plan:pull_request:example-org/repo-one:23";
     let recoveryCalled = false;
     const fakeRecoveryService = {
       isRecoveryNeeded: (task: TaskRecord) => task.context.recoveryNeeded === true,
@@ -2687,19 +2687,19 @@ test("runCli workspace recovery: recovery failure is non-fatal and dispatch life
       path.join(stateDir, "tasks.json"),
       JSON.stringify({
         tasks: [{
-          id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+          id: "task:implement_plan:pull_request:example-org/repo-one:23",
           kind: "implement_plan",
           status: "failed",
           repoId: "repo-1",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "pull_request",
-          sourceId: "pull_request:eladaviv/repo-one:23",
-          sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+          sourceId: "pull_request:example-org/repo-one:23",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23",
           relevant: true,
           reason: "Plan is approved.",
           summary: "Implement approved plan for PR #23",
-          context: { repoIdentifier: "eladaviv/repo-one", recoveryNeeded: true },
+          context: { repoIdentifier: "example-org/repo-one", recoveryNeeded: true },
           createdAt: "2026-06-14T00:00:00.000Z",
           updatedAt: "2026-06-14T00:00:00.000Z"
         }]
@@ -2770,19 +2770,19 @@ test("runCli workspace recovery: completed tasks are not touched by Phase 0", as
       path.join(stateDir, "tasks.json"),
       JSON.stringify({
         tasks: [{
-          id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+          id: "task:implement_plan:pull_request:example-org/repo-one:23",
           kind: "implement_plan",
           status: "completed",
           repoId: "repo-1",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "pull_request",
-          sourceId: "pull_request:eladaviv/repo-one:23",
-          sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+          sourceId: "pull_request:example-org/repo-one:23",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23",
           relevant: true,
           reason: "Plan is approved.",
           summary: "Implement approved plan for PR #23",
-          context: { repoIdentifier: "eladaviv/repo-one" },
+          context: { repoIdentifier: "example-org/repo-one" },
           createdAt: "2026-06-14T00:00:00.000Z",
           updatedAt: "2026-06-14T00:00:00.000Z"
         }]
@@ -2838,7 +2838,7 @@ test("runCli workspace recovery: duplicate workspace paths are recovered only on
   const managementDir = path.join(tempDir, "management");
   const stateDir = path.join(managementDir, "state");
   const codeRoot = path.join(tempDir, "code-root");
-  const sharedWorkspacePath = path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "shared");
+  const sharedWorkspacePath = path.join(codeRoot, "_worktrees", "example-org", "repo-one", "shared");
 
   try {
     await writeManagementConfig(managementDir, [baseRepoConfig("repo-1", "repo-one")], [implementationAgent()]);
@@ -2848,36 +2848,36 @@ test("runCli workspace recovery: duplicate workspace paths are recovered only on
       JSON.stringify({
         tasks: [
           {
-            id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+            id: "task:implement_plan:pull_request:example-org/repo-one:23",
             kind: "implement_plan",
             status: "failed",
             repoId: "repo-1",
             repoName: "repo-one",
-            repoSlug: "eladaviv/repo-one",
+            repoSlug: "example-org/repo-one",
             sourceKind: "pull_request",
-            sourceId: "pull_request:eladaviv/repo-one:23",
-            sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+            sourceId: "pull_request:example-org/repo-one:23",
+            sourceUrl: "https://github.com/example-org/repo-one/pull/23",
             relevant: true,
             reason: "Plan is approved.",
             summary: "Implement approved plan for PR #23",
-            context: { repoIdentifier: "eladaviv/repo-one", recoveryNeeded: true },
+            context: { repoIdentifier: "example-org/repo-one", recoveryNeeded: true },
             createdAt: "2026-06-14T00:00:00.000Z",
             updatedAt: "2026-06-14T00:00:00.000Z"
           },
           {
-            id: "task:implement_plan:pull_request:eladaviv/repo-one:24",
+            id: "task:implement_plan:pull_request:example-org/repo-one:24",
             kind: "implement_plan",
             status: "failed",
             repoId: "repo-1",
             repoName: "repo-one",
-            repoSlug: "eladaviv/repo-one",
+            repoSlug: "example-org/repo-one",
             sourceKind: "pull_request",
-            sourceId: "pull_request:eladaviv/repo-one:24",
-            sourceUrl: "https://github.com/eladaviv/repo-one/pull/24",
+            sourceId: "pull_request:example-org/repo-one:24",
+            sourceUrl: "https://github.com/example-org/repo-one/pull/24",
             relevant: true,
             reason: "Plan is approved.",
             summary: "Implement approved plan for PR #24",
-            context: { repoIdentifier: "eladaviv/repo-one", recoveryNeeded: true },
+            context: { repoIdentifier: "example-org/repo-one", recoveryNeeded: true },
             createdAt: "2026-06-14T00:00:00.000Z",
             updatedAt: "2026-06-14T00:00:00.000Z"
           }
@@ -2937,7 +2937,7 @@ test("runCli workspace recovery: task with failed recovery outcome is marked as 
   const managementDir = path.join(tempDir, "management");
   const stateDir = path.join(managementDir, "state");
   const codeRoot = path.join(tempDir, "code-root");
-  const workspacePath = path.join(codeRoot, "_worktrees", "eladaviv", "repo-one", "issue-17");
+  const workspacePath = path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17");
 
   try {
     await writeManagementConfig(managementDir, [baseRepoConfig("repo-1", "repo-one")], [implementationAgent()]);
@@ -2946,19 +2946,19 @@ test("runCli workspace recovery: task with failed recovery outcome is marked as 
       path.join(stateDir, "tasks.json"),
       JSON.stringify({
         tasks: [{
-          id: "task:implement_plan:pull_request:eladaviv/repo-one:23",
+          id: "task:implement_plan:pull_request:example-org/repo-one:23",
           kind: "implement_plan",
           status: "failed",
           repoId: "repo-1",
           repoName: "repo-one",
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           sourceKind: "pull_request",
-          sourceId: "pull_request:eladaviv/repo-one:23",
-          sourceUrl: "https://github.com/eladaviv/repo-one/pull/23",
+          sourceId: "pull_request:example-org/repo-one:23",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23",
           relevant: true,
           reason: "Plan is approved.",
           summary: "Implement approved plan for PR #23",
-          context: { repoIdentifier: "eladaviv/repo-one", recoveryNeeded: true },
+          context: { repoIdentifier: "example-org/repo-one", recoveryNeeded: true },
           createdAt: "2026-06-14T00:00:00.000Z",
           updatedAt: "2026-06-14T00:00:00.000Z"
         }]

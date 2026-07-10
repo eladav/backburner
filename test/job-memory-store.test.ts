@@ -103,7 +103,7 @@ describe("JsonJobMemoryStore", () => {
   const bank2 = getJobMemoryBankId(scope2);
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-memory-test-"));
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-memory-test-"));
     filePath = path.join(tmpDir, "memory.json");
     store = new JsonJobMemoryStore({
       filePath,

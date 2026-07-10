@@ -145,7 +145,7 @@ test("materializeManagementLearningProposals restores the original branch", asyn
           checkoutCalls.push(args[args.length - 1]!);
         }
         if (cmd === "git" && args?.[0] === "remote" && args?.[1] === "get-url") {
-          return { stdout: "https://github.com/eladav/mgmt.git", stderr: "", exitCode: 0 };
+          return { stdout: "https://github.com/example-org/mgmt.git", stderr: "", exitCode: 0 };
         }
         return { stdout: "", stderr: "", exitCode: 0 };
       },
@@ -156,7 +156,7 @@ test("materializeManagementLearningProposals restores the original branch", asyn
       createPullRequest: async () => ({
         id: "pr-1",
         number: 123,
-        url: "https://github.com/eladav/mgmt/pull/123",
+        url: "https://github.com/example-org/mgmt/pull/123",
         title: "Title",
         body: "Body",
         state: "OPEN",
@@ -231,7 +231,7 @@ test("materializeManagementLearningProposals reuses existing branch if checkout 
           }
         }
         if (cmd === "git" && args?.[0] === "remote" && args?.[1] === "get-url") {
-          return { stdout: "https://github.com/eladav/mgmt.git", stderr: "", exitCode: 0 };
+          return { stdout: "https://github.com/example-org/mgmt.git", stderr: "", exitCode: 0 };
         }
         if (cmd === "git" && args?.[0] === "diff" && args.includes("--cached")) {
           return { stdout: "learnings/global.md", stderr: "", exitCode: 0 };
@@ -245,7 +245,7 @@ test("materializeManagementLearningProposals reuses existing branch if checkout 
       createPullRequest: async () => ({
         id: "pr-1",
         number: 123,
-        url: "https://github.com/eladav/mgmt/pull/123",
+        url: "https://github.com/example-org/mgmt/pull/123",
       } as any),
     };
 
@@ -312,7 +312,7 @@ test("materializeManagementLearningProposals is idempotent when content already 
           commitCalls.push(args.join(" "));
         }
         if (cmd === "git" && args?.[0] === "remote" && args?.[1] === "get-url") {
-          return { stdout: "https://github.com/eladav/mgmt.git", stderr: "", exitCode: 0 };
+          return { stdout: "https://github.com/example-org/mgmt.git", stderr: "", exitCode: 0 };
         }
         return { stdout: "", stderr: "", exitCode: 0 };
       },
@@ -322,7 +322,7 @@ test("materializeManagementLearningProposals is idempotent when content already 
       findOpenPullRequestByHeadBranch: async () => ({
         id: "pr-1",
         number: 123,
-        url: "https://github.com/eladav/mgmt/pull/123",
+        url: "https://github.com/example-org/mgmt/pull/123",
       } as any),
       createPullRequest: async () => { throw new Error("Should not create PR"); },
     };

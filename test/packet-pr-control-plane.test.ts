@@ -24,7 +24,7 @@ import type { GitHubGateway } from "../src/github/types.js";
 function baseRepo(overrides: Partial<RepoConfig> = {}): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     defaultBranch: "main",
     localPath: "/tmp/code-root/repo-one",
@@ -46,7 +46,7 @@ function baseRepoSync(overrides: Partial<RepoSyncRecord> = {}): RepoSyncRecord {
   return {
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     localPath: "/tmp/code-root/repo-one",
     codeRoot: "/tmp/code-root",
     status: "synced",
@@ -66,23 +66,23 @@ function baseRepoSync(overrides: Partial<RepoSyncRecord> = {}): RepoSyncRecord {
 function baseIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:17",
+    id: "issue:example-org/repo-one:17",
     repoId: "repo-1",
     repoKey: "repo-1",
-    repoOwner: "eladaviv",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 17,
-    key: "issue:eladaviv/repo-one:17",
+    key: "issue:example-org/repo-one:17",
     sourceId: "issue-17-id",
     title: "Need a workflow",
     body: "Please figure out the next step.",
     state: "open",
     labels: [],
-    author: "eladaviv",
+    author: "example-org",
     createdAt: "2026-04-18T09:00:00.000Z",
     updatedAt: "2026-04-18T09:00:00.000Z",
-    url: "https://github.com/eladaviv/repo-one/issues/17",
+    url: "https://github.com/example-org/repo-one/issues/17",
     ...overrides
   };
 }
@@ -91,25 +91,25 @@ function basePullRequest(overrides: Partial<NormalizedPullRequest> = {}): Normal
   const number = overrides.number ?? 100;
   return {
     kind: "pull_request",
-    id: `pull_request:eladaviv/repo-one:${number}`,
+    id: `pull_request:example-org/repo-one:${number}`,
     repoId: "repo-1",
     repoKey: "repo-1",
-    repoOwner: "eladaviv",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number,
-    key: `pull_request:eladaviv/repo-one:${number}`,
+    key: `pull_request:example-org/repo-one:${number}`,
     sourceId: `pr-${number}-id`,
     title: "Implement workflow",
     body: "Working on it.",
     state: "open",
     labels: [],
-    author: "eladaviv",
+    author: "example-org",
     createdAt: "2026-04-18T09:30:00.000Z",
     updatedAt: "2026-04-18T09:30:00.000Z",
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     headSha: "head-1",
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     baseBranch: "main",
     defaultBranch: "main",
     baseClassification: "top_level",
@@ -123,21 +123,21 @@ function basePrComment(overrides: Partial<NormalizedComment> = {}): NormalizedCo
   return {
     kind: "comment",
     commentKind: "pull_request_comment",
-    id: `pull_request_comment:eladaviv/repo-one:${prNumber}:1`,
+    id: `pull_request_comment:example-org/repo-one:${prNumber}:1`,
     sourceId: `comment-1-id`,
     repoId: "repo-1",
     repoKey: "repo-1",
-    repoOwner: "eladaviv",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "pull_request",
     parentNumber: prNumber,
-    parentKey: `pull_request:eladaviv/repo-one:${prNumber}`,
+    parentKey: `pull_request:example-org/repo-one:${prNumber}`,
     body: "Looks good!",
     author: "human",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z",
-    url: `https://github.com/eladaviv/repo-one/pull/${prNumber}#issuecomment-1`,
+    url: `https://github.com/example-org/repo-one/pull/${prNumber}#issuecomment-1`,
     ...overrides
   };
 }
@@ -145,14 +145,14 @@ function basePrComment(overrides: Partial<NormalizedComment> = {}): NormalizedCo
 function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   const now = "2026-04-18T10:00:00.000Z";
   return {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-parent",
-    branchName: "agent/eladaviv-repo-one/issue-17",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-parent/docs/agents/issue-17/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-parent/docs/agents/issue-17/issue-17-agent-log.md",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-parent",
+    branchName: "agent/example-org-repo-one/issue-17",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-parent/docs/agents/issue-17/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-parent/docs/agents/issue-17/issue-17-agent-log.md",
     status: "implementation_ready",
     createdAt: now,
     updatedAt: now,
@@ -162,14 +162,14 @@ function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
 
 function baseParentWorkstream(overrides: Partial<WorkstreamRecord> = {}): WorkstreamRecord {
   return {
-    id: "eladaviv/repo-one:issue:17",
+    id: "example-org/repo-one:issue:17",
     repoKey: "repo-1",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [{ number: 100, role: "integration", status: "open" }],
     activePrNumber: 100,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-17",
+      branchName: "agent/example-org-repo-one/issue-17",
       prNumber: 100
     },
     phase: "implementing",
@@ -355,7 +355,7 @@ test("packet PR approval comment and review signals derive packet-scoped state a
           canRunInParallelWith: [],
           blocks: [],
           status: "pr_open",
-          branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+          branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
           prNumber: 101
         }
       },
@@ -365,21 +365,21 @@ test("packet PR approval comment and review signals derive packet-scoped state a
   });
 
   const packetWorktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:17:packet:t1",
+    id: "worktree:example-org/repo-one:issue:17:packet:t1",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1",
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     status: "planning",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     },
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z"
   };
@@ -388,8 +388,8 @@ test("packet PR approval comment and review signals derive packet-scoped state a
     number: 101,
     labels: ["agent-plan-approved", "agent-review"],
     headSha: "packet-head-a",
-    headBranch: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
+    baseBranch: "agent/example-org-repo-one/issue-17",
     baseClassification: "non_default_parent"
   });
 
@@ -477,21 +477,21 @@ test("approved packet PR with implementation_done does not derive another implem
   });
 
   const packetWorktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:17:packet:t1",
+    id: "worktree:example-org/repo-one:issue:17:packet:t1",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1",
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     status: "implementation_done",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     },
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z"
   };
@@ -500,8 +500,8 @@ test("approved packet PR with implementation_done does not derive another implem
     number: 101,
     labels: ["agent-plan-approved"],
     headSha: "packet-head-a",
-    headBranch: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
+    baseBranch: "agent/example-org-repo-one/issue-17",
     baseClassification: "non_default_parent"
   });
 
@@ -546,7 +546,7 @@ test("packet PR review freshness remains scoped to the packet PR head in the int
           canRunInParallelWith: [],
           blocks: [],
           status: "pr_open",
-          branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+          branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
           prNumber: 101
         }
       },
@@ -556,21 +556,21 @@ test("packet PR review freshness remains scoped to the packet PR head in the int
   });
 
   const packetWorktree: WorktreeRecord = {
-    id: "worktree:eladaviv/repo-one:issue:17:packet:t1",
+    id: "worktree:example-org/repo-one:issue:17:packet:t1",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1",
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
     status: "implementation_ready",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     },
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17-packet-t1/docs/agents/packet-t1/issue-17-agent-log.md",
     createdAt: "2026-04-18T10:00:00.000Z",
     updatedAt: "2026-04-18T10:00:00.000Z"
   };
@@ -580,15 +580,15 @@ test("packet PR review freshness remains scoped to the packet PR head in the int
     number: 101,
     labels: ["agent-review"],
     headSha: "packet-head-a",
-    headBranch: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/workstream-issue-17/packet-t1",
+    baseBranch: "agent/example-org-repo-one/issue-17",
     baseClassification: "non_default_parent"
   });
 
   // Case A: parent completed review does not suppress packet review
   {
     const completedParentReviewTask = {
-      id: "task:review_pr:pull_request:eladaviv/repo-one:100",
+      id: "task:review_pr:pull_request:example-org/repo-one:100",
       kind: "review_pr",
       sourceId: parentPr.id,
       status: "completed",
@@ -621,7 +621,7 @@ test("packet PR review freshness remains scoped to the packet PR head in the int
   // Case B: unchanged packet head does not duplicate review
   {
     const completedPacketReviewTask = {
-      id: "task:review_pr:pull_request:eladaviv/repo-one:101",
+      id: "task:review_pr:pull_request:example-org/repo-one:101",
       kind: "review_pr",
       sourceId: packetPr.id,
       status: "completed",
@@ -654,7 +654,7 @@ test("packet PR review freshness remains scoped to the packet PR head in the int
   // Case C: changed packet head allows review rerun
   {
     const completedPacketReviewTask = {
-      id: "task:review_pr:pull_request:eladaviv/repo-one:101",
+      id: "task:review_pr:pull_request:example-org/repo-one:101",
       kind: "review_pr",
       sourceId: packetPr.id,
       status: "completed",

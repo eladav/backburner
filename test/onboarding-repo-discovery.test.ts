@@ -105,7 +105,7 @@ test("RepoDiscoveryService: returns empty list when gh fails", async () => {
 });
 
 test("RepoDiscoveryService: discovers local repos via SSH remote (flat layout)", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-repo-discovery-flat-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-repo-discovery-flat-"));
 
   try {
     const repoDir = path.join(tmpDir, "my-local-repo");
@@ -129,7 +129,7 @@ test("RepoDiscoveryService: discovers local repos via SSH remote (flat layout)",
 });
 
 test("RepoDiscoveryService: discovers local repos via HTTPS remote", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-repo-discovery-https-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-repo-discovery-https-"));
 
   try {
     const repoDir = path.join(tmpDir, "another-repo");
@@ -151,16 +151,16 @@ test("RepoDiscoveryService: discovers local repos via HTTPS remote", async () =>
 });
 
 test("RepoDiscoveryService: discovers repos in owner/name layout (codeRoot/org/repo)", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-repo-discovery-owner-name-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-repo-discovery-owner-name-"));
 
   try {
-    // Simulate: /tmp/<dir>/myorg/agents-over-github/.git
-    const repoDir = path.join(tmpDir, "myorg", "agents-over-github");
+    // Simulate: /tmp/<dir>/myorg/example-repo/.git
+    const repoDir = path.join(tmpDir, "myorg", "example-repo");
     await fs.mkdir(path.join(repoDir, ".git"), { recursive: true });
 
     const runner = stubRunner({
       "git remote get-url origin": ok(
-        "git@github.com:myorg/agents-over-github.git\n"
+        "git@github.com:myorg/example-repo.git\n"
       )
     });
 
@@ -169,7 +169,7 @@ test("RepoDiscoveryService: discovers repos in owner/name layout (codeRoot/org/r
 
     assert.equal(repos.length, 1);
     assert.equal(repos[0]?.owner, "myorg");
-    assert.equal(repos[0]?.name, "agents-over-github");
+    assert.equal(repos[0]?.name, "example-repo");
     assert.equal(repos[0]?.localPath, repoDir);
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });
@@ -177,7 +177,7 @@ test("RepoDiscoveryService: discovers repos in owner/name layout (codeRoot/org/r
 });
 
 test("RepoDiscoveryService: skips node_modules and hidden directories", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-repo-skip-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-repo-skip-"));
 
   try {
     // These should be skipped entirely
@@ -197,7 +197,7 @@ test("RepoDiscoveryService: skips node_modules and hidden directories", async ()
 });
 
 test("RepoDiscoveryService: skips directories without .git", async () => {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-no-git-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-no-git-"));
 
   try {
     await fs.mkdir(path.join(tmpDir, "not-a-repo"), { recursive: true });

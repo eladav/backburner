@@ -8,7 +8,7 @@ import { ProviderLimitRecord } from "../src/state/types.js";
 import { AgentProvider } from "../src/config/types.js";
 
 test("StateStore loads empty provider limits default when file does not exist", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-provider-limits-empty-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-provider-limits-empty-"));
   try {
     const store = new StateStore(tempDir);
     const state = await store.load();
@@ -22,7 +22,7 @@ test("StateStore loads empty provider limits default when file does not exist", 
 });
 
 test("StateStore round-trips provider limits and sorts keys alphabetically", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-provider-limits-roundtrip-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-provider-limits-roundtrip-"));
   try {
     const store = new StateStore(tempDir);
     const limits: ProviderLimitRecord[] = [
@@ -101,7 +101,7 @@ test("StateStore round-trips provider limits and sorts keys alphabetically", asy
 });
 
 test("StateStore loadProviderLimitsState validation diagnostics on corrupted content", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-provider-limits-corrupted-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-provider-limits-corrupted-"));
   try {
     const store = new StateStore(tempDir);
     const invalidJson = {
@@ -144,7 +144,7 @@ test("StateStore loadProviderLimitsState validation diagnostics on corrupted con
 });
 
 test("StateStore loadProviderLimitsState validation diagnostics on unrecognized fields (strict)", async () => {
-  const tempDir = await mkdtemp(path.join(os.tmpdir(), "aog-provider-limits-unrecognized-"));
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "backburner-provider-limits-unrecognized-"));
   try {
     const store = new StateStore(tempDir);
     const invalidJson = {

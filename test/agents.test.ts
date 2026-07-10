@@ -52,7 +52,7 @@ test("CodexCliAgent fails wave_plan_replanning when exit code is 0 but sessionId
     });
 
     const result = await agent.dispatch(
-      baseTask({ kind: "wave_plan_replanning", workstreamId: "eladaviv/repo-one:issue:21" }),
+      baseTask({ kind: "wave_plan_replanning", workstreamId: "example-org/repo-one:issue:21" }),
       baseContext(),
       baseAgent({ id: "codex-strong", roles: ["implementation_manager"] })
     );
@@ -173,8 +173,8 @@ test("selectAgentForTask chooses enabled Codex agents by task strategy", () => {
 test("prompt packet rendering is deterministic and includes the GitHub prefix reminder", () => {
   const task = baseTask({ kind: "respond_pr_comment" });
   const context = baseContext({
-    pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
-    commentUrl: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-9001",
+    pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
+    commentUrl: "https://github.com/example-org/repo-one/pull/21#issuecomment-9001",
     relevantCommentText: "Please update the implementation notes."
   });
 
@@ -183,8 +183,8 @@ test("prompt packet rendering is deterministic and includes the GitHub prefix re
 
   assert.deepEqual(packet, {
     taskType: "respond_pr_comment",
-    repo: "eladaviv/repo-one",
-    url: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-9001",
+    repo: "example-org/repo-one",
+    url: "https://github.com/example-org/repo-one/pull/21#issuecomment-9001",
     executionPermission: "workspace-write",
     handoffPolicy: {
       expectsPushableHandoff: true,
@@ -207,13 +207,13 @@ test("prompt packet for issue comment follow-up includes parent issue intent", (
   const task = baseTask({
     kind: "respond_issue_comment",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:issue_comment:5001",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    sourceId: "comment:example-org/repo-one:issue_comment:5001",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     parentSourceKind: "issue",
-    parentSourceId: "issue:eladaviv/repo-one:11",
+    parentSourceId: "issue:example-org/repo-one:11",
     context: baseContext({
-      issueUrl: "https://github.com/eladaviv/repo-one/issues/11",
-      commentUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+      issueUrl: "https://github.com/example-org/repo-one/issues/11",
+      commentUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
       issueTitle: "Just answer this question",
       issueBody: "Do not create a PR. I only want an answer on the issue.",
       relevantCommentText: "come on",
@@ -242,24 +242,24 @@ test("product phase issue comment prompts require broker publication", () => {
   const context = builder.build({
     taskKind: "respond_issue_comment",
     workflowPhase: "product_discovery",
-    repoIdentifier: "eladaviv/repo-one",
+    repoIdentifier: "example-org/repo-one",
     sourceKind: "comment",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     labels: [],
-    parentUrl: "https://github.com/eladaviv/repo-one/issues/11",
+    parentUrl: "https://github.com/example-org/repo-one/issues/11",
     issueTitle: "Clarify product direction",
     issueBody: "We need product discovery before implementation.",
-    commentUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    commentUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     commentText: "Scope accepted. Keep it small."
   });
   const task = baseTask({
     kind: "respond_issue_comment",
     workflowPhase: "product_discovery",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:issue_comment:5001",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    sourceId: "comment:example-org/repo-one:issue_comment:5001",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     parentSourceKind: "issue",
-    parentSourceId: "issue:eladaviv/repo-one:11",
+    parentSourceId: "issue:example-org/repo-one:11",
     context
   });
 
@@ -277,12 +277,12 @@ test("DefaultContextBuilder preserves full comment text without truncation for r
 
   const prCtx = builder.build({
     taskKind: "respond_pr_comment",
-    repoIdentifier: "eladaviv/repo-one",
+    repoIdentifier: "example-org/repo-one",
     sourceKind: "pull_request",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/21",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/21",
     labels: [],
     headSha: "abc123",
-    commentUrl: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-9001",
+    commentUrl: "https://github.com/example-org/repo-one/pull/21#issuecomment-9001",
     commentText: longComment
   });
   assert.equal(prCtx.relevantCommentText, longComment);
@@ -290,12 +290,12 @@ test("DefaultContextBuilder preserves full comment text without truncation for r
 
   const issueCtx = builder.build({
     taskKind: "respond_issue_comment",
-    repoIdentifier: "eladaviv/repo-one",
+    repoIdentifier: "example-org/repo-one",
     sourceKind: "comment",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     labels: [],
-    parentUrl: "https://github.com/eladaviv/repo-one/issues/11",
-    commentUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    parentUrl: "https://github.com/example-org/repo-one/issues/11",
+    commentUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     commentText: longComment
   });
   assert.equal(issueCtx.relevantCommentText, longComment);
@@ -323,9 +323,9 @@ test("CodexCliAgent persists prompt and output artifacts and invokes the command
     const result = await agent.dispatch(
       baseTask({ kind: "write_plan" }),
       baseContext({
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
         instruction:
-          "Write or update docs/agents/agent-eladaviv-repo-one-issue-21/issue-21-agent-plan.md with a comprehensive implementation plan for a later cheap-model implementation pass, and document the planning work in docs/agents/agent-eladaviv-repo-one-issue-21/issue-21-agent-log.md. Do not begin implementation."
+          "Write or update docs/agents/agent-example-org-repo-one-issue-21/issue-21-agent-plan.md with a comprehensive implementation plan for a later cheap-model implementation pass, and document the planning work in docs/agents/agent-example-org-repo-one-issue-21/issue-21-agent-log.md. Do not begin implementation."
       }),
       baseAgent({ id: "codex-strong", roles: ["planning"] })
     );
@@ -347,7 +347,7 @@ test("CodexCliAgent persists prompt and output artifacts and invokes the command
     assert.equal(commandRunner.calls[0]?.options.cwd, "/tmp/code-root/repo-one");
     assert.match(
       commandRunner.calls[0]?.options.input ?? "",
-      /docs\/agents\/agent-eladaviv-repo-one-issue-21\/issue-21-agent-plan\.md/
+      /docs\/agents\/agent-example-org-repo-one-issue-21\/issue-21-agent-plan\.md/
     );
     assert.equal(result.taskStatus, "completed");
 
@@ -673,7 +673,7 @@ test("packet implementation prompt does not describe packet plan as Product Spec
   const context = baseContext({
     planDocumentPath: "/tmp/code-root/repo-one/docs/agents/packets/T1.md",
     logDocumentPath: "/tmp/code-root/repo-one/docs/agents/packets/T1-log.md",
-    pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21"
+    pullRequestUrl: "https://github.com/example-org/repo-one/pull/21"
   });
   const task = baseTask({
     kind: "implement_plan",
@@ -691,7 +691,7 @@ test("normal implementation prompt includes Product Spec guidance when a spec pa
     planDocumentPath: "/tmp/code-root/repo-one/docs/agents/issue-21-plan.md",
     productSpecDocumentPath: "/tmp/code-root/repo-one/docs/agents/issue-21-product-spec.md",
     logDocumentPath: "/tmp/code-root/repo-one/docs/agents/issue-21-log.md",
-    pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21"
+    pullRequestUrl: "https://github.com/example-org/repo-one/pull/21"
   });
   const task = baseTask({
     kind: "implement_plan",
@@ -771,16 +771,16 @@ test("CodexCliAgent parses structured review JSON decisions from stdout", async 
       baseTask({
         kind: "review_pr",
         sourceKind: "pull_request",
-        sourceId: "pull_request:eladaviv/repo-one:21",
-        sourceUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        sourceId: "pull_request:example-org/repo-one:21",
+        sourceUrl: "https://github.com/example-org/repo-one/pull/21",
         context: baseContext({
-          pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+          pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
           instruction:
             'Review the pull request and finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required.'
         })
       }),
       baseContext({
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
         instruction:
           'Review the pull request and finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required.'
       }),
@@ -823,16 +823,16 @@ test("CodexCliAgent fails review_pr when stdout has no valid structured review r
       baseTask({
         kind: "review_pr",
         sourceKind: "pull_request",
-        sourceId: "pull_request:eladaviv/repo-one:21",
-        sourceUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        sourceId: "pull_request:example-org/repo-one:21",
+        sourceUrl: "https://github.com/example-org/repo-one/pull/21",
         context: baseContext({
-          pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+          pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
           instruction:
             'Review the pull request and finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required.'
         })
       }),
       baseContext({
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
         instruction:
           'Review the pull request and finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required.'
       }),
@@ -972,7 +972,7 @@ test("CodexCliAgent uses config overrides and leaves repo-local AGENTS.md untouc
       baseTask({ kind: "write_plan" }),
       baseContext({
         localRepoPath: repoDir,
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
         instruction: "Write the plan."
       }),
       baseAgent({ id: "codex-strong", roles: ["planning"] })
@@ -1087,12 +1087,12 @@ test("dispatchPendingTasks publishes replanning completion as a superseding wave
       id: "checkpoint-1",
       sessionId: "checkpoint-1",
       identity: {
-        repoKey: "eladaviv/repo-one",
-        workstreamId: "eladaviv/repo-one:issue:21",
+        repoKey: "example-org/repo-one",
+        workstreamId: "example-org/repo-one:issue:21",
         waveId: "wave-0",
         parentPrNumber: 21,
         parentHeadSha: "abc123",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-21",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-21",
         defaultBranch: "main",
         planRevision: "rev-1",
         originalPlanningSessionId: "planner-session-1",
@@ -1115,8 +1115,8 @@ test("dispatchPendingTasks publishes replanning completion as a superseding wave
       finalizedAt: "2026-04-18T09:30:00.000Z"
     };
     const workstream: WorkstreamRecord = {
-      id: "eladaviv/repo-one:issue:21",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:21",
+      repoKey: "example-org/repo-one",
       origin: { type: "issue", number: 21 },
       linkedIssueNumber: 21,
       linkedPrs: [{ number: 21, role: "implementation" }],
@@ -1125,7 +1125,7 @@ test("dispatchPendingTasks publishes replanning completion as a superseding wave
       attention: "idle",
       status: "open",
       resolution: "unresolved",
-      integration: { branchName: "agent/eladaviv-repo-one/issue-21", prNumber: 21 },
+      integration: { branchName: "agent/example-org-repo-one/issue-21", prNumber: 21 },
       packetPlan: {
         status: "approved",
         packets: {
@@ -1166,7 +1166,7 @@ test("dispatchPendingTasks publishes replanning completion as a superseding wave
       context: baseContext({
         waveAssessmentCheckpoint: checkpoint,
         finalizedWaveAssessment: replanAssessment,
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21"
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21"
       })
     });
     await store.writeTaskState([task]);
@@ -1289,12 +1289,12 @@ test("dispatchPendingTasks keeps wave assessment publication failures retryable 
       id: "checkpoint-retry",
       sessionId: "checkpoint-retry",
       identity: {
-        repoKey: "eladaviv/repo-one",
-        workstreamId: "eladaviv/repo-one:issue:21",
+        repoKey: "example-org/repo-one",
+        workstreamId: "example-org/repo-one:issue:21",
         waveId: "wave-0",
         parentPrNumber: 21,
         parentHeadSha: "abc123",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-21",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-21",
         defaultBranch: "main",
         planRevision: "rev-1",
         originalPlanningSessionId: "planner-session-1",
@@ -1306,8 +1306,8 @@ test("dispatchPendingTasks keeps wave assessment publication failures retryable 
       }
     };
     const workstream: WorkstreamRecord = {
-      id: "eladaviv/repo-one:issue:21",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:21",
+      repoKey: "example-org/repo-one",
       origin: { type: "issue", number: 21 },
       linkedIssueNumber: 21,
       linkedPrs: [{ number: 21, role: "implementation" }],
@@ -1316,12 +1316,12 @@ test("dispatchPendingTasks keeps wave assessment publication failures retryable 
       attention: "idle",
       status: "open",
       resolution: "unresolved",
-      integration: { branchName: "agent/eladaviv-repo-one/issue-21", prNumber: 21 },
+      integration: { branchName: "agent/example-org-repo-one/issue-21", prNumber: 21 },
       packetPlan: {
         status: "in_progress",
         source: {
           kind: "plan_breakdown_result",
-          workstreamId: "eladaviv/repo-one:issue:21",
+          workstreamId: "example-org/repo-one:issue:21",
           generatedAt: "rev-1"
         },
         packets: {},
@@ -1338,7 +1338,7 @@ test("dispatchPendingTasks keeps wave assessment publication failures retryable 
       workstreamId: workstream.id,
       context: baseContext({
         waveAssessmentCheckpoint: checkpoint,
-        pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21"
+        pullRequestUrl: "https://github.com/example-org/repo-one/pull/21"
       })
     });
     await store.writeTaskState([task]);
@@ -1538,7 +1538,7 @@ test("buildSinglePostDispatchHandoffFailureExecution builds a correct record", a
 });
 
 test("buildTechnicalFailureComment uses the bot prefix and asks for retry", () => {
-  const task = baseTask({ kind: "product_discovery", sourceKind: "issue", sourceId: "issue:eladaviv/repo-one:11" });
+  const task = baseTask({ kind: "product_discovery", sourceKind: "issue", sourceId: "issue:example-org/repo-one:11" });
   const execution: ExecutionRecord = {
     id: "exec:test:failure",
     taskId: task.id,
@@ -1574,7 +1574,7 @@ test("buildTechnicalFailureComment prefers timeout details over noisy stderr ban
   const task = baseTask({
     kind: "implement_plan",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:25"
+    sourceId: "pull_request:example-org/repo-one:25"
   });
   const execution: ExecutionRecord = {
     id: "exec:test:timeout",
@@ -1618,7 +1618,7 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments to issue parents for i
         comments.push(input);
         return {
           id: 1,
-          url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-1",
+          url: "https://github.com/example-org/repo-one/issues/11#issuecomment-1",
           body: "",
           createdAt: "2026-04-18T10:00:00.000Z",
           updatedAt: "2026-04-18T10:00:00.000Z",
@@ -1629,7 +1629,7 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments to issue parents for i
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -1651,10 +1651,10 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments to issue parents for i
     baseTask({
       kind: "respond_issue_comment",
       sourceKind: "comment",
-      sourceId: "comment:eladaviv/repo-one:issue_comment:5001",
-      sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+      sourceId: "comment:example-org/repo-one:issue_comment:5001",
+      sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
       parentSourceKind: "issue",
-      parentSourceId: "issue:eladaviv/repo-one:11",
+      parentSourceId: "issue:example-org/repo-one:11",
       summary: "Respond to issue comment"
     }),
     { isRetry: true }
@@ -1662,7 +1662,7 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments to issue parents for i
 
   assert.deepEqual(reactions, [
     {
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
       commentId: "5001",
       commentKind: "issue_comment",
@@ -1671,7 +1671,7 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments to issue parents for i
   ]);
   assert.deepEqual(comments, [
     {
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
       issueNumber: 11,
       body:
@@ -1691,7 +1691,7 @@ test("GitHubTaskLifecycleNotifier carries review-comment kind when reacting to i
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -1713,10 +1713,10 @@ test("GitHubTaskLifecycleNotifier carries review-comment kind when reacting to i
     baseTask({
       kind: "respond_pr_comment",
       sourceKind: "comment",
-      sourceId: "comment:eladaviv/repo-one:pull_request_review_comment:6001",
-      sourceUrl: "https://github.com/eladaviv/repo-one/pull/21#discussion_r6001",
+      sourceId: "comment:example-org/repo-one:pull_request_review_comment:6001",
+      sourceUrl: "https://github.com/example-org/repo-one/pull/21#discussion_r6001",
       parentSourceKind: "pull_request",
-      parentSourceId: "pull_request:eladaviv/repo-one:21",
+      parentSourceId: "pull_request:example-org/repo-one:21",
       summary: "Respond to inline review comment"
     }),
     "completed"
@@ -1724,7 +1724,7 @@ test("GitHubTaskLifecycleNotifier carries review-comment kind when reacting to i
 
   assert.deepEqual(reactions, [
     {
-      owner: "eladaviv",
+      owner: "example-org",
       name: "repo-one",
       commentId: "6001",
       commentKind: "pull_request_review_comment",
@@ -1830,11 +1830,11 @@ test("dispatchPendingTasks publishes completed review outcomes as PR reviews", a
         },
         async getPullRequest() {
           return {
-            id: "pull_request:eladaviv/repo-one:21",
+            id: "pull_request:example-org/repo-one:21",
             number: 21,
             title: "PR",
             body: "",
-            url: "https://github.com/eladaviv/repo-one/pull/21",
+            url: "https://github.com/example-org/repo-one/pull/21",
             state: "OPEN",
             createdAt: "",
             updatedAt: "",
@@ -1868,7 +1868,7 @@ test("dispatchPendingTasks publishes completed review outcomes as PR reviews", a
           reviews.push(input);
           return {
             id: 1,
-            url: "https://github.com/eladaviv/repo-one/pull/21#review-1",
+            url: "https://github.com/example-org/repo-one/pull/21#review-1",
             body: input.body,
             state: input.event,
             submittedAt: "2026-04-18T10:00:10.000Z",
@@ -1917,7 +1917,7 @@ test("dispatchPendingTasks publishes completed review outcomes as PR reviews", a
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           defaultBranch: "main",
@@ -1990,7 +1990,7 @@ test("dispatchPendingTasks publishes completed review outcomes as PR reviews", a
 
     assert.deepEqual(reviews, [
       {
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         pullRequestNumber: 21,
         event: "COMMENT",
@@ -2035,7 +2035,7 @@ test("dispatchPendingTasks moves invalid inline comments into the summary", asyn
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2111,7 +2111,7 @@ test("dispatchPendingTasks retries with summary-only if GitHub rejects inline co
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2183,7 +2183,7 @@ test("dispatchPendingTasks posts a PR thread comment if summary-only review publ
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2252,7 +2252,7 @@ test("dispatchPendingTasks moves inline comments on files not in diff to summary
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2331,7 +2331,7 @@ test("dispatchPendingTasks validates range comments against the diff", async () 
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2433,7 +2433,7 @@ test("GitHubPullRequestReviewPublisher publishes inline comments on unchanged co
       [
         {
           id: "repo-1",
-          owner: "eladaviv",
+          owner: "example-org",
           name: "repo-one",
           localPath: "repo-one",
           enabled: true,
@@ -2500,7 +2500,7 @@ test("GitHubTaskLifecycleNotifier uses sourceReactionTargetId for dispatch eyes 
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2514,7 +2514,7 @@ test("GitHubTaskLifecycleNotifier uses sourceReactionTargetId for dispatch eyes 
     baseTask({
       kind: "respond_pr_comment",
       sourceKind: "comment",
-      sourceId: "comment:eladaviv/repo-one:pull_request_comment:926817920",
+      sourceId: "comment:example-org/repo-one:pull_request_comment:926817920",
       sourceReactionTargetId: "123456789",
       summary: "REST source ID test"
     }),
@@ -2538,7 +2538,7 @@ test("GitHubTaskLifecycleNotifier uses sourceReactionTargetId for completion rea
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2551,7 +2551,7 @@ test("GitHubTaskLifecycleNotifier uses sourceReactionTargetId for completion rea
   const task = baseTask({
     kind: "respond_pr_comment",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:pull_request_comment:926817920",
+    sourceId: "comment:example-org/repo-one:pull_request_comment:926817920",
     sourceReactionTargetId: "987654321",
     summary: "REST source ID test"
   });
@@ -2579,7 +2579,7 @@ test("GitHubTaskLifecycleNotifier handles top-level PR comments using numeric RE
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2592,10 +2592,10 @@ test("GitHubTaskLifecycleNotifier handles top-level PR comments using numeric RE
   const task = baseTask({
     kind: "respond_pr_comment",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:pull_request_comment:123456789",
+    sourceId: "comment:example-org/repo-one:pull_request_comment:123456789",
     sourceReactionTargetId: "123456789",
     parentSourceKind: "pull_request",
-    parentSourceId: "pull_request:eladaviv/repo-one:21",
+    parentSourceId: "pull_request:example-org/repo-one:21",
     summary: "Top-level PR comment test"
   });
 
@@ -2622,7 +2622,7 @@ test("GitHubTaskLifecycleNotifier continues to post dispatch comment even if eye
         comments.push(input);
         return {
           id: 1,
-          url: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-1",
+          url: "https://github.com/example-org/repo-one/pull/21#issuecomment-1",
           body: input.body,
           createdAt: "2026-04-18T10:00:00.000Z",
           updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2633,7 +2633,7 @@ test("GitHubTaskLifecycleNotifier continues to post dispatch comment even if eye
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2646,10 +2646,10 @@ test("GitHubTaskLifecycleNotifier continues to post dispatch comment even if eye
   const task = baseTask({
     kind: "respond_pr_comment",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:pull_request_comment:926817920",
+    sourceId: "comment:example-org/repo-one:pull_request_comment:926817920",
     sourceReactionTargetId: "123456789",
     parentSourceKind: "pull_request",
-    parentSourceId: "pull_request:eladaviv/repo-one:21",
+    parentSourceId: "pull_request:example-org/repo-one:21",
     summary: "Regression test for reaction failure"
   });
 
@@ -2658,7 +2658,7 @@ test("GitHubTaskLifecycleNotifier continues to post dispatch comment even if eye
   });
 
   assert.equal(comments.length, 1);
-  assert.equal(comments[0].owner, "eladaviv");
+  assert.equal(comments[0].owner, "example-org");
   assert.equal(comments[0].name, "repo-one");
   assert.equal(comments[0].issueNumber, 21);
   assert.match(comments[0].body, /🤖 I noticed this task and I'm starting work on it: \*\*Regression test for reaction failure\*\*/);
@@ -2680,7 +2680,7 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments and completion reactio
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2693,12 +2693,12 @@ test("GitHubTaskLifecycleNotifier posts dispatch comments and completion reactio
   const task = baseTask({
     kind: "implement_plan",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:100",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/100",
+    sourceId: "pull_request:example-org/repo-one:100",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/100",
     summary: "Implement approved packet \"T1\" in wave 0",
     context: baseContext({
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/100",
-      issueUrl: "https://github.com/eladaviv/repo-one/issues/96"
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/100",
+      issueUrl: "https://github.com/example-org/repo-one/issues/96"
     })
   });
 
@@ -2727,7 +2727,7 @@ test("GitHubTaskLifecycleNotifier posts queued comments to issue parents when pr
         comments.push(input);
         return {
           id: 1,
-          url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-1",
+          url: "https://github.com/example-org/repo-one/issues/11#issuecomment-1",
           body: "",
           createdAt: "2026-04-18T10:00:00.000Z",
           updatedAt: "2026-04-18T10:00:00.000Z",
@@ -2738,7 +2738,7 @@ test("GitHubTaskLifecycleNotifier posts queued comments to issue parents when pr
     [
       {
         id: "repo-1",
-        owner: "eladaviv",
+        owner: "example-org",
         name: "repo-one",
         localPath: "repo-one",
         defaultBranch: "main",
@@ -2759,10 +2759,10 @@ test("GitHubTaskLifecycleNotifier posts queued comments to issue parents when pr
   const task = baseTask({
     kind: "respond_issue_comment",
     sourceKind: "comment",
-    sourceId: "comment:eladaviv/repo-one:issue_comment:5001",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    sourceId: "comment:example-org/repo-one:issue_comment:5001",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     parentSourceKind: "issue",
-    parentSourceId: "issue:eladaviv/repo-one:11",
+    parentSourceId: "issue:example-org/repo-one:11",
     summary: "Respond to issue comment"
   });
 
@@ -2777,16 +2777,16 @@ test("prompt rendering for sync_parent_branch_preflight includes preflight detai
   const task = baseTask({
     kind: "sync_parent_branch_preflight",
     sourceKind: "issue",
-    sourceId: "issue:eladaviv/repo-one:11",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/11",
+    sourceId: "issue:example-org/repo-one:11",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/11",
     context: baseContext({
-      issueUrl: "https://github.com/eladaviv/repo-one/issues/11",
+      issueUrl: "https://github.com/example-org/repo-one/issues/11",
       issueTitle: "Need a workflow",
       instruction: "Do not modify files or run git sync commands. Analyze the repo state and the preflight data below to determine if a parent branch sync is required before implementing the next packet wave.",
       preflight: {
-        workstreamId: "eladaviv/repo-one:issue:11",
-        repoKey: "eladaviv/repo-one",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11",
+        workstreamId: "example-org/repo-one:issue:11",
+        repoKey: "example-org/repo-one",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-11",
         parentPrNumber: 31,
         defaultBranch: "main",
         currentWaveIndex: 0,
@@ -2803,7 +2803,7 @@ test("prompt rendering for sync_parent_branch_preflight includes preflight detai
   assert.deepEqual(packet.preflight, task.context.preflight);
   assert.match(prompt, /Current packet wave: 0/);
   assert.match(prompt, /Next packet wave: 1/);
-  assert.match(prompt, /Parent integration branch: agent\/eladaviv-repo-one\/issue-11/);
+  assert.match(prompt, /Parent integration branch: agent\/example-org-repo-one\/issue-11/);
   assert.match(prompt, /Default branch: main/);
   assert.match(prompt, /Completed packet IDs: T1/);
   assert.match(prompt, /Pending future packet IDs: T2/);
@@ -2815,9 +2815,9 @@ test("prompt rendering for sync_parent_branch_preflight handles missing parentPr
     kind: "sync_parent_branch_preflight",
     context: baseContext({
       preflight: {
-        workstreamId: "eladaviv/repo-one:issue:11",
-        repoKey: "eladaviv/repo-one",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11",
+        workstreamId: "example-org/repo-one:issue:11",
+        repoKey: "example-org/repo-one",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-11",
         defaultBranch: "main",
         currentWaveIndex: 0,
         nextWaveIndex: 1,
@@ -2830,7 +2830,7 @@ test("prompt rendering for sync_parent_branch_preflight handles missing parentPr
   const packet = buildPromptPacket(task, task.context);
   const prompt = renderPrompt(task, packet);
 
-  assert.match(prompt, /Parent integration branch: agent\/eladaviv-repo-one\/issue-11/);
+  assert.match(prompt, /Parent integration branch: agent\/example-org-repo-one\/issue-11/);
   assert.doesNotMatch(prompt, /Parent PR: #undefined/);
   assert.doesNotMatch(prompt, /Parent PR: #0/);
   assert.ok(!prompt.includes("Parent PR:"), "Should not include Parent PR line when parentPrNumber is missing");
@@ -2840,15 +2840,15 @@ test("prompt rendering for sync_parent_branch includes preflight details and wor
   const task = baseTask({
     kind: "sync_parent_branch",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:31",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/31",
+    sourceId: "pull_request:example-org/repo-one:31",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/31",
     context: baseContext({
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/31",
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/31",
       instruction: "Resolve the requested parent branch sync for the packet workstream using the provided preflight context. Preserve the safety distinction between behind_default, diverged, and unknown/missing refs; leave the workspace clean after success or failure; do not advance the packet wave manually. The orchestrator remains responsible for remote publication handoff.",
       preflight: {
-        workstreamId: "eladaviv/repo-one:issue:11",
-        repoKey: "eladaviv/repo-one",
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11",
+        workstreamId: "example-org/repo-one:issue:11",
+        repoKey: "example-org/repo-one",
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-11",
         parentPrNumber: 31,
         defaultBranch: "main",
         currentWaveIndex: 0,
@@ -2866,7 +2866,7 @@ test("prompt rendering for sync_parent_branch includes preflight details and wor
   assert.equal(packet.executionPermission, "workspace-write");
   assert.match(prompt, /Current packet wave: 0/);
   assert.match(prompt, /Next packet wave: 1/);
-  assert.match(prompt, /Parent integration branch: agent\/eladaviv-repo-one\/issue-11/);
+  assert.match(prompt, /Parent integration branch: agent\/example-org-repo-one\/issue-11/);
   assert.match(prompt, /Default branch: main/);
   assert.match(prompt, /Completed packet IDs: T1/);
   assert.match(prompt, /Pending future packet IDs: T2/);
@@ -2894,23 +2894,23 @@ function baseTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
   const executionPolicy = workflowRegistry.resolveTaskExecutionPolicy(kind);
 
   return {
-    id: "task:write_plan:pull_request:eladaviv/repo-one:21",
+    id: "task:write_plan:pull_request:example-org/repo-one:21",
     kind,
     status: "pending",
     executionPermission: executionPolicy.executionPermission,
     handoffPolicy: executionPolicy.handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:21",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/21",
+    sourceId: "pull_request:example-org/repo-one:21",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/21",
     relevant: true,
     reason: "PR is ready.",
     summary: "Write a plan",
-    workstreamId: "eladaviv/repo-one:issue:21",
+    workstreamId: "example-org/repo-one:issue:21",
     context: baseContext({
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21"
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/21"
     }),
     createdAt: "2026-04-18T09:00:00.000Z",
     updatedAt: "2026-04-18T09:00:00.000Z",
@@ -2920,8 +2920,8 @@ function baseTask(overrides: Partial<TaskRecord> = {}): TaskRecord {
 
 function baseContext(overrides: Partial<BuiltContext> = {}): BuiltContext {
   return {
-    taskId: "task:write_plan:pull_request:eladaviv/repo-one:21",
-    repoIdentifier: "eladaviv/repo-one",
+    taskId: "task:write_plan:pull_request:example-org/repo-one:21",
+    repoIdentifier: "example-org/repo-one",
     localRepoPath: "/tmp/code-root/repo-one",
     labels: ["agent-in-progress"],
     instruction:

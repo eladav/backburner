@@ -11,8 +11,8 @@ import {
 } from "./schemas.js";
 import type {
   AgentConfig,
-  AogControllerCapability,
-  AogSensorCapability,
+  BackburnerControllerCapability,
+  BackburnerSensorCapability,
   GitHubBrokerConfig,
   McpDependency,
   NormalizedCapabilities,
@@ -44,8 +44,8 @@ export interface LoadedConfig {
   prompts?: PromptsConfigFile;
   mcps: McpDependency[];
   capabilities: {
-    sensors: AogSensorCapability[];
-    controllers: AogControllerCapability[];
+    sensors: BackburnerSensorCapability[];
+    controllers: BackburnerControllerCapability[];
   };
   maxConcurrentAgents: number;
 }
@@ -175,7 +175,7 @@ export async function loadCapabilitiesConfig(
 
   const config = parseConfig(CapabilitiesConfigFileSchema, raw, capabilitiesFile);
 
-  const sensors: AogSensorCapability[] = Object.entries(config.sensors).map(
+  const sensors: BackburnerSensorCapability[] = Object.entries(config.sensors).map(
     ([name, sensor]) => ({
       name,
       uses: sensor.uses,
@@ -185,7 +185,7 @@ export async function loadCapabilitiesConfig(
     })
   );
 
-  const controllers: AogControllerCapability[] = Object.entries(config.controllers).map(
+  const controllers: BackburnerControllerCapability[] = Object.entries(config.controllers).map(
     ([name, controller]) => ({
       name,
       uses: controller.uses,

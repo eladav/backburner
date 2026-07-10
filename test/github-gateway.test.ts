@@ -6,7 +6,7 @@ import type { CommandRunner, CommandRunnerOptions, CommandRunnerResult } from ".
 test("GhCliGitHubGateway creates a PR without relying on gh pr create --json and resolves it by branch", async () => {
   const runner = new RecordingCommandRunner([
     {
-      stdout: "https://github.com/eladav/repo/pull/42\n",
+      stdout: "https://github.com/example-org/repo/pull/42\n",
       stderr: "",
       exitCode: 0
     },
@@ -17,13 +17,13 @@ test("GhCliGitHubGateway creates a PR without relying on gh pr create --json and
           number: 42,
           title: "agent: plan for issue #2 - Test",
           body: "Body",
-          url: "https://github.com/eladav/repo/pull/42",
+          url: "https://github.com/example-org/repo/pull/42",
           state: "OPEN",
           createdAt: "2026-04-19T08:00:00.000Z",
           updatedAt: "2026-04-19T08:00:00.000Z",
-          author: { login: "eladav" },
+          author: { login: "example-org" },
           labels: [],
-          headRefName: "agent/eladav-repo/issue-2",
+          headRefName: "agent/example-org-repo/issue-2",
           baseRefName: "main",
           isDraft: false
         }
@@ -35,9 +35,9 @@ test("GhCliGitHubGateway creates a PR without relying on gh pr create --json and
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   const result = await gateway.createPullRequest({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
-    headBranch: "agent/eladav-repo/issue-2",
+    headBranch: "agent/example-org-repo/issue-2",
     baseBranch: "main",
     title: "agent: plan for issue #2 - Test",
     body: "Body"
@@ -45,13 +45,13 @@ test("GhCliGitHubGateway creates a PR without relying on gh pr create --json and
 
   assert.equal(runner.calls[0]?.args.includes("--json"), false);
   assert.equal(result.number, 42);
-  assert.equal(result.headRefName, "agent/eladav-repo/issue-2");
+  assert.equal(result.headRefName, "agent/example-org-repo/issue-2");
 });
 
 test("GhCliGitHubGateway falls back to the created PR URL when lookup does not immediately resolve", async () => {
   const runner = new RecordingCommandRunner([
     {
-      stdout: "https://github.com/eladav/repo/pull/43\n",
+      stdout: "https://github.com/example-org/repo/pull/43\n",
       stderr: "",
       exitCode: 0
     },
@@ -64,17 +64,17 @@ test("GhCliGitHubGateway falls back to the created PR URL when lookup does not i
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   const result = await gateway.createPullRequest({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
-    headBranch: "agent/eladav-repo/issue-3",
+    headBranch: "agent/example-org-repo/issue-3",
     baseBranch: "main",
     title: "agent: plan for issue #3 - Test",
     body: "Body"
   });
 
-  assert.equal(result.url, "https://github.com/eladav/repo/pull/43");
+  assert.equal(result.url, "https://github.com/example-org/repo/pull/43");
   assert.equal(result.number, 43);
-  assert.equal(result.headRefName, "agent/eladav-repo/issue-3");
+  assert.equal(result.headRefName, "agent/example-org-repo/issue-3");
 });
 
 test("GhCliGitHubGateway submits a structured pull request review", async () => {
@@ -82,11 +82,11 @@ test("GhCliGitHubGateway submits a structured pull request review", async () => 
     {
       stdout: JSON.stringify({
         id: 99,
-        html_url: "https://github.com/eladav/repo/pull/43#pullrequestreview-99",
+        html_url: "https://github.com/example-org/repo/pull/43#pullrequestreview-99",
         body: "🤖 Looks good.",
         state: "APPROVED",
         submitted_at: "2026-04-19T09:00:00.000Z",
-        user: { login: "eladav" }
+        user: { login: "example-org" }
       }),
       stderr: "",
       exitCode: 0
@@ -95,7 +95,7 @@ test("GhCliGitHubGateway submits a structured pull request review", async () => 
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   const result = await gateway.submitPullRequestReview({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
     pullRequestNumber: 43,
     event: "APPROVE",
@@ -129,11 +129,11 @@ test("GhCliGitHubGateway submits a structured pull request review with extended 
     {
       stdout: JSON.stringify({
         id: 100,
-        html_url: "https://github.com/eladav/repo/pull/43#pullrequestreview-100",
+        html_url: "https://github.com/example-org/repo/pull/43#pullrequestreview-100",
         body: "🤖 Range feedback.",
         state: "COMMENT",
         submitted_at: "2026-04-19T10:00:00.000Z",
-        user: { login: "eladav" }
+        user: { login: "example-org" }
       }),
       stderr: "",
       exitCode: 0
@@ -142,7 +142,7 @@ test("GhCliGitHubGateway submits a structured pull request review with extended 
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   await gateway.submitPullRequestReview({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
     pullRequestNumber: 43,
     event: "COMMENT",
@@ -177,7 +177,7 @@ test("GhCliGitHubGateway reacts to inline PR review comments through the pulls e
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   await gateway.addReaction({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
     commentId: "6001",
     commentKind: "pull_request_review_comment",
@@ -188,7 +188,7 @@ test("GhCliGitHubGateway reacts to inline PR review comments through the pulls e
     "api",
     "-X",
     "POST",
-    "/repos/eladav/repo/pulls/comments/6001/reactions",
+    "/repos/example-org/repo/pulls/comments/6001/reactions",
     "-f",
     "content=eyes"
   ]);
@@ -205,7 +205,7 @@ test("GhCliGitHubGateway reacts to issue and PR thread comments through the issu
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
   await gateway.addReaction({
-    owner: "eladav",
+    owner: "example-org",
     name: "repo",
     commentId: "5001",
     commentKind: "issue_comment",
@@ -216,7 +216,7 @@ test("GhCliGitHubGateway reacts to issue and PR thread comments through the issu
     "api",
     "-X",
     "POST",
-    "/repos/eladav/repo/issues/comments/5001/reactions",
+    "/repos/example-org/repo/issues/comments/5001/reactions",
     "-f",
     "content=+1"
   ]);
@@ -228,7 +228,7 @@ test("GhCliGitHubGateway fetches PR top-level comments from the issues REST endp
       stdout: JSON.stringify([
         {
           id: 12345,
-          html_url: "https://github.com/eladav/repo/pull/43#issuecomment-12345",
+          html_url: "https://github.com/example-org/repo/pull/43#issuecomment-12345",
           body: "Top-level comment",
           created_at: "2026-05-03T10:00:00Z",
           updated_at: "2026-05-03T10:00:00Z",
@@ -241,13 +241,13 @@ test("GhCliGitHubGateway fetches PR top-level comments from the issues REST endp
   ]);
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
-  const comments = await gateway.listPullRequestComments("eladav", "repo", 43);
+  const comments = await gateway.listPullRequestComments("example-org", "repo", 43);
 
   assert.equal(runner.calls[0]?.args[0], "api");
-  assert.ok(runner.calls[0]?.args.includes("repos/eladav/repo/issues/43/comments?per_page=100"));
+  assert.ok(runner.calls[0]?.args.includes("repos/example-org/repo/issues/43/comments?per_page=100"));
   assert.equal(comments.length, 1);
   assert.equal(comments[0]?.id, "12345");
-  assert.equal(comments[0]?.url, "https://github.com/eladav/repo/pull/43#issuecomment-12345");
+  assert.equal(comments[0]?.url, "https://github.com/example-org/repo/pull/43#issuecomment-12345");
 });
 
 test("GhCliGitHubGateway lists pull request changed files and parses patches", async () => {
@@ -269,10 +269,10 @@ test("GhCliGitHubGateway lists pull request changed files and parses patches", a
   ]);
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
-  const files = await gateway.listPullRequestChangedFiles("eladav", "repo", 43);
+  const files = await gateway.listPullRequestChangedFiles("example-org", "repo", 43);
 
   assert.equal(runner.calls[0]?.args[0], "api");
-  assert.ok(runner.calls[0]?.args.includes("repos/eladav/repo/pulls/43/files?per_page=100"));
+  assert.ok(runner.calls[0]?.args.includes("repos/example-org/repo/pulls/43/files?per_page=100"));
   assert.equal(files.length, 2);
 
   assert.equal(files[0]?.path, "src/app.ts");
@@ -304,7 +304,7 @@ test("GhCliGitHubGateway parses patches with multiple hunks", async () => {
   ]);
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
-  const files = await gateway.listPullRequestChangedFiles("eladav", "repo", 43);
+  const files = await gateway.listPullRequestChangedFiles("example-org", "repo", 43);
 
   assert.equal(files.length, 1);
   assert.equal(files[0]?.path, "src/multi.ts");
@@ -329,7 +329,7 @@ test("GhCliGitHubGateway parses context lines as commentable", async () => {
   ]);
   const gateway = new UnsecuredGhCliGitHubGateway(runner);
 
-  const files = await gateway.listPullRequestChangedFiles("eladav", "repo", 43);
+  const files = await gateway.listPullRequestChangedFiles("example-org", "repo", 43);
 
   assert.equal(files.length, 1);
   const file = files[0]!;

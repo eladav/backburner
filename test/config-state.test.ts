@@ -16,7 +16,7 @@ test("loadConfig validates repos.json with useful errors", async () => {
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
@@ -67,11 +67,11 @@ test("loadConfig defaults planBreakdownNeeded label", async () => {
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: "repo-1",
             enabled: true,
@@ -110,11 +110,11 @@ test("loadConfig accepts custom agentSyncParentBranch label", async () => {
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: "repo-1",
             enabled: true,
@@ -153,11 +153,11 @@ test("loadConfig accepts custom planBreakdownNeeded label", async () => {
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: "repo-1",
             enabled: true,
@@ -266,8 +266,8 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
     const store = new StateStore(tempDir);
     await store.writeWorkstreamState([
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: {
           type: "issue",
           number: 17
@@ -281,7 +281,7 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
           }
         ],
         activePrNumber: 23,
-        activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+        activeWorktreeId: "worktree:example-org/repo-one:issue:17",
         phase: "planning",
         attention: "idle",
         status: "open",
@@ -295,8 +295,8 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
       '{\n' +
         '  "workstreams": [\n' +
         '    {\n' +
-        '      "id": "eladaviv/repo-one:issue:17",\n' +
-        '      "repoKey": "eladaviv/repo-one",\n' +
+        '      "id": "example-org/repo-one:issue:17",\n' +
+        '      "repoKey": "example-org/repo-one",\n' +
         '      "origin": {\n' +
         '        "type": "issue",\n' +
         '        "number": 17\n' +
@@ -310,7 +310,7 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
         '        }\n' +
         '      ],\n' +
         '      "activePrNumber": 23,\n' +
-        '      "activeWorktreeId": "worktree:eladaviv/repo-one:issue:17",\n' +
+        '      "activeWorktreeId": "worktree:example-org/repo-one:issue:17",\n' +
         '      "phase": "planning",\n' +
         '      "attention": "idle",\n' +
         '      "status": "open",\n' +
@@ -323,8 +323,8 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
     const state = await store.load();
     assert.deepEqual(state.workstreams, [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: {
           type: "issue",
           number: 17
@@ -338,7 +338,7 @@ test("StateStore round-trips workstreams as readable JSON", async () => {
           }
         ],
         activePrNumber: 23,
-        activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+        activeWorktreeId: "worktree:example-org/repo-one:issue:17",
         phase: "planning",
         attention: "idle",
         status: "open",
@@ -357,13 +357,13 @@ test("StateStore round-trips attention records as readable JSON", async () => {
     const store = new StateStore(tempDir);
     await store.writeAttentionState([
       {
-        workstreamId: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        workstreamId: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         needsAction: true,
         reasons: ["plan_approved", "pr_comment_added"],
         issueNumber: 17,
         pullRequestNumbers: [23],
-        commentIds: ["comment:eladaviv/repo-one:pull_request_comment:6001"],
+        commentIds: ["comment:example-org/repo-one:pull_request_comment:6001"],
         retryTargetCommentId: "9999",
         lastObservedAt: "2026-04-20T10:00:00.000Z",
         currentPullRequestHeadSha: "head-sha-23",
@@ -378,8 +378,8 @@ test("StateStore round-trips attention records as readable JSON", async () => {
       '{\n' +
         '  "attention": [\n' +
         '    {\n' +
-        '      "workstreamId": "eladaviv/repo-one:issue:17",\n' +
-        '      "repoKey": "eladaviv/repo-one",\n' +
+        '      "workstreamId": "example-org/repo-one:issue:17",\n' +
+        '      "repoKey": "example-org/repo-one",\n' +
         '      "needsAction": true,\n' +
         '      "reasons": [\n' +
         '        "plan_approved",\n' +
@@ -390,7 +390,7 @@ test("StateStore round-trips attention records as readable JSON", async () => {
         '        23\n' +
         '      ],\n' +
         '      "commentIds": [\n' +
-        '        "comment:eladaviv/repo-one:pull_request_comment:6001"\n' +
+        '        "comment:example-org/repo-one:pull_request_comment:6001"\n' +
         '      ],\n' +
         '      "retryTargetCommentId": "9999",\n' +
         '      "lastObservedAt": "2026-04-20T10:00:00.000Z",\n' +
@@ -407,13 +407,13 @@ test("StateStore round-trips attention records as readable JSON", async () => {
     const state = await store.load();
     assert.deepEqual(state.attention, [
       {
-        workstreamId: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        workstreamId: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         needsAction: true,
         reasons: ["plan_approved", "pr_comment_added"],
         issueNumber: 17,
         pullRequestNumbers: [23],
-        commentIds: ["comment:eladaviv/repo-one:pull_request_comment:6001"],
+        commentIds: ["comment:example-org/repo-one:pull_request_comment:6001"],
         retryTargetCommentId: "9999",
         lastObservedAt: "2026-04-20T10:00:00.000Z",
         currentPullRequestHeadSha: "head-sha-23",
@@ -474,7 +474,7 @@ test("loadConfig accepts optional model in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -510,7 +510,7 @@ test("loadConfig accepts missing model in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -545,7 +545,7 @@ test("loadConfig rejects empty model string in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -583,7 +583,7 @@ test("loadConfig rejects whitespace-only model string in agents.json", async () 
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -621,7 +621,7 @@ test("loadConfig rejects null model in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -659,7 +659,7 @@ test("loadConfig rejects unknown provider in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -696,7 +696,7 @@ test("loadConfig accepts Gemini agent and broker config", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -741,7 +741,7 @@ test("loadConfig accepts Antigravity agent and broker defaults", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -780,7 +780,7 @@ test("loadConfig accepts valid OpenCode agent with required model", async () => 
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -817,7 +817,7 @@ test("loadConfig rejects OpenCode agent with missing model", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -854,7 +854,7 @@ test("loadConfig rejects OpenCode agent with whitespace-only model", async () =>
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -892,7 +892,7 @@ test("loadConfig accepts root opencode.githubBroker config", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -925,7 +925,7 @@ test("loadConfig uses default opencode.githubBroker config when omitted", async 
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -952,7 +952,7 @@ test("loadConfig rejects invalid modelClass in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -989,7 +989,7 @@ test("loadConfig rejects invalid roles in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -1026,7 +1026,7 @@ test("loadConfig rejects missing command in agents.json", async () => {
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -1063,7 +1063,7 @@ test("loadConfig rejects invalid broker toolAllowList in agents.json", async () 
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -1097,11 +1097,11 @@ test("loadConfig rejects invalid repo localPath (absolute) in repos.json", async
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: "/tmp/repo-1",
             enabled: true,
@@ -1139,11 +1139,11 @@ test("loadConfig rejects invalid repo localPath (traversal) in repos.json", asyn
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: "../outside",
             enabled: true,
@@ -1181,11 +1181,11 @@ test("loadConfig rejects repo localPath traversal after separator normalization"
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["eladav"],
+        allowedUsers: ["example-org"],
         repos: [
           {
             id: "repo-1",
-            owner: "eladav",
+            owner: "example-org",
             name: "repo-1",
             localPath: ["repo", "..", "..", "outside"].join(path.sep),
             enabled: true,
@@ -1235,11 +1235,11 @@ test("loadConfig rejects Windows-shaped repo localPath traversal and absolute pa
       await writeFile(
         path.join(managementDir, "repos.json"),
         JSON.stringify({
-          allowedUsers: ["eladav"],
+          allowedUsers: ["example-org"],
           repos: [
             {
               id: "repo-1",
-              owner: "eladav",
+              owner: "example-org",
               name: "repo-1",
               localPath,
               enabled: true,
@@ -1278,11 +1278,11 @@ test("loadConfig normalizes (trims) string fields", async () => {
     await writeFile(
       path.join(managementDir, "repos.json"),
       JSON.stringify({
-        allowedUsers: ["  eladav  "],
+        allowedUsers: ["  example-org  "],
         repos: [
           {
             id: "  repo-1  ",
-            owner: "  eladav  ",
+            owner: "  example-org  ",
             name: "  repo-one  ",
             localPath: "  repo-one  ",
             enabled: true,
@@ -1317,9 +1317,9 @@ test("loadConfig normalizes (trims) string fields", async () => {
     const config = await loadConfig(managementDir);
     assert.ok(config.repos[0]);
     assert.ok(config.agents[0]);
-    assert.strictEqual(config.allowedUsers[0], "eladav");
+    assert.strictEqual(config.allowedUsers[0], "example-org");
     assert.strictEqual(config.repos[0].id, "repo-1");
-    assert.strictEqual(config.repos[0].owner, "eladav");
+    assert.strictEqual(config.repos[0].owner, "example-org");
     assert.strictEqual(config.repos[0].name, "repo-one");
     assert.strictEqual(config.repos[0].localPath, "repo-one");
     assert.strictEqual(config.repos[0].labels.agentInProgress, "in-progress");
@@ -1340,7 +1340,7 @@ test("loadConfig rejects invalid prompt profile path (absolute) in prompts.json"
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(
@@ -1377,7 +1377,7 @@ test("loadConfig rejects invalid prompt profile path (traversal) in prompts.json
     await mkdir(managementDir, { recursive: true });
     await writeFile(
       path.join(managementDir, "repos.json"),
-      JSON.stringify({ allowedUsers: ["eladav"], repos: [] }),
+      JSON.stringify({ allowedUsers: ["example-org"], repos: [] }),
       "utf8"
     );
     await writeFile(

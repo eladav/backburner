@@ -225,15 +225,15 @@ function baseTask(kind: TaskKind): TaskRecord {
     handoffPolicy: workflowRegistry.resolveTaskExecutionPolicy(kind).handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: workflowRegistry.getDefinition(kind).sourceKinds[0]!,
     sourceId: "source-1",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/1",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/1",
     relevant: true,
     reason: "test",
     summary: "test task",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       labels: [],
       instruction: "test"
     },

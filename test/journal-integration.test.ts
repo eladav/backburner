@@ -111,7 +111,7 @@ function prFixture(overrides: Partial<NormalizedPullRequest> = {}): NormalizedPu
 const noopLogger = { info: () => undefined, warn: () => undefined };
 
 async function setupTmp() {
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-journal-integ-"));
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-journal-integ-"));
   const managementDir = path.join(tmpDir, "management");
   const stateDir = path.join(tmpDir, "state");
   const codeRoot = path.join(tmpDir, "code");

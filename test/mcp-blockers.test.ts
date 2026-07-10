@@ -23,8 +23,8 @@ import type { BlockedCapability } from "../src/capabilities/types.js";
 
 const mockWorkstream = {
   id: "ws-1",
-  owner: "eladav",
-  repo: "agents-over-github",
+  owner: "example-org",
+  repo: "example-repo",
   issueNumber: 310,
   phase: "implementing",
   status: "open",
@@ -36,7 +36,7 @@ const mockTask = {
   id: "task-1",
   workstreamId: "ws-1",
   repoId: "repo-1",
-  repoSlug: "eladav/agents-over-github",
+  repoSlug: "example-org/example-repo",
   sourceKind: "issue",
   sourceId: "issue-1",
   kind: "implement_plan",
@@ -544,9 +544,9 @@ test("runDispatchWithMergePrepLifecycle surfaces first-time pre-dispatch MCP blo
   const task = {
     ...mockTask,
     sourceKind: "issue",
-    sourceId: "issue:eladav/agents-over-github:310",
-    sourceUrl: "https://github.com/eladav/agents-over-github/issues/310",
-    repoName: "agents-over-github",
+    sourceId: "issue:example-org/example-repo:310",
+    sourceUrl: "https://github.com/example-org/example-repo/issues/310",
+    repoName: "example-repo",
     executionPermission: "workspace-write",
     handoffPolicy: {
       expectsPushableHandoff: true,
@@ -573,7 +573,7 @@ test("runDispatchWithMergePrepLifecycle surfaces first-time pre-dispatch MCP blo
     tasks: [task],
     executions: [],
     agents: [{ id: "mock-agent", provider: "codex", modelClass: "cheap", roles: ["implementation"], command: "node", enabled: true }],
-    enabledRepos: [{ id: "repo-1", owner: "eladav", name: "agents-over-github" }],
+    enabledRepos: [{ id: "repo-1", owner: "example-org", name: "example-repo" }],
     codeRoot: "/tmp/code",
     logDir: "/tmp/log",
     stateStore: mockStateStore,
@@ -657,9 +657,9 @@ test("runDispatchWithMergePrepLifecycle classifies mid-task MCP action_required 
   const task = {
     ...mockTask,
     sourceKind: "issue",
-    sourceId: "issue:eladav/agents-over-github:310",
-    sourceUrl: "https://github.com/eladav/agents-over-github/issues/310",
-    repoName: "agents-over-github",
+    sourceId: "issue:example-org/example-repo:310",
+    sourceUrl: "https://github.com/example-org/example-repo/issues/310",
+    repoName: "example-repo",
     executionPermission: "workspace-write",
     handoffPolicy: {
       expectsPushableHandoff: true,
@@ -668,7 +668,7 @@ test("runDispatchWithMergePrepLifecycle classifies mid-task MCP action_required 
     },
     context: {
       recoveryNeeded: false,
-      localRepoPath: "/tmp/code/agents-over-github",
+      localRepoPath: "/tmp/code/example-repo",
       branchName: "agent/issue-310"
     }
   } as any as TaskRecord;
@@ -701,7 +701,7 @@ test("runDispatchWithMergePrepLifecycle classifies mid-task MCP action_required 
     repoSlug: task.repoSlug,
     agentId: "mock-agent",
     agentProvider: "codex",
-    command: { executable: "mock", args: [], cwd: "/tmp/code/agents-over-github", timeoutMs: 1000 },
+    command: { executable: "mock", args: [], cwd: "/tmp/code/example-repo", timeoutMs: 1000 },
     promptArtifactPath: "/tmp/log/prompt.md",
     stdoutArtifactPath: "/tmp/log/stdout.txt",
     stderrArtifactPath: "/tmp/log/stderr.txt",
@@ -729,7 +729,7 @@ test("runDispatchWithMergePrepLifecycle classifies mid-task MCP action_required 
     tasks: [task],
     executions: [],
     agents: [{ id: "mock-agent", provider: "codex", modelClass: "cheap", roles: ["implementation"], command: "node", enabled: true }],
-    enabledRepos: [{ id: "repo-1", owner: "eladav", name: "agents-over-github" }],
+    enabledRepos: [{ id: "repo-1", owner: "example-org", name: "example-repo" }],
     codeRoot: "/tmp/code",
     logDir: "/tmp/log",
     stateStore,
@@ -776,9 +776,9 @@ test("runDispatchWithMergePrepLifecycle classifies mid-task MCP action_required 
       {
         id: "wt-1",
         repoId: "repo-1",
-        repoSlug: "eladav/agents-over-github",
-        repoName: "agents-over-github",
-        path: "/tmp/code/agents-over-github",
+        repoSlug: "example-org/example-repo",
+        repoName: "example-repo",
+        path: "/tmp/code/example-repo",
         branchName: "agent/issue-310",
         status: "implementing",
         packet: {
@@ -823,11 +823,11 @@ test("runDispatchWithMergePrepLifecycle rehydrates persisted MCP skip exclusions
     id: "task-review",
     workstreamId: "ws-1",
     repoId: "repo-1",
-    repoName: "agents-over-github",
-    repoSlug: "eladav/agents-over-github",
+    repoName: "example-repo",
+    repoSlug: "example-org/example-repo",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladav/agents-over-github:311",
-    sourceUrl: "https://github.com/eladav/agents-over-github/pull/311",
+    sourceId: "pull_request:example-org/example-repo:311",
+    sourceUrl: "https://github.com/example-org/example-repo/pull/311",
     kind: "review_pr",
     status: "pending",
     executionPermission: "read-only",
@@ -891,7 +891,7 @@ test("runDispatchWithMergePrepLifecycle rehydrates persisted MCP skip exclusions
     tasks: [task],
     executions: [],
     agents: [{ id: "reviewer", provider: "codex", modelClass: "strong", roles: ["review"], command: "node", enabled: true }],
-    enabledRepos: [{ id: "repo-1", owner: "eladav", name: "agents-over-github" }],
+    enabledRepos: [{ id: "repo-1", owner: "example-org", name: "example-repo" }],
     codeRoot: "/tmp/code",
     logDir: "/tmp/log",
     stateStore,
@@ -1015,7 +1015,7 @@ test("runDispatchWithMergePrepLifecycle prevents duplicate comments and correctl
     id: "task-resumed-and-failed",
     workstreamId: "ws-1",
     repoId: "repo-1",
-    repoSlug: "eladav/agents-over-github",
+    repoSlug: "example-org/example-repo",
     kind: "implement_plan",
     status: "failed", // starts failed so Phase 2 resume picks it up
     relevant: true,
@@ -1031,8 +1031,8 @@ test("runDispatchWithMergePrepLifecycle prevents duplicate comments and correctl
   // A blocker that starts as waiting_for_user but is cleared this cycle
   const mockWorkstreamWithClearedBlocker = {
     id: "ws-1",
-    owner: "eladav",
-    repo: "agents-over-github",
+    owner: "example-org",
+    repo: "example-repo",
     issueNumber: 310,
     phase: "implementing",
     status: "open",

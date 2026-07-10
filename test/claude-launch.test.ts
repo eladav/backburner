@@ -173,7 +173,7 @@ test("buildClaudeCliArgs includes --session-id and --name when planned session o
   const args = buildClaudeCliArgs({
     permissionMode: "dontAsk",
     plannedSessionId: "uuid-1234",
-    sessionName: "aog-session-name"
+    sessionName: "backburner-session-name"
   });
   assert.deepEqual(args, [
     "-p",
@@ -182,7 +182,7 @@ test("buildClaudeCliArgs includes --session-id and --name when planned session o
     "--session-id",
     "uuid-1234",
     "--name",
-    "aog-session-name"
+    "backburner-session-name"
   ]);
 });
 

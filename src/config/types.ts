@@ -13,8 +13,8 @@ import type {
   CapabilityApproval,
   CapabilityScope,
   CapabilityCadence,
-  AogSensorCapability,
-  AogControllerCapability,
+  BackburnerSensorCapability,
+  BackburnerControllerCapability,
   CapabilityConfig
 } from "./schemas.js";
 
@@ -33,8 +33,8 @@ export type {
   CapabilityApproval,
   CapabilityScope,
   CapabilityCadence,
-  AogSensorCapability,
-  AogControllerCapability,
+  BackburnerSensorCapability,
+  BackburnerControllerCapability,
   CapabilityConfig
 };
 
@@ -44,8 +44,8 @@ export interface McpDependency {
 }
 
 export interface NormalizedCapabilities {
-  sensors: AogSensorCapability[];
-  controllers: AogControllerCapability[];
+  sensors: BackburnerSensorCapability[];
+  controllers: BackburnerControllerCapability[];
 }
 
 // Legacy names for backward compatibility if needed, though plan said to collapse them

@@ -19,7 +19,7 @@ import type { WorkstreamRecord, WorktreeRecord } from "../src/state/types.js";
 import type { TaskRecord } from "../src/tasks/types.js";
 
 async function withTmpDir(fn: (dir: string) => Promise<void>): Promise<void> {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "aog-journal-test-"));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-journal-test-"));
   try {
     await fn(dir);
   } finally {
@@ -266,8 +266,8 @@ test("JournalService.recordBlocked sets severity warning", async () => {
 
 test("resolveRepoActionState reports failed Product Discovery before waiting for approval", () => {
   const workstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [],
@@ -281,7 +281,7 @@ test("resolveRepoActionState reports failed Product Discovery before waiting for
     }
   };
   const failedTask: TaskRecord = {
-    id: "task:product_discovery:issue:eladaviv/repo-one:17",
+    id: "task:product_discovery:issue:example-org/repo-one:17",
     kind: "product_discovery",
     status: "failed",
     executionPermission: "read-only",
@@ -292,18 +292,18 @@ test("resolveRepoActionState reports failed Product Discovery before waiting for
     },
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "issue",
-    sourceId: "issue:eladaviv/repo-one:17",
-    sourceUrl: "https://github.com/eladaviv/repo-one/issues/17",
+    sourceId: "issue:example-org/repo-one:17",
+    sourceUrl: "https://github.com/example-org/repo-one/issues/17",
     relevant: true,
     reason: "New issue needs Product Discovery.",
     summary: "Product Discovery for issue #17",
     workstreamId: workstream.id,
     workflowPhase: "product_discovery",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
-      issueUrl: "https://github.com/eladaviv/repo-one/issues/17",
+      repoIdentifier: "example-org/repo-one",
+      issueUrl: "https://github.com/example-org/repo-one/issues/17",
       labels: [],
       instruction: "Analyze product direction."
     },
@@ -313,7 +313,7 @@ test("resolveRepoActionState reports failed Product Discovery before waiting for
 
   const state = resolveRepoActionState({
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     syncRecord: undefined,
     tasks: [failedTask],
     workstreams: [workstream],

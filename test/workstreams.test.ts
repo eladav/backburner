@@ -16,8 +16,8 @@ test("deriveWorkstreams creates one issue-originated workstream for a relevant n
 
   assert.deepEqual(workstreams, [
     {
-      id: "eladaviv/repo-one:issue:17",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:17",
+      repoKey: "example-org/repo-one",
       origin: {
         type: "issue",
         number: 17
@@ -44,28 +44,28 @@ test("deriveWorkstreams lets an issue-originated workstream accumulate multiple 
     currentPullRequests: [
       basePullRequest({
         number: 21,
-        headBranch: "agent/eladaviv-repo-one/issue-17",
+        headBranch: "agent/example-org-repo-one/issue-17",
         labels: ["agent-in-progress"]
       }),
       basePullRequest({
         number: 22,
-        headBranch: "agent/eladaviv-repo-one/issue-17-followup",
+        headBranch: "agent/example-org-repo-one/issue-17-followup",
         labels: ["agent-plan-approved"]
       })
     ],
     worktrees: [
       baseWorktree({
-        id: "worktree:eladaviv/repo-one:issue:17",
+        id: "worktree:example-org/repo-one:issue:17",
         issueId: issue.id,
         issueNumber: issue.number,
-        branchName: "agent/eladaviv-repo-one/issue-17",
+        branchName: "agent/example-org-repo-one/issue-17",
         prNumber: 21
       }),
       baseWorktree({
-        id: "worktree:eladaviv/repo-one:issue:17:followup",
+        id: "worktree:example-org/repo-one:issue:17:followup",
         issueId: issue.id,
         issueNumber: issue.number,
-        branchName: "agent/eladaviv-repo-one/issue-17-followup",
+        branchName: "agent/example-org-repo-one/issue-17-followup",
         prNumber: 22,
         status: "awaiting_plan_approval",
         updatedAt: "2026-04-20T10:05:00.000Z"
@@ -80,7 +80,7 @@ test("deriveWorkstreams lets an issue-originated workstream accumulate multiple 
     { number: 22, status: "open", role: "implementation" }
   ]);
   assert.equal(workstreams[0]?.activePrNumber, 22);
-  assert.equal(workstreams[0]?.activeWorktreeId, "worktree:eladaviv/repo-one:issue:17:followup");
+  assert.equal(workstreams[0]?.activeWorktreeId, "worktree:example-org/repo-one:issue:17:followup");
   assert.equal(workstreams[0]?.phase, "implementation_ready");
 });
 
@@ -95,8 +95,8 @@ test("deriveWorkstreams creates a PR-originated workstream for an unrelated PR",
 
   assert.deepEqual(workstreams, [
     {
-      id: "eladaviv/repo-one:pr:23",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:pr:23",
+      repoKey: "example-org/repo-one",
       origin: {
         type: "pr",
         number: 23
@@ -139,9 +139,9 @@ test("deriveWorkstreams suppresses standalone workstream for matched packet PR",
   });
 
   // PR 100 should be a workstream
-  assert.ok(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:100"));
+  assert.ok(workstreams.find(ws => ws.id === "example-org/repo-one:pr:100"));
   // PR 101 should NOT be a workstream
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("deriveWorkstreams preserves orphan non-default PR behavior", () => {
@@ -161,7 +161,7 @@ test("deriveWorkstreams preserves orphan non-default PR behavior", () => {
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:pr:102");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:pr:102");
 });
 
 test("deriveWorkstreams suppresses previous stale PR workstream for now-matched packet PR", () => {
@@ -180,8 +180,8 @@ test("deriveWorkstreams suppresses previous stale PR workstream for now-matched 
   });
 
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:pr:101",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:pr:101",
+    repoKey: "example-org/repo-one",
     origin: { type: "pr", number: 101 },
     linkedPrs: [{ number: 101, status: "open" }],
     activePrNumber: 101,
@@ -199,8 +199,8 @@ test("deriveWorkstreams suppresses previous stale PR workstream for now-matched 
     previousWorkstreams: [previousWorkstream]
   });
 
-  assert.ok(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:100"));
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.ok(workstreams.find(ws => ws.id === "example-org/repo-one:pr:100"));
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("deriveWorkstreams packet matching is repo-scoped", () => {
@@ -210,8 +210,8 @@ test("deriveWorkstreams packet matching is repo-scoped", () => {
   const parentPrA = basePullRequest({
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
-    repoKey: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
+    repoKey: "example-org/repo-one",
     number: 100,
     headBranch: "workstream/shared",
     labels: ["agent-review"]
@@ -220,8 +220,8 @@ test("deriveWorkstreams packet matching is repo-scoped", () => {
   const packetPrB = basePullRequest({
     repoId: "repo-2",
     repoName: "repo-two",
-    repoSlug: "eladaviv/repo-two",
-    repoKey: "eladaviv/repo-two",
+    repoSlug: "example-org/repo-two",
+    repoKey: "example-org/repo-two",
     number: 101,
     baseBranch: "workstream/shared",
     baseClassification: "non_default_parent",
@@ -238,8 +238,8 @@ test("deriveWorkstreams packet matching is repo-scoped", () => {
   });
 
   // PR 101 in Repo B should NOT be suppressed by PR 100 in Repo A
-  assert.ok(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:100"));
-  assert.ok(workstreams.find(ws => ws.id === "eladaviv/repo-two:pr:101"));
+  assert.ok(workstreams.find(ws => ws.id === "example-org/repo-one:pr:100"));
+  assert.ok(workstreams.find(ws => ws.id === "example-org/repo-two:pr:101"));
 });
 
 test("deriveWorkstreams packet matching does not hard-code main", () => {
@@ -269,8 +269,8 @@ test("deriveWorkstreams packet matching does not hard-code main", () => {
     previousWorkstreams: []
   });
 
-  assert.ok(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:200"));
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:201"), undefined);
+  assert.ok(workstreams.find(ws => ws.id === "example-org/repo-one:pr:200"));
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:201"), undefined);
 });
 
 test("deriveWorkstreams does NOT assign integration metadata to PR-originated workstreams targeting non-default branch", () => {
@@ -291,7 +291,7 @@ test("deriveWorkstreams does NOT assign integration metadata to PR-originated wo
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:pr:100");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:pr:100");
   assert.equal(workstreams[0]?.integration, undefined);
 });
 
@@ -318,7 +318,7 @@ test("deriveWorkstreams attaches a linked implementation PR to the issue workstr
   const issue = baseIssue();
   const pr = basePullRequest({
     number: 24,
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     labels: ["agent-plan-approved"]
   });
 
@@ -338,7 +338,7 @@ test("deriveWorkstreams attaches a linked implementation PR to the issue workstr
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:issue:17");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:issue:17");
   assert.deepEqual(workstreams[0]?.linkedPrs, [
     { number: 24, status: "open", role: "implementation" }
   ]);
@@ -365,8 +365,8 @@ test("deriveWorkstreams preserves prior workstream links across repeated runs", 
     worktrees: [],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: {
           type: "issue",
           number: 17
@@ -380,7 +380,7 @@ test("deriveWorkstreams preserves prior workstream links across repeated runs", 
           }
         ],
         activePrNumber: 21,
-        activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+        activeWorktreeId: "worktree:example-org/repo-one:issue:17",
         phase: "resolved",
         attention: "idle",
         status: "merged",
@@ -391,8 +391,8 @@ test("deriveWorkstreams preserves prior workstream links across repeated runs", 
 
   assert.deepEqual(workstreams, [
     {
-      id: "eladaviv/repo-one:issue:17",
-      repoKey: "eladaviv/repo-one",
+      id: "example-org/repo-one:issue:17",
+      repoKey: "example-org/repo-one",
       origin: {
         type: "issue",
         number: 17
@@ -406,7 +406,7 @@ test("deriveWorkstreams preserves prior workstream links across repeated runs", 
         }
       ],
       activePrNumber: 21,
-      activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+      activeWorktreeId: "worktree:example-org/repo-one:issue:17",
       phase: "resolved",
       attention: "idle",
       status: "merged",
@@ -425,8 +425,8 @@ test("deriveWorkstreams moves triage to planning when an implementation worktree
     worktrees: [baseWorktree({ issueId: issue.id, issueNumber: issue.number })],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: { type: "issue", number: 17 },
         linkedIssueNumber: 17,
         linkedPrs: [],
@@ -445,7 +445,7 @@ test("deriveWorkstreams moves planning to implementation_ready when approval app
   const issue = baseIssue();
   const pr = basePullRequest({
     number: 24,
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     labels: ["agent-plan-approved"]
   });
 
@@ -465,13 +465,13 @@ test("deriveWorkstreams moves planning to implementation_ready when approval app
     ],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: { type: "issue", number: 17 },
         linkedIssueNumber: 17,
         linkedPrs: [{ number: 24, status: "open", role: "implementation" }],
         activePrNumber: 24,
-        activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+        activeWorktreeId: "worktree:example-org/repo-one:issue:17",
         phase: "planning",
         attention: "idle",
         status: "open",
@@ -487,7 +487,7 @@ test("deriveWorkstreams moves implementation_ready to implementing when worktree
   const issue = baseIssue();
   const pr = basePullRequest({
     number: 24,
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     labels: ["agent-plan-approved"]
   });
 
@@ -507,13 +507,13 @@ test("deriveWorkstreams moves implementation_ready to implementing when worktree
     ],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: { type: "issue", number: 17 },
         linkedIssueNumber: 17,
         linkedPrs: [{ number: 24, status: "open", role: "implementation" }],
         activePrNumber: 24,
-        activeWorktreeId: "worktree:eladaviv/repo-one:issue:17",
+        activeWorktreeId: "worktree:example-org/repo-one:issue:17",
         phase: "implementation_ready",
         attention: "idle",
         status: "open",
@@ -529,12 +529,12 @@ test("deriveWorkstreams uses feedback phases for planning and implementing comme
   const issue = baseIssue();
   const pr = basePullRequest({
     number: 24,
-    headBranch: "agent/eladaviv-repo-one/issue-17",
+    headBranch: "agent/example-org-repo-one/issue-17",
     labels: ["agent-plan-approved"]
   });
   const planningAttention: AttentionRecord = {
-    workstreamId: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    workstreamId: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     needsAction: true,
     reasons: ["pr_comment_added"],
     lastObservedAt: "2026-04-20T10:10:00.000Z"
@@ -600,8 +600,8 @@ test("deriveWorkstreams exposes resolved and abandoned scaffolding", () => {
     worktrees: [],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:99",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:99",
+        repoKey: "example-org/repo-one",
         origin: { type: "issue", number: 99 },
         linkedIssueNumber: 99,
         linkedPrs: [],
@@ -630,7 +630,7 @@ test("deriveWorkstreams creates a PR-originated workstream for a standalone PR w
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:pr:63");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:pr:63");
   assert.equal(workstreams[0]?.origin.type, "pr");
   assert.deepEqual(workstreams[0]?.linkedPrs, [{ number: 63, status: "open" }]);
 });
@@ -650,7 +650,7 @@ test("deriveWorkstreams creates a PR-originated workstream for a standalone PR w
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:pr:64");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:pr:64");
   assert.equal(workstreams[0]?.attention, "prepare_for_merge_requested");
 });
 
@@ -695,8 +695,8 @@ test("deriveWorkstreams preserves packetPlan for issue-originated workstreams", 
     worktrees: [],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:issue:17",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:issue:17",
+        repoKey: "example-org/repo-one",
         origin: { type: "issue", number: 17 },
         linkedIssueNumber: 17,
         linkedPrs: [],
@@ -728,8 +728,8 @@ test("deriveWorkstreams preserves packetPlan for PR-originated workstreams", () 
     worktrees: [],
     previousWorkstreams: [
       {
-        id: "eladaviv/repo-one:pr:63",
-        repoKey: "eladaviv/repo-one",
+        id: "example-org/repo-one:pr:63",
+        repoKey: "example-org/repo-one",
         origin: { type: "pr", number: 63 },
         linkedPrs: [{ number: 63, status: "open" }],
         activePrNumber: 63,
@@ -760,10 +760,10 @@ test("deriveWorkstreams filters out packet worktrees from active worktree select
   const packetWorktree = baseWorktree({
     id: "worktree:packet",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:17",
+      parentWorkstreamId: "example-org/repo-one:issue:17",
       packetId: "p1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     },
     updatedAt: "2026-04-20T11:00:00.000Z" // Newer
   });
@@ -786,11 +786,11 @@ test("deriveWorkstreams filters out packet worktrees from active worktree select
 
 test("deriveWorkstreams parent integration branch remains stable when packet worktrees exist", () => {
   const issue = baseIssue();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
 
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [{ number: 100, status: "open", role: "implementation" }],
@@ -807,8 +807,8 @@ test("deriveWorkstreams parent integration branch remains stable when packet wor
   };
 
   const previousPacketWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:pr:101",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:pr:101",
+    repoKey: "example-org/repo-one",
     origin: { type: "pr", number: 101 },
     linkedPrs: [{ number: 101, status: "open" }],
     activePrNumber: 101,
@@ -821,13 +821,13 @@ test("deriveWorkstreams parent integration branch remains stable when packet wor
   const packetWorktree = baseWorktree({
     id: "worktree:packet",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:17",
+      parentWorkstreamId: "example-org/repo-one:issue:17",
       packetId: "T1",
       waveIndex: 0,
       parentIntegrationBranch: integrationBranch
     },
     baseBranch: integrationBranch,
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
     prNumber: 101,
     updatedAt: "2026-04-20T11:00:00.000Z"
   });
@@ -863,7 +863,7 @@ test("deriveWorkstreams parent integration branch remains stable when packet wor
   assert.equal(workstreams[0]?.integration?.branchName, integrationBranch);
   assert.equal(workstreams[0]?.integration?.prNumber, 100);
   assert.equal(workstreams[0]?.activePrNumber, 100);
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("deriveWorkstreams does not pick any active worktree if only packet worktrees exist", () => {
@@ -872,10 +872,10 @@ test("deriveWorkstreams does not pick any active worktree if only packet worktre
   const packetWorktree = baseWorktree({
     id: "worktree:packet",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:17",
+      parentWorkstreamId: "example-org/repo-one:issue:17",
       packetId: "p1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-17"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-17"
     }
   });
   delete packetWorktree.issueId;
@@ -896,7 +896,7 @@ test("deriveWorkstreams does not pick any active worktree if only packet worktre
 test("deriveWorkstreams keeps parent active worktree when approved packet is implementation_ready", () => {
   const repo = baseRepo();
   const issue = baseIssue();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
 
   const parentPr = basePullRequest({
     number: 100,
@@ -907,13 +907,13 @@ test("deriveWorkstreams keeps parent active worktree when approved packet is imp
   const packetWorktree = baseWorktree({
     id: "worktree:packet",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:17",
+      parentWorkstreamId: "example-org/repo-one:issue:17",
       packetId: "T1",
       waveIndex: 0,
       parentIntegrationBranch: integrationBranch
     },
     baseBranch: integrationBranch,
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
     status: "implementation_ready",
     prNumber: 101,
     updatedAt: "2026-04-20T11:00:00.000Z" // Newer than integration worktree
@@ -948,18 +948,18 @@ test("deriveWorkstreams keeps parent active worktree when approved packet is imp
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:issue:17");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:issue:17");
   assert.equal(workstreams[0]?.activeWorktreeId, "worktree:integration");
   assert.equal(workstreams[0]?.activePrNumber, 100);
   assert.equal(workstreams[0]?.integration?.branchName, integrationBranch);
 
   // Ensure packet PR is still suppressed from being a standalone workstream
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("deriveWorkstreams updates the parent workstream packet plan but does not resolve or advance it", () => {
   const issue = baseIssue();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
 
   const packetPlan: WorkstreamRecord["packetPlan"] = {
     status: "approved",
@@ -975,7 +975,7 @@ test("deriveWorkstreams updates the parent workstream packet plan but does not r
         blocks: [],
         status: "pr_open",
         prNumber: 101,
-        branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d"
+        branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d"
       }
     },
     waves: [["T1"]],
@@ -983,8 +983,8 @@ test("deriveWorkstreams updates the parent workstream packet plan but does not r
   };
 
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [{ number: 100, status: "open", role: "implementation" }],
@@ -1002,8 +1002,8 @@ test("deriveWorkstreams updates the parent workstream packet plan but does not r
   };
 
   const previousPacketWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:pr:101",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:pr:101",
+    repoKey: "example-org/repo-one",
     origin: { type: "pr", number: 101 },
     linkedPrs: [{ number: 101, status: "open" }],
     activePrNumber: 101,
@@ -1016,13 +1016,13 @@ test("deriveWorkstreams updates the parent workstream packet plan but does not r
   const packetWorktree = baseWorktree({
     id: "worktree:packet",
     packet: {
-      parentWorkstreamId: "eladaviv/repo-one:issue:17",
+      parentWorkstreamId: "example-org/repo-one:issue:17",
       packetId: "T1",
       waveIndex: 0,
       parentIntegrationBranch: integrationBranch
     },
     baseBranch: integrationBranch,
-    branchName: "agent/eladaviv-repo-one/workstream-issue-17/packet-t1-1f93603d",
+    branchName: "agent/example-org-repo-one/workstream-issue-17/packet-t1-1f93603d",
     prNumber: 101,
     updatedAt: "2026-04-20T11:00:00.000Z"
   });
@@ -1064,12 +1064,12 @@ test("deriveWorkstreams updates the parent workstream packet plan but does not r
   assert.equal(workstreams[0]?.packetPlan?.currentWaveIndex, 0);
 
   // Ensure packet PR is still suppressed from being a standalone workstream
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
 });
 
 test("deriveWorkstreams: All current-wave packets merged does not advance waves", () => {
   const issue = baseIssue();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
 
   const packetPlan: WorkstreamRecord["packetPlan"] = {
     status: "approved",
@@ -1118,8 +1118,8 @@ test("deriveWorkstreams: All current-wave packets merged does not advance waves"
   };
 
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [{ number: 100, status: "open", role: "implementation" }],
@@ -1137,8 +1137,8 @@ test("deriveWorkstreams: All current-wave packets merged does not advance waves"
   };
 
   const previousPacketWorkstream1: WorkstreamRecord = {
-    id: "eladaviv/repo-one:pr:101",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:pr:101",
+    repoKey: "example-org/repo-one",
     origin: { type: "pr", number: 101 },
     linkedPrs: [{ number: 101, status: "open" }],
     activePrNumber: 101,
@@ -1149,8 +1149,8 @@ test("deriveWorkstreams: All current-wave packets merged does not advance waves"
   };
 
   const previousPacketWorkstream2: WorkstreamRecord = {
-    id: "eladaviv/repo-one:pr:102",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:pr:102",
+    repoKey: "example-org/repo-one",
     origin: { type: "pr", number: 102 },
     linkedPrs: [{ number: 102, status: "open" }],
     activePrNumber: 102,
@@ -1196,14 +1196,14 @@ test("deriveWorkstreams: All current-wave packets merged does not advance waves"
   assert.equal(workstreams[0]?.packetPlan?.packets.T1?.status, "merged_to_parent");
   assert.equal(workstreams[0]?.packetPlan?.packets.T2?.status, "merged_to_parent");
   assert.equal(workstreams[0]?.packetPlan?.currentWaveIndex, 0); // Should NOT advance
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:102"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:102"), undefined);
 });
 
 test("deriveWorkstreams ignores stale packet PRs from previous linkedPrs when marking packet merged", () => {
   const repo = baseRepo();
   const issue = baseIssue();
-  const integrationBranch = "agent/eladaviv-repo-one/issue-17";
+  const integrationBranch = "agent/example-org-repo-one/issue-17";
 
   const parentPr = basePullRequest({
     number: 100,
@@ -1221,8 +1221,8 @@ test("deriveWorkstreams ignores stale packet PRs from previous linkedPrs when ma
   });
 
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [
@@ -1289,14 +1289,14 @@ test("deriveWorkstreams ignores stale packet PRs from previous linkedPrs when ma
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:issue:17");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:issue:17");
   assert.equal(workstreams[0]?.packetPlan?.packets.T1?.status, "merged_to_parent");
   assert.equal(workstreams[0]?.status, "open");
   assert.equal(workstreams[0]?.resolution, "unresolved");
   assert.equal(workstreams[0]?.integration?.branchName, integrationBranch);
   assert.equal(workstreams[0]?.integration?.prNumber, 100);
   assert.equal(workstreams[0]?.linkedPrs.map((pr) => pr.number).includes(101), false);
-  assert.equal(workstreams.find(ws => ws.id === "eladaviv/repo-one:pr:101"), undefined);
+  assert.equal(workstreams.find(ws => ws.id === "example-org/repo-one:pr:101"), undefined);
   assert.equal(workstreams[0]?.packetPlan?.currentWaveIndex, 0);
 });
 
@@ -1304,8 +1304,8 @@ test("deriveWorkstreams marks a previously-open issue workstream as abandoned wh
   // Issue closed on GitHub: listOpenIssues no longer returns it, so currentIssues is empty.
   // The workstream should detect that and transition to abandoned rather than staying in planning.
   const previousWorkstream: WorkstreamRecord = {
-    id: "eladaviv/repo-one:issue:17",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:17",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [],
@@ -1324,7 +1324,7 @@ test("deriveWorkstreams marks a previously-open issue workstream as abandoned wh
   });
 
   assert.equal(workstreams.length, 1);
-  assert.equal(workstreams[0]?.id, "eladaviv/repo-one:issue:17");
+  assert.equal(workstreams[0]?.id, "example-org/repo-one:issue:17");
   assert.equal(workstreams[0]?.status, "closed");
   assert.equal(workstreams[0]?.phase, "abandoned");
 });
@@ -1337,9 +1337,9 @@ test("deriveWorkstreams does not abandon a workstream whose issue was never seen
     currentPullRequests: [],
     worktrees: [
       baseWorktree({
-        id: "worktree:eladaviv/repo-one:issue:17",
+        id: "worktree:example-org/repo-one:issue:17",
         issueNumber: 17,
-        branchName: "agent/eladaviv-repo-one/issue-17",
+        branchName: "agent/example-org-repo-one/issue-17",
         status: "planning"
       })
     ],
@@ -1365,7 +1365,7 @@ test("deriveWorkstreams packetPlan status transitions", () => {
 
   const prevWorkstream: WorkstreamRecord = {
     id: issue.key,
-    repoKey: "eladaviv/repo-one",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 17 },
     linkedIssueNumber: 17,
     linkedPrs: [],
@@ -1435,7 +1435,7 @@ test("deriveWorkstreams packetPlan status transitions", () => {
   {
     const attention: AttentionRecord = {
       workstreamId: issue.key,
-      repoKey: "eladaviv/repo-one",
+      repoKey: "example-org/repo-one",
       needsAction: true,
       reasons: ["plan_approved"],
       lastObservedAt: new Date().toISOString()
@@ -1567,7 +1567,7 @@ test("deriveWorkstreams packetPlan status transitions", () => {
 function baseRepo(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -1586,16 +1586,16 @@ function baseRepo(): RepoConfig {
 function baseIssue(): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:17",
+    id: "issue:example-org/repo-one:17",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 17,
-    key: "eladaviv/repo-one:issue:17",
+    key: "example-org/repo-one:issue:17",
     sourceId: "ISSUE_17",
-    url: "https://github.com/eladaviv/repo-one/issues/17",
+    url: "https://github.com/example-org/repo-one/issues/17",
     title: "Need deterministic workstreams",
     body: "body",
     labels: [],
@@ -1612,16 +1612,16 @@ function basePullRequest(
   const number = overrides.number ?? 21;
   return {
     kind: "pull_request",
-    id: `pull_request:eladaviv/repo-one:${number}`,
+    id: `pull_request:example-org/repo-one:${number}`,
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number,
-    key: `eladaviv/repo-one:pull_request:${number}`,
+    key: `example-org/repo-one:pull_request:${number}`,
     sourceId: `PR_${number}`,
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     title: `PR ${number}`,
     body: "body",
     labels: [],
@@ -1641,17 +1641,17 @@ function basePullRequest(
 
 function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   return {
-    id: "worktree:eladaviv/repo-one:issue:17",
+    id: "worktree:example-org/repo-one:issue:17",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
-    issueId: "issue:eladaviv/repo-one:17",
+    issueId: "issue:example-org/repo-one:17",
     issueNumber: 17,
     prNumber: 24,
-    branchName: "agent/eladaviv-repo-one/issue-17",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-17/docs/agents/agent-eladaviv-repo-one-issue-17/issue-17-agent-log.md",
+    branchName: "agent/example-org-repo-one/issue-17",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-17/docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md",
     status: "planning",
     createdAt: "2026-04-20T10:00:00.000Z",
     updatedAt: "2026-04-20T10:00:00.000Z",

@@ -312,7 +312,7 @@ export const CapabilityCadenceSchema = z.enum([
   "on-demand"
 ]);
 
-const AogSensorCapabilitySchema = z.object({
+const BackburnerSensorCapabilitySchema = z.object({
   uses: nonEmptyString('sensor "uses" must be a non-empty string'),
   observes: SensorObservesSchema,
   cadence: CapabilityCadenceSchema.optional(),
@@ -335,7 +335,7 @@ const AogSensorCapabilitySchema = z.object({
   grants:         z.never({ message: 'sensor capability must not include "grants"' }).optional(),
 }).strict();
 
-const AogControllerCapabilitySchema = z.object({
+const BackburnerControllerCapabilitySchema = z.object({
   uses: nonEmptyString('controller "uses" must be a non-empty string'),
   grants: z.array(ControllerGrantsSchema, {
     message: 'controller "grants" must be an array of valid grant values',
@@ -362,11 +362,11 @@ const AogControllerCapabilitySchema = z.object({
 export const CapabilitiesConfigFileSchema = z
   .object({
     sensors: z
-      .record(z.string(), AogSensorCapabilitySchema)
+      .record(z.string(), BackburnerSensorCapabilitySchema)
       .optional()
       .default({}),
     controllers: z
-      .record(z.string(), AogControllerCapabilitySchema)
+      .record(z.string(), BackburnerControllerCapabilitySchema)
       .optional()
       .default({}),
   })
@@ -515,6 +515,6 @@ export type ControllerGrants = z.infer<typeof ControllerGrantsSchema>;
 export type CapabilityApproval = z.infer<typeof CapabilityApprovalSchema>;
 export type CapabilityScope = z.infer<typeof CapabilityScopeSchema>;
 export type CapabilityCadence = z.infer<typeof CapabilityCadenceSchema>;
-export type AogSensorCapability = z.infer<typeof AogSensorCapabilitySchema> & { name: string };
-export type AogControllerCapability = z.infer<typeof AogControllerCapabilitySchema> & { name: string };
+export type BackburnerSensorCapability = z.infer<typeof BackburnerSensorCapabilitySchema> & { name: string };
+export type BackburnerControllerCapability = z.infer<typeof BackburnerControllerCapabilitySchema> & { name: string };
 export type CapabilityConfig = z.infer<typeof CapabilitiesConfigFileSchema>;

@@ -69,7 +69,7 @@ class SequenceCommandRunner implements CommandRunner {
 function repoConfig(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -98,7 +98,7 @@ test("GitCliGateway.cloneRepository creates the destination parent and runs clon
     const call = runner.calls[0]!;
 
     assert.strictEqual(call.command, "git");
-    assert.deepEqual(call.args, ["clone", "git@github.com:eladaviv/repo-one.git", destinationPath]);
+    assert.deepEqual(call.args, ["clone", "git@github.com:example-org/repo-one.git", destinationPath]);
     assert.strictEqual(call.options.cwd, path.dirname(destinationPath));
 
   } finally {

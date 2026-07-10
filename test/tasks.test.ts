@@ -55,7 +55,7 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
   assert.equal(newPrTasks[0]?.kind, "review_pr");
   assert.equal(newPrTasks[0]?.relevant, true);
   assert.equal(newPrTasks[0]?.executionPermission, "read-only");
-  assert.equal(newPrTasks[0]?.context.pullRequestUrl, "https://github.com/eladaviv/repo-one/pull/21");
+  assert.equal(newPrTasks[0]?.context.pullRequestUrl, "https://github.com/example-org/repo-one/pull/21");
 
   const issueCommentTasks = deriveTasks({
     repos: [repo],
@@ -73,7 +73,7 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
   assert.equal(issueCommentTasks.length, 1);
   assert.equal(issueCommentTasks[0]?.kind, "respond_issue_comment");
   assert.equal(issueCommentTasks[0]?.relevant, true);
-  assert.equal(issueCommentTasks[0]?.context.commentUrl, "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001");
+  assert.equal(issueCommentTasks[0]?.context.commentUrl, "https://github.com/example-org/repo-one/issues/11#issuecomment-5001");
   assert.equal(issueCommentTasks[0]?.context.issueTitle, "Need a workflow");
   assert.equal(issueCommentTasks[0]?.context.issueBody, "Please figure out the next step.");
 
@@ -109,7 +109,7 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
           mode: "pull_request",
           status: "opened",
           prNumber: 42,
-          repoSlug: "eladaviv/repo-one",
+          repoSlug: "example-org/repo-one",
           changedArtifactPaths: [],
           detectedAt: now
         }
@@ -159,7 +159,7 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
       worktrees: [
         baseWorktree({
           status: "planning",
-          prId: "pull_request:eladaviv/repo-one:21",
+          prId: "pull_request:example-org/repo-one:21",
           prNumber: 21
         })
       ]
@@ -170,7 +170,7 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
     worktrees: [
       baseWorktree({
         status: "planning",
-        prId: "pull_request:eladaviv/repo-one:21",
+        prId: "pull_request:example-org/repo-one:21",
         prNumber: 21
       })
     ],
@@ -272,7 +272,7 @@ test("migrated Product Discovery workstream does not duplicate existing Product 
   };
   delete previousWorkstream.product;
   const existingTask: TaskRecord = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery",
     status: "pending",
     executionPermission: "read-only",
@@ -315,11 +315,11 @@ test("deriveTasks preserves queued provider-limit tasks across cycles", () => {
   const now = "2026-07-07T09:00:00.000Z";
   const pullRequest = basePullRequest({ labels: ["agent-in-progress"] });
   const queuedTask: TaskRecord = {
-    ...baseTaskRecord("task:write_plan:pull_request:eladaviv/repo-one:21", "write_plan"),
+    ...baseTaskRecord("task:write_plan:pull_request:example-org/repo-one:21", "write_plan"),
     status: "queued",
     waitingOnProvider: "claude",
     context: {
-      ...baseTaskRecord("task:write_plan:pull_request:eladaviv/repo-one:21", "write_plan").context,
+      ...baseTaskRecord("task:write_plan:pull_request:example-org/repo-one:21", "write_plan").context,
       notifiedQueued: true
     }
   };
@@ -399,7 +399,7 @@ test("Product Specification worktree derives write_product_spec before write_pla
     status: "product_specification",
     issueId: issue.id,
     issueNumber: issue.number,
-    productSpecDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md"
+    productSpecDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md"
   });
   const workstream = baseIssueWorkstream({
     phase: "product_specification",
@@ -447,7 +447,7 @@ test("Product Specification reopens completed write_product_spec when spec artif
     status: "product_specification",
     issueId: issue.id,
     issueNumber: issue.number,
-    productSpecDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md"
+    productSpecDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md"
   });
   const workstream = baseIssueWorkstream({
     phase: "product_specification",
@@ -671,7 +671,7 @@ test("old triage_issue tasks are not carried into migrated Product Discovery wor
     product: { status: "in_discovery", approvalLabel: "agent-product-approved" }
   });
   const staleTask: TaskRecord = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "triage_issue",
     status: "pending",
     sourceKind: "issue",
@@ -713,7 +713,7 @@ test("old triage_issue tasks are not carried into migrated Product Discovery wor
 test("written Product Spec allows write_plan and carries Product Spec context", () => {
   const now = "2026-06-28T10:00:00.000Z";
   const issue = baseIssue({ labels: ["agent-product-approved"] });
-  const productSpecDocumentPath = "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md";
+  const productSpecDocumentPath = "/tmp/code-root/_worktrees/example-org/repo-one/issue-11/docs/agents/feature-tasks/issue-11-product-spec.md";
   const worktree = baseWorktree({
     status: "planning",
     issueId: issue.id,
@@ -767,16 +767,16 @@ test("deriveTasks ignores bot-authored comments for follow-up task creation but 
     currentPullRequests: [basePullRequest()],
     currentComments: [
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:bot-1",
+        id: "comment:example-org/repo-one:issue_comment:bot-1",
         sourceId: "bot-1",
         body: "🤖 I already answered this.",
-        url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-bot-1"
+        url: "https://github.com/example-org/repo-one/issues/11#issuecomment-bot-1"
       }),
       basePrComment({
-        id: "comment:eladaviv/repo-one:pull_request_comment:human-1",
+        id: "comment:example-org/repo-one:pull_request_comment:human-1",
         sourceId: "human-1",
         body: "Please update the plan.",
-        url: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-human-1"
+        url: "https://github.com/example-org/repo-one/pull/21#issuecomment-human-1"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -785,7 +785,7 @@ test("deriveTasks ignores bot-authored comments for follow-up task creation but 
 
   assert.deepEqual(
     tasks.map((task) => task.id),
-    ["task:respond_pr_comment:comment:eladaviv/repo-one:pull_request_comment:human-1"]
+    ["task:respond_pr_comment:comment:example-org/repo-one:pull_request_comment:human-1"]
   );
 });
 
@@ -802,17 +802,17 @@ test("deriveTasks uses the PR worktree path for PR comment follow-up tasks when 
     currentComments: [basePrComment()],
     worktrees: [
       {
-        id: "worktree:eladaviv/repo-one:issue:21",
+        id: "worktree:example-org/repo-one:issue:21",
         repoId: "repo-1",
-        repoSlug: "eladaviv/repo-one",
+        repoSlug: "example-org/repo-one",
         repoName: "repo-one",
-        issueId: "issue:eladaviv/repo-one:11",
+        issueId: "issue:example-org/repo-one:11",
         issueNumber: 11,
         baseBranch: "main",
         branchName: "feature/tasks",
-        path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-21",
-        planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-21/docs/agents/feature-tasks/issue-11-agent-plan.md",
-        logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-21/docs/agents/feature-tasks/issue-11-agent-log.md",
+        path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-21",
+        planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-21/docs/agents/feature-tasks/issue-11-agent-plan.md",
+        logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-21/docs/agents/feature-tasks/issue-11-agent-log.md",
         status: "planning",
         createdAt: "2026-04-18T09:00:00.000Z",
         updatedAt: "2026-04-18T09:00:00.000Z"
@@ -824,7 +824,7 @@ test("deriveTasks uses the PR worktree path for PR comment follow-up tasks when 
 
   assert.equal(
     tasks[0]?.context.localRepoPath,
-    "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-21"
+    "/tmp/code-root/_worktrees/example-org/repo-one/issue-21"
   );
 });
 
@@ -856,9 +856,9 @@ test("deriveTasks keeps unresolved comment tasks alive across identical runs", (
   assert.deepEqual(
     firstRunTasks.map((task) => task.id),
     [
-      "task:implement_plan:pull_request:eladaviv/repo-one:21",
-      "task:respond_issue_comment:comment:eladaviv/repo-one:issue_comment:5001",
-      "task:respond_pr_comment:comment:eladaviv/repo-one:pull_request_comment:6001"
+      "task:implement_plan:pull_request:example-org/repo-one:21",
+      "task:respond_issue_comment:comment:example-org/repo-one:issue_comment:5001",
+      "task:respond_pr_comment:comment:example-org/repo-one:pull_request_comment:6001"
     ]
   );
 
@@ -881,9 +881,9 @@ test("deriveTasks keeps unresolved comment tasks alive across identical runs", (
 
   assert.equal(secondRunTasks.length, 3);
   assert.deepEqual(secondRunTasks.map((task) => task.id), [
-    "task:implement_plan:pull_request:eladaviv/repo-one:21",
-    "task:respond_issue_comment:comment:eladaviv/repo-one:issue_comment:5001",
-    "task:respond_pr_comment:comment:eladaviv/repo-one:pull_request_comment:6001"
+    "task:implement_plan:pull_request:example-org/repo-one:21",
+    "task:respond_issue_comment:comment:example-org/repo-one:issue_comment:5001",
+    "task:respond_pr_comment:comment:example-org/repo-one:pull_request_comment:6001"
   ]);
   assert.deepEqual(secondRunTasks.map((task) => task.status), ["pending", "pending", "pending"]);
   assert.equal(secondRunTasks[0]?.updatedAt, firstRunTasks[0]?.updatedAt);
@@ -1008,7 +1008,7 @@ test("deriveTasks reopens a completed issue-comment task when the enriched paren
     status: "completed" as const,
     lastExecutionId: "exec:legacy",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       localRepoPath: "/tmp/code-root/repo-one",
       labels: [],
       issueUrl: issue.url,
@@ -1073,7 +1073,7 @@ test("deriveTasks removes label-driven tasks when the controlling label is remov
   const builder = new DefaultContextBuilder();
   const prWithoutApproval = basePullRequest({ labels: [] });
   const staleImplementTask = {
-    ...baseTaskRecord("task:implement_plan:pull_request:eladaviv/repo-one:21", "implement_plan"),
+    ...baseTaskRecord("task:implement_plan:pull_request:example-org/repo-one:21", "implement_plan"),
     status: "completed" as const
   };
 
@@ -1526,7 +1526,7 @@ test("deriveTasks does not duplicate write_plan tasks when workstream and raw en
 test("deriveTasks requeues the latest failed task when a human retry comment is present", () => {
   const issue = baseIssue();
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
@@ -1552,7 +1552,7 @@ test("deriveTasks requeues the latest failed task when a human retry comment is 
     },
     currentIssues: [issue],
     currentPullRequests: [],
-    currentComments: [baseIssueComment({ body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999" })],
+    currentComments: [baseIssueComment({ body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999" })],
     contextBuilder: new DefaultContextBuilder(),
     now: "2026-04-21T08:10:00.000Z"
   });
@@ -1567,7 +1567,7 @@ test("deriveTasks requeues the latest failed task when a human retry comment is 
 test("deriveTasks ignores retry: <url> when the comment ID does not match any failed task", () => {
   const issue = baseIssue();
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
@@ -1594,7 +1594,7 @@ test("deriveTasks ignores retry: <url> when the comment ID does not match any fa
     currentIssues: [issue],
     currentPullRequests: [],
     currentComments: [
-      baseIssueComment({ body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-0000" })
+      baseIssueComment({ body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-0000" })
     ],
     contextBuilder: new DefaultContextBuilder(),
     now: "2026-04-21T08:10:00.000Z"
@@ -1608,7 +1608,7 @@ test("deriveTasks ignores retry: <url> when the comment ID does not match any fa
 test("deriveTasks processes feedback comment in the same window as a retry comment", () => {
   const issue = baseIssue();
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
@@ -1625,13 +1625,13 @@ test("deriveTasks processes feedback comment in the same window as a retry comme
   };
 
   const retryComment = baseIssueComment({
-    id: "comment:eladaviv/repo-one:issue_comment:5001",
-    body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+    id: "comment:example-org/repo-one:issue_comment:5001",
+    body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
   });
   const feedbackComment = baseIssueComment({
-    id: "comment:eladaviv/repo-one:issue_comment:5002",
+    id: "comment:example-org/repo-one:issue_comment:5002",
     sourceId: "5002",
-    url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5002",
+    url: "https://github.com/example-org/repo-one/issues/11#issuecomment-5002",
     body: "Please also fix the deployment step."
   });
 
@@ -1671,9 +1671,9 @@ test("deriveTasks requeues all packet prepare_pr_for_merge failures from task-ce
   const repoSync = baseRepoSync();
   const issue = baseIssue();
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
+    id: "example-org/repo-one:issue:11",
     phase: "implementing",
-    integration: { branchName: "agent/eladaviv-repo-one/issue-11", prNumber: 31 },
+    integration: { branchName: "agent/example-org-repo-one/issue-11", prNumber: 31 },
     packetPlan: {
       status: "approved",
       packets: {
@@ -1695,12 +1695,12 @@ test("deriveTasks requeues all packet prepare_pr_for_merge failures from task-ce
     baseWorktree({
       id: `worktree:${packetId}`,
       branchName: `packet/${packetId}`,
-      path: `/tmp/code-root/_worktrees/eladaviv/repo-one/packet-${packetId}`,
+      path: `/tmp/code-root/_worktrees/example-org/repo-one/packet-${packetId}`,
       packet: {
         parentWorkstreamId: workstream.id,
         packetId,
         waveIndex: 0,
-        parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11"
+        parentIntegrationBranch: "agent/example-org-repo-one/issue-11"
       }
     })
   );
@@ -1728,16 +1728,16 @@ test("deriveTasks requeues all packet prepare_pr_for_merge failures from task-ce
     };
   });
   const unrelatedFailedTask = {
-    ...baseTaskRecord("task:write_plan:pull_request:eladaviv/repo-one:777", "write_plan"),
+    ...baseTaskRecord("task:write_plan:pull_request:example-org/repo-one:777", "write_plan"),
     status: "failed" as const,
     lastFailureCommentId: "9999"
   };
   const retryComments = packetPrs.map((packetPr, index) =>
     basePrComment({
-      id: `comment:eladaviv/repo-one:pull_request_comment:70${index + 1}`,
+      id: `comment:example-org/repo-one:pull_request_comment:70${index + 1}`,
       sourceId: `70${index + 1}`,
       parentNumber: packetPr.number,
-      parentKey: `eladaviv/repo-one:pull_request:${packetPr.number}`,
+      parentKey: `example-org/repo-one:pull_request:${packetPr.number}`,
       url: `${packetPr.url}#issuecomment-70${index + 1}`,
       body: `retry: ${packetPr.url}#issuecomment-90${index + 1}`
     })
@@ -1777,13 +1777,13 @@ test("deriveTasks requeues all packet prepare_pr_for_merge failures from task-ce
 test("deriveTasks requeues duplicate retry comments once for the matching failed task", () => {
   const issue = baseIssue();
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "9999",
     context: {
       repoIdentifier: issue.repoSlug,
@@ -1805,15 +1805,15 @@ test("deriveTasks requeues duplicate retry comments once for the matching failed
     currentPullRequests: [],
     currentComments: [
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:5001",
+        id: "comment:example-org/repo-one:issue_comment:5001",
         sourceId: "5001",
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
       }),
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:5002",
+        id: "comment:example-org/repo-one:issue_comment:5002",
         sourceId: "5002",
-        url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5002",
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+        url: "https://github.com/example-org/repo-one/issues/11#issuecomment-5002",
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -1827,18 +1827,18 @@ test("deriveTasks requeues duplicate retry comments once for the matching failed
 test("deriveTasks ignores retry targets for completed or pending tasks", () => {
   const issue = baseIssue();
   const completedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11:completed", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11:completed", "write_plan"),
     kind: "product_discovery" as const,
     status: "completed" as const,
     sourceKind: "issue" as const,
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "9999"
   };
   const pendingTask = {
     ...completedTask,
-    id: "task:product_discovery:issue:eladaviv/repo-one:11:pending",
+    id: "task:product_discovery:issue:example-org/repo-one:11:pending",
     status: "pending" as const,
     lastFailureCommentId: "8888"
   };
@@ -1855,13 +1855,13 @@ test("deriveTasks ignores retry targets for completed or pending tasks", () => {
     currentPullRequests: [],
     currentComments: [
       baseIssueComment({
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
       }),
       baseIssueComment({
-        id: "comment:eladaviv/repo-one:issue_comment:5002",
+        id: "comment:example-org/repo-one:issue_comment:5002",
         sourceId: "5002",
-        url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5002",
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-8888"
+        url: "https://github.com/example-org/repo-one/issues/11#issuecomment-5002",
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-8888"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -1875,28 +1875,28 @@ test("deriveTasks ignores retry targets for completed or pending tasks", () => {
 test("deriveTasks scopes retry matching to the current workstream", () => {
   const issue = baseIssue();
   const otherIssue = baseIssue({
-    id: "issue:eladaviv/repo-one:99",
+    id: "issue:example-org/repo-one:99",
     number: 99,
-    key: "eladaviv/repo-one:issue:99",
+    key: "example-org/repo-one:issue:99",
     sourceId: "ISSUE_99",
-    url: "https://github.com/eladaviv/repo-one/issues/99"
+    url: "https://github.com/example-org/repo-one/issues/99"
   });
   const wrongWorkstreamTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:99", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:99", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
     sourceId: otherIssue.id,
     sourceUrl: otherIssue.url,
-    workstreamId: "eladaviv/repo-one:issue:99",
+    workstreamId: "example-org/repo-one:issue:99",
     lastFailureCommentId: "9999"
   };
   const matchingTask = {
     ...wrongWorkstreamTask,
-    id: "task:product_discovery:issue:eladaviv/repo-one:11",
+    id: "task:product_discovery:issue:example-org/repo-one:11",
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11"
+    workstreamId: "example-org/repo-one:issue:11"
   };
 
   const tasks = deriveTasks({
@@ -1911,7 +1911,7 @@ test("deriveTasks scopes retry matching to the current workstream", () => {
     currentPullRequests: [],
     currentComments: [
       baseIssueComment({
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -1925,13 +1925,13 @@ test("deriveTasks scopes retry matching to the current workstream", () => {
 test("deriveTasks uses legacy retryTargetCommentId from persisted attention as fallback", () => {
   const issue = baseIssue();
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "9999"
   };
 
@@ -2025,7 +2025,7 @@ test("deriveTasks warns and retries all duplicate modern retry matches", () => {
     sourceKind: "issue" as const,
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "9999"
   };
   const secondTask = {
@@ -2051,7 +2051,7 @@ test("deriveTasks warns and retries all duplicate modern retry matches", () => {
       currentPullRequests: [],
       currentComments: [
         baseIssueComment({
-          body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+          body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
         })
       ],
       contextBuilder: new DefaultContextBuilder(),
@@ -2073,13 +2073,13 @@ test("deriveTasks does not accumulate retry reason suffixes across repeated retr
   const issue = baseIssue();
   const retrySuffix = "Retry requested by a human comment after a technical failure.";
   const failedTask = {
-    ...baseTaskRecord("task:product_discovery:issue:eladaviv/repo-one:11", "write_plan"),
+    ...baseTaskRecord("task:product_discovery:issue:example-org/repo-one:11", "write_plan"),
     kind: "product_discovery" as const,
     status: "failed" as const,
     sourceKind: "issue" as const,
     sourceId: issue.id,
     sourceUrl: issue.url,
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "9999",
     reason: `Original reason. ${retrySuffix} ${retrySuffix}`
   };
@@ -2096,7 +2096,7 @@ test("deriveTasks does not accumulate retry reason suffixes across repeated retr
     currentPullRequests: [],
     currentComments: [
       baseIssueComment({
-        body: "retry: https://github.com/eladaviv/repo-one/issues/11#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/issues/11#issuecomment-9999"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -2149,7 +2149,7 @@ test("deriveTasks uses fresh same-cycle prepare_pr_for_merge context when retryi
     currentPullRequests: [currentPr],
     currentComments: [
       basePrComment({
-        body: "retry: https://github.com/eladaviv/repo-one/pull/21#issuecomment-9999"
+        body: "retry: https://github.com/example-org/repo-one/pull/21#issuecomment-9999"
       })
     ],
     contextBuilder: new DefaultContextBuilder(),
@@ -2494,7 +2494,7 @@ function emptyState(): PersistedState {
 function baseRepo(): RepoConfig {
   return {
     id: "repo-1",
-    owner: "eladaviv",
+    owner: "example-org",
     name: "repo-one",
     localPath: "repo-one",
     enabled: true,
@@ -2514,7 +2514,7 @@ function baseRepoSync(): RepoSyncRecord {
   return {
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     localPath: "/tmp/code-root/repo-one",
     codeRoot: "/tmp/code-root",
     status: "synced",
@@ -2533,16 +2533,16 @@ function baseRepoSync(): RepoSyncRecord {
 function baseIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
   return {
     kind: "issue",
-    id: "issue:eladaviv/repo-one:11",
+    id: "issue:example-org/repo-one:11",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 11,
-    key: "eladaviv/repo-one:issue:11",
+    key: "example-org/repo-one:issue:11",
     sourceId: "ISSUE_11",
-    url: "https://github.com/eladaviv/repo-one/issues/11",
+    url: "https://github.com/example-org/repo-one/issues/11",
     title: "Need a workflow",
     body: "Please figure out the next step.",
     labels: [],
@@ -2558,16 +2558,16 @@ function baseIssue(overrides: Partial<NormalizedIssue> = {}): NormalizedIssue {
 function basePullRequest(overrides: Partial<NormalizedPullRequest> = {}): NormalizedPullRequest {
   return {
     kind: "pull_request",
-    id: "pull_request:eladaviv/repo-one:21",
+    id: "pull_request:example-org/repo-one:21",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     number: 21,
-    key: "eladaviv/repo-one:pull_request:21",
+    key: "example-org/repo-one:pull_request:21",
     sourceId: "PR_21",
-    url: "https://github.com/eladaviv/repo-one/pull/21",
+    url: "https://github.com/example-org/repo-one/pull/21",
     title: "Add orchestrator tasks",
     body: "This PR tracks implementation work.",
     labels: [],
@@ -2592,14 +2592,14 @@ function packetPullRequest(
   overrides: Partial<NormalizedPullRequest> = {}
 ): NormalizedPullRequest {
   return basePullRequest({
-    id: `pull_request:eladaviv/repo-one:${number}`,
+    id: `pull_request:example-org/repo-one:${number}`,
     number,
-    key: `eladaviv/repo-one:pull_request:${number}`,
+    key: `example-org/repo-one:pull_request:${number}`,
     sourceId: `PR_${number}`,
-    url: `https://github.com/eladaviv/repo-one/pull/${number}`,
+    url: `https://github.com/example-org/repo-one/pull/${number}`,
     title: `Packet ${packetId}`,
     headBranch: `packet/${packetId}`,
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent",
     ...overrides
   });
@@ -2609,17 +2609,17 @@ function baseIssueComment(overrides: Partial<NormalizedComment> = {}): Normalize
   return {
     kind: "comment",
     commentKind: "issue_comment",
-    id: "comment:eladaviv/repo-one:issue_comment:5001",
+    id: "comment:example-org/repo-one:issue_comment:5001",
     sourceId: "5001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "issue",
     parentNumber: 11,
-    parentKey: "eladaviv/repo-one:issue:11",
-    url: "https://github.com/eladaviv/repo-one/issues/11#issuecomment-5001",
+    parentKey: "example-org/repo-one:issue:11",
+    url: "https://github.com/example-org/repo-one/issues/11#issuecomment-5001",
     body: "Can you start on this?",
     author: "owner",
     createdAt: "2026-04-18T08:30:00.000Z",
@@ -2633,17 +2633,17 @@ function basePrComment(overrides: Partial<NormalizedComment> = {}): NormalizedCo
   return {
     kind: "comment",
     commentKind: "pull_request_comment",
-    id: "comment:eladaviv/repo-one:pull_request_comment:6001",
+    id: "comment:example-org/repo-one:pull_request_comment:6001",
     sourceId: "6001",
     repoId: "repo-1",
-    repoKey: "eladaviv/repo-one",
-    repoOwner: "eladaviv",
+    repoKey: "example-org/repo-one",
+    repoOwner: "example-org",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     parentType: "pull_request",
     parentNumber: 21,
-    parentKey: "eladaviv/repo-one:pull_request:21",
-    url: "https://github.com/eladaviv/repo-one/pull/21#issuecomment-6001",
+    parentKey: "example-org/repo-one:pull_request:21",
+    url: "https://github.com/example-org/repo-one/pull/21#issuecomment-6001",
     body: "Please update the context packet.",
     author: "reviewer",
     createdAt: "2026-04-18T08:40:00.000Z",
@@ -2667,18 +2667,18 @@ function baseTaskRecord(
     handoffPolicy: executionPolicy.handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:21",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/21",
+    sourceId: "pull_request:example-org/repo-one:21",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/21",
     relevant: true,
     reason: "Reason",
     summary: "Summary",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       localRepoPath: "/tmp/code-root/repo-one",
       labels: [],
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/21",
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/21",
       instruction: "Instruction"
     },
     createdAt: "2026-04-18T10:00:00.000Z",
@@ -2688,14 +2688,14 @@ function baseTaskRecord(
 
 function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
   return {
-    id: "worktree:eladaviv/repo-one:issue:11",
+    id: "worktree:example-org/repo-one:issue:11",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     repoName: "repo-one",
     branchName: "feature/tasks",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11/docs/agents/feature-tasks/issue-11-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11/docs/agents/feature-tasks/issue-11-agent-log.md",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11/docs/agents/feature-tasks/issue-11-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11/docs/agents/feature-tasks/issue-11-agent-log.md",
     status: "planning",
     createdAt: "2026-04-18T09:00:00.000Z",
     updatedAt: "2026-04-18T09:00:00.000Z",
@@ -2705,8 +2705,8 @@ function baseWorktree(overrides: Partial<WorktreeRecord> = {}): WorktreeRecord {
 
 function baseIssueWorkstream(overrides: Partial<WorkstreamRecord> = {}): WorkstreamRecord {
   return {
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 11 },
     linkedIssueNumber: 11,
     linkedPrs: [],
@@ -2720,8 +2720,8 @@ function baseIssueWorkstream(overrides: Partial<WorkstreamRecord> = {}): Workstr
 
 function baseAttention(overrides: Partial<AttentionRecord> = {}): AttentionRecord {
   return {
-    workstreamId: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    workstreamId: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     needsAction: false,
     reasons: [],
     lastObservedAt: "2026-04-18T10:00:00.000Z",
@@ -2743,11 +2743,11 @@ function baseSyncPreflightPacketPlan() {
 
 function baseSyncPreflightWorkstream(overrides: Partial<WorkstreamRecord> = {}): WorkstreamRecord {
   return baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
+    id: "example-org/repo-one:issue:11",
     origin: { type: "issue", number: 11 },
     linkedIssueNumber: 11,
     phase: "implementing",
-    integration: { branchName: "agent/eladaviv-repo-one/issue-11", prNumber: 31 },
+    integration: { branchName: "agent/example-org-repo-one/issue-11", prNumber: 31 },
     packetPlan: baseSyncPreflightPacketPlan() as any,
     ...overrides
   });
@@ -2755,7 +2755,7 @@ function baseSyncPreflightWorkstream(overrides: Partial<WorkstreamRecord> = {}):
 
 function baseSyncPreflightAttention(overrides: Partial<AttentionRecord> = {}): AttentionRecord {
   return baseAttention({
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     reasons: ["packet_wave_complete_sync_needed"],
     ...overrides
   });
@@ -2763,13 +2763,13 @@ function baseSyncPreflightAttention(overrides: Partial<AttentionRecord> = {}): A
 
 function baseParentPullRequest(overrides: Partial<NormalizedPullRequest> = {}): NormalizedPullRequest {
   return basePullRequest({
-    id: "pull_request:eladaviv/repo-one:31",
+    id: "pull_request:example-org/repo-one:31",
     number: 31,
-    key: "eladaviv/repo-one:pull_request:31",
+    key: "example-org/repo-one:pull_request:31",
     sourceId: "PR_31",
-    url: "https://github.com/eladaviv/repo-one/pull/31",
+    url: "https://github.com/example-org/repo-one/pull/31",
     title: "Parent integration PR",
-    headBranch: "agent/eladaviv-repo-one/issue-11",
+    headBranch: "agent/example-org-repo-one/issue-11",
     baseBranch: "main",
     baseClassification: "top_level",
     ...overrides
@@ -2800,12 +2800,12 @@ function baseWaveAssessmentExecution(
     id: "checkpoint-1",
     sessionId: "checkpoint-1",
     identity: {
-      repoKey: "eladaviv/repo-one",
-      workstreamId: "eladaviv/repo-one:issue:11",
+      repoKey: "example-org/repo-one",
+      workstreamId: "example-org/repo-one:issue:11",
       waveId: "wave-0",
       parentPrNumber: 31,
       parentHeadSha: "abc123",
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11",
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-11",
       defaultBranch: "main",
       planRevision: "0:T1,T2",
       originalPlanningSessionId: "unknown",
@@ -2824,7 +2824,7 @@ function baseWaveAssessmentExecution(
     taskKind: "wave_plan_assessment",
     taskStatus: "completed",
     repoId: "repo-1",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     agentId: "agent",
     agentProvider: "codex",
     command: { executable: "codex", args: [], cwd: "/tmp/code-root/repo-one", timeoutMs: 1000 },
@@ -2868,9 +2868,9 @@ test("deriveTasks derives wave_plan_assessment before sync-parent tasks for comp
   const assessmentTask = tasks.find((task) => task.kind === "wave_plan_assessment");
   assert.ok(assessmentTask, "Should derive assessment task");
   assert.equal(assessmentTask.sourceKind, "pull_request");
-  assert.equal(assessmentTask.sourceId, "pull_request:eladaviv/repo-one:31");
-  assert.equal(assessmentTask.context.pullRequestUrl, "https://github.com/eladaviv/repo-one/pull/31");
-  assert.equal(assessmentTask.context.issueUrl, "https://github.com/eladaviv/repo-one/issues/11");
+  assert.equal(assessmentTask.sourceId, "pull_request:example-org/repo-one:31");
+  assert.equal(assessmentTask.context.pullRequestUrl, "https://github.com/example-org/repo-one/pull/31");
+  assert.equal(assessmentTask.context.issueUrl, "https://github.com/example-org/repo-one/issues/11");
   assert.equal(assessmentTask.context.waveAssessmentCheckpoint?.identity.currentWaveIndex, 0);
   assert.ok(!tasks.some((task) => task.kind === "sync_parent_branch_preflight"));
   assert.ok(!tasks.some((task) => task.kind === "sync_parent_branch"));
@@ -2982,19 +2982,19 @@ test("deriveTasks carries failed wave tasks forward so GitHub retry comments can
     handoffPolicy: executionPolicy.handoffPolicy,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:31",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/31",
+    sourceId: "pull_request:example-org/repo-one:31",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/31",
     relevant: true,
     reason: "Assessment failed.",
     summary: "Assess wave",
-    workstreamId: "eladaviv/repo-one:issue:11",
+    workstreamId: "example-org/repo-one:issue:11",
     lastFailureCommentId: "999",
     context: {
-      repoIdentifier: "eladaviv/repo-one",
-      pullRequestUrl: "https://github.com/eladaviv/repo-one/pull/31",
-      issueUrl: "https://github.com/eladaviv/repo-one/issues/11",
+      repoIdentifier: "example-org/repo-one",
+      pullRequestUrl: "https://github.com/example-org/repo-one/pull/31",
+      issueUrl: "https://github.com/example-org/repo-one/issues/11",
       labels: [],
       waveAssessmentCheckpoint: checkpoint,
       instruction: "Assess wave."
@@ -3106,7 +3106,7 @@ test("deriveTasks derives fresh wave assessment when original planning session c
     id: "task:plan_breakdown:planner-new",
     kind: "plan_breakdown",
     status: "completed",
-    workstreamId: "eladaviv/repo-one:issue:11"
+    workstreamId: "example-org/repo-one:issue:11"
   };
 
   const tasks = deriveTasks({
@@ -3162,8 +3162,8 @@ test("deriveTasks derives write_plan tasks for packet worktrees even when parent
 
   const issue = baseIssue({ number: 90 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:90",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:90",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 90 },
     linkedIssueNumber: 90,
     phase: "implementing",
@@ -3189,9 +3189,9 @@ test("deriveTasks derives write_plan tasks for packet worktrees even when parent
 
   const packetWorktree: WorktreeRecord = {
     ...baseWorktree({
-      id: "worktree:eladaviv/repo-one:packet:packet-1",
+      id: "worktree:example-org/repo-one:packet:packet-1",
       branchName: "packet/packet-1",
-      path: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-1",
+      path: "/tmp/code-root/_worktrees/example-org/repo-one/packet-1",
       packet: {
         parentWorkstreamId: workstream.id,
         packetId: "packet-1",
@@ -3235,7 +3235,7 @@ test("deriveTasks derives write_plan tasks for packet worktrees even when plan_a
 
   const issue = baseIssue({ number: 90 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:90",
+    id: "example-org/repo-one:issue:90",
     origin: { type: "issue", number: 90 },
     linkedIssueNumber: 90,
     phase: "planning"
@@ -3248,7 +3248,7 @@ test("deriveTasks derives write_plan tasks for packet worktrees even when plan_a
 
   const packetWorktree: WorktreeRecord = {
     ...baseWorktree({
-      id: "worktree:eladaviv/repo-one:packet:packet-1",
+      id: "worktree:example-org/repo-one:packet:packet-1",
       packet: {
         parentWorkstreamId: workstream.id,
         packetId: "packet-1",
@@ -3310,7 +3310,7 @@ test("deriveTasks packet planning task context and stability", () => {
   };
 
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:92",
+    id: "example-org/repo-one:issue:92",
     origin: { type: "issue", number: 92 },
     linkedIssueNumber: 92,
     packetPlan: packetPlan as any
@@ -3318,11 +3318,11 @@ test("deriveTasks packet planning task context and stability", () => {
 
   const packetWorktree: WorktreeRecord = {
     ...baseWorktree({
-      id: "worktree:eladaviv/repo-one:issue:92:packet:T1",
-      branchName: "agent/eladaviv-repo-one/workstream-issue-92/packet-t1",
-      path: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1",
-      planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1/docs/agents/packet-t1/t1-plan.md",
-      logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1/docs/agents/packet-t1/t1-log.md",
+      id: "worktree:example-org/repo-one:issue:92:packet:T1",
+      branchName: "agent/example-org-repo-one/workstream-issue-92/packet-t1",
+      path: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1",
+      planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1/docs/agents/packet-t1/t1-plan.md",
+      logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1/docs/agents/packet-t1/t1-log.md",
       packet: {
         parentWorkstreamId: workstream.id,
         packetId: "T1",
@@ -3409,7 +3409,7 @@ test("deriveTasks creates implement_plan for implementation-ready packet worktre
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementing",
@@ -3429,16 +3429,16 @@ test("deriveTasks creates implement_plan for implementation-ready packet worktre
   });
 
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
-    branchName: "agent/eladaviv-repo-one/workstream-issue-96/packet-t1",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1/docs/agents/packet-t1/packet-t1-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1/docs/agents/packet-t1/packet-t1-agent-log.md",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-96/packet-t1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1/docs/agents/packet-t1/packet-t1-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1/docs/agents/packet-t1/packet-t1-agent-log.md",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-96"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-96"
     },
     status: "implementation_ready"
   });
@@ -3480,7 +3480,7 @@ test("deriveTasks packet implement_plan uses worktree.prUrl if available", () =>
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementing",
@@ -3492,23 +3492,23 @@ test("deriveTasks packet implement_plan uses worktree.prUrl if available", () =>
     } as any
   });
 
-  const packetPrUrl = "https://github.com/eladaviv/repo-one/pull/100";
+  const packetPrUrl = "https://github.com/example-org/repo-one/pull/100";
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-96"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-96"
     },
     status: "implementation_ready",
     prUrl: packetPrUrl
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:100",
+    id: "pull_request:example-org/repo-one:100",
     number: 100,
-    key: "eladaviv/repo-one:pull_request:100",
+    key: "example-org/repo-one:pull_request:100",
     sourceId: "PR_100",
     url: packetPrUrl
   });
@@ -3564,29 +3564,29 @@ test("deriveTasks packet write_plan uses worktree.prUrl if available", () => {
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "planning"
   });
 
-  const packetPrUrl = "https://github.com/eladaviv/repo-one/pull/100";
+  const packetPrUrl = "https://github.com/example-org/repo-one/pull/100";
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-96"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-96"
     },
     status: "planning",
     prUrl: packetPrUrl
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:100",
+    id: "pull_request:example-org/repo-one:100",
     number: 100,
-    key: "eladaviv/repo-one:pull_request:100",
+    key: "example-org/repo-one:pull_request:100",
     sourceId: "PR_100",
     url: packetPrUrl
   });
@@ -3642,7 +3642,7 @@ test("deriveTasks does not duplicate packet implement_plan across repeated deriv
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementing",
@@ -3655,7 +3655,7 @@ test("deriveTasks does not duplicate packet implement_plan across repeated deriv
   });
 
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
@@ -3709,7 +3709,7 @@ test("deriveTasks keeps completed packet implement_plan terminal when context is
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementing",
@@ -3722,7 +3722,7 @@ test("deriveTasks keeps completed packet implement_plan terminal when context is
   });
 
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
@@ -3778,7 +3778,7 @@ test("deriveTasks does not create packet implement_plan for planning or awaiting
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementing",
@@ -3833,7 +3833,7 @@ test("deriveTasks ignores packet worktrees whose packet IDs are no longer in the
 
   const issue = baseIssue({ number: 196 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:196",
+    id: "example-org/repo-one:issue:196",
     origin: { type: "issue", number: 196 },
     linkedIssueNumber: 196,
     phase: "implementing",
@@ -3883,7 +3883,7 @@ test("deriveTasks does not create packet implement_plan after implementation_don
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "implementation_done",
@@ -3896,7 +3896,7 @@ test("deriveTasks does not create packet implement_plan after implementation_don
   });
 
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
     packet: { parentWorkstreamId: workstream.id, packetId: "T1", waveIndex: 0, parentIntegrationBranch: "main" },
     status: "implementation_done"
   });
@@ -3926,7 +3926,7 @@ test("deriveTasks does not carry forward pending packet implement_plan after app
 
   const issue = baseIssue({ number: 96 });
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:96",
+    id: "example-org/repo-one:issue:96",
     origin: { type: "issue", number: 96 },
     linkedIssueNumber: 96,
     phase: "planning",
@@ -3939,14 +3939,14 @@ test("deriveTasks does not carry forward pending packet implement_plan after app
   });
 
   const packetWorktree = baseWorktree({
-    id: "worktree:eladaviv/repo-one:issue:96:packet:t1",
-    branchName: "agent/eladaviv-repo-one/workstream-issue-96/packet-t1",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-t1",
+    id: "worktree:example-org/repo-one:issue:96:packet:t1",
+    branchName: "agent/example-org-repo-one/workstream-issue-96/packet-t1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/packet-t1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-96"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-96"
     },
     status: "awaiting_plan_approval"
   });
@@ -3961,8 +3961,8 @@ test("deriveTasks does not carry forward pending packet implement_plan after app
     repoName: repo.name,
     repoSlug: `${repo.owner}/${repo.name}`,
     sourceKind: "pull_request",
-    sourceId: "pull_request:eladaviv/repo-one:100",
-    sourceUrl: "https://github.com/eladaviv/repo-one/pull/100",
+    sourceId: "pull_request:example-org/repo-one:100",
+    sourceUrl: "https://github.com/example-org/repo-one/pull/100",
     relevant: true,
     reason: "previously approved",
     summary: "Implement packet",
@@ -3978,9 +3978,9 @@ test("deriveTasks does not carry forward pending packet implement_plan after app
   } as const;
 
   const packetPrWithoutApproval = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:100",
+    id: "pull_request:example-org/repo-one:100",
     number: 100,
-    key: "eladaviv/repo-one:pull_request:100",
+    key: "example-org/repo-one:pull_request:100",
     sourceId: "PR_100",
     headBranch: packetWorktree.branchName,
     labels: []
@@ -4086,12 +4086,12 @@ test("deriveTasks handles sync_parent_branch_preflight derivation", () => {
   };
 
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:110",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:110",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 110 },
     linkedIssueNumber: 110,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-110",
+      branchName: "agent/example-org-repo-one/issue-110",
       prNumber: 111
     },
     packetPlan: packetPlan as any
@@ -4126,7 +4126,7 @@ test("deriveTasks handles sync_parent_branch_preflight derivation", () => {
   assert.match(task.summary, /#110/);
   assert.match(task.summary, /wave 1/);
   assert.match(task.reason, /wave 0 is complete/);
-  assert.match(task.reason, /Parent integration branch: agent\/eladaviv-repo-one\/issue-110/);
+  assert.match(task.reason, /Parent integration branch: agent\/example-org-repo-one\/issue-110/);
   assert.match(task.reason, /Default branch: main/);
   assert.match(task.reason, /Next wave index: 1/);
   assert.match(task.reason, /Completed packet IDs: T1/);
@@ -4136,7 +4136,7 @@ test("deriveTasks handles sync_parent_branch_preflight derivation", () => {
   assert.ok(task.context.preflight, "Task context should have preflight data");
   assert.equal(task.context.preflight.currentWaveIndex, 0);
   assert.equal(task.context.preflight.nextWaveIndex, 1);
-  assert.equal(task.context.preflight.parentIntegrationBranch, "agent/eladaviv-repo-one/issue-110");
+  assert.equal(task.context.preflight.parentIntegrationBranch, "agent/example-org-repo-one/issue-110");
   assert.equal(task.context.preflight.defaultBranch, "main");
   assert.deepEqual(task.context.preflight.completedPacketIds, ["T1"]);
   assert.deepEqual(task.context.preflight.pendingFuturePacketIds, ["T2"]);
@@ -4163,7 +4163,7 @@ test("deriveTasks handles sync_parent_branch_preflight derivation", () => {
 
   // Negative case: PR-origin workstream
   const prWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:pr:22",
+    id: "example-org/repo-one:pr:22",
     origin: { type: "pr", number: 22 },
     packetPlan: packetPlan as any
   });
@@ -4200,12 +4200,12 @@ test("shouldCarryForwardUnresolvedTask for sync_parent_branch_preflight", () => 
   };
 
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:110",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:110",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 110 },
     linkedIssueNumber: 110,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-110",
+      branchName: "agent/example-org-repo-one/issue-110",
       prNumber: 111
     },
     packetPlan: packetPlan as any
@@ -4426,7 +4426,7 @@ test("sync_parent_branch_preflight meaningful preflight change reopens the compl
   const repoSync = baseRepoSync();
   const builder = new DefaultContextBuilder();
   const issue = baseIssue();
-  const workstream = baseSyncPreflightWorkstream({ integration: { branchName: "agent/eladaviv-repo-one/issue-11", prNumber: 31 } });
+  const workstream = baseSyncPreflightWorkstream({ integration: { branchName: "agent/example-org-repo-one/issue-11", prNumber: 31 } });
   const attention = baseSyncPreflightAttention();
 
   const now = "2026-04-18T10:00:00.000Z";
@@ -4572,11 +4572,11 @@ test("deriveTasks derives respond_pr_comment for a human packet PR comment", () 
 
   const issue = baseIssue();
   const parentWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     linkedIssueNumber: issue.number,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -4587,7 +4587,7 @@ test("deriveTasks derives respond_pr_comment for a human packet PR comment", () 
           title: "Packet one",
           summary: "Packet summary",
           status: "pr_open",
-          branchName: "agent/eladaviv-repo-one/issue-11-packet-t1",
+          branchName: "agent/example-org-repo-one/issue-11-packet-t1",
           prNumber: 101,
           acceptanceCriteria: [],
           filesLikelyTouched: [],
@@ -4601,32 +4601,32 @@ test("deriveTasks derives respond_pr_comment for a human packet PR comment", () 
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
-    headBranch: "agent/eladaviv-repo-one/issue-11-packet-t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    headBranch: "agent/example-org-repo-one/issue-11-packet-t1",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent",
-    url: "https://github.com/eladaviv/repo-one/pull/101"
+    url: "https://github.com/example-org/repo-one/pull/101"
   });
 
   const packetWorktree = baseWorktree({
     id: "worktree:packet:T1",
     branchName: packetPr.headBranch,
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-log.md",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-log.md",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-11"
     }
   });
 
   const comment = basePrComment({
-    id: "comment:eladaviv/repo-one:pull_request_comment:9001",
+    id: "comment:example-org/repo-one:pull_request_comment:9001",
     parentNumber: 101,
-    url: "https://github.com/eladaviv/repo-one/pull/101#discussion_r9001",
+    url: "https://github.com/example-org/repo-one/pull/101#discussion_r9001",
     pullRequestReviewLocation: {
       path: "src/example.ts",
       line: 42,
@@ -4721,11 +4721,11 @@ test("deriveTasks derives respond_pr_comment for a human packet PR comment even 
 
   const issue = baseIssue();
   const parentWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     linkedIssueNumber: issue.number,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -4742,9 +4742,9 @@ test("deriveTasks derives respond_pr_comment for a human packet PR comment even 
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
@@ -4782,11 +4782,11 @@ test("deriveTasks derives review_pr for packet PR with review label", () => {
 
   const issue = baseIssue();
   const parentWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     linkedIssueNumber: issue.number,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -4797,7 +4797,7 @@ test("deriveTasks derives review_pr for packet PR with review label", () => {
           title: "Packet one",
           summary: "Packet summary",
           status: "pr_open",
-          branchName: "agent/eladaviv-repo-one/issue-11-packet-t1",
+          branchName: "agent/example-org-repo-one/issue-11-packet-t1",
           prNumber: 101,
           acceptanceCriteria: [],
           filesLikelyTouched: [],
@@ -4811,27 +4811,27 @@ test("deriveTasks derives review_pr for packet PR with review label", () => {
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
     labels: [repo.labels.agentReview],
     headSha: "packet-head-a",
-    headBranch: "agent/eladaviv-repo-one/issue-11-packet-t1",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    headBranch: "agent/example-org-repo-one/issue-11-packet-t1",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent",
-    url: "https://github.com/eladaviv/repo-one/pull/101"
+    url: "https://github.com/example-org/repo-one/pull/101"
   });
 
   const packetWorktree = baseWorktree({
     id: "worktree:packet:T1",
     branchName: packetPr.headBranch,
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1",
-    planDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-plan.md",
-    logDocumentPath: "/tmp/code-root/_worktrees/eladaviv/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-log.md",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1",
+    planDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-plan.md",
+    logDocumentPath: "/tmp/code-root/_worktrees/example-org/repo-one/issue-11-packet-t1/docs/agents/packet-t1/issue-11-agent-log.md",
     packet: {
       parentWorkstreamId: parentWorkstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-11"
     }
   });
 
@@ -4870,18 +4870,18 @@ test("deriveTasks does not let parent PR review suppress packet PR review", () =
   const builder = new DefaultContextBuilder();
 
   const parentPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:100",
+    id: "pull_request:example-org/repo-one:100",
     number: 100,
     labels: [repo.labels.agentReview],
     headSha: "parent-head-a",
-    headBranch: "agent/eladaviv-repo-one/issue-11"
+    headBranch: "agent/example-org-repo-one/issue-11"
   });
 
   const parentWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     linkedPrs: [{ number: 100, role: "integration", status: "open" }],
@@ -4894,23 +4894,23 @@ test("deriveTasks does not let parent PR review suppress packet PR review", () =
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
     labels: [repo.labels.agentReview],
     headSha: "packet-head-a",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const completedParentReviewTask: any = {
-    id: "task:review_pr:pull_request:eladaviv/repo-one:100",
+    id: "task:review_pr:pull_request:example-org/repo-one:100",
     kind: "review_pr",
     status: "completed",
     sourceId: parentPr.id,
     updatedAt: now,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one"
+    repoSlug: "example-org/repo-one"
   };
 
   const tasks = deriveTasks({
@@ -4943,7 +4943,7 @@ test("deriveTasks does not duplicate packet review when packet head is unchanged
 
   const parentWorkstream = baseIssueWorkstream({
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -4954,16 +4954,16 @@ test("deriveTasks does not duplicate packet review when packet head is unchanged
   });
 
   const packetPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
     labels: [repo.labels.agentReview],
     headSha: "packet-head-a",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const completedPacketReviewTask: any = {
-    id: "task:review_pr:pull_request:eladaviv/repo-one:101",
+    id: "task:review_pr:pull_request:example-org/repo-one:101",
     kind: "review_pr",
     status: "completed",
     sourceId: packetPr.id,
@@ -4972,10 +4972,10 @@ test("deriveTasks does not duplicate packet review when packet head is unchanged
     summary: `Review packet PR #101: Add orchestrator tasks`,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     context: builder.build({
       taskKind: "review_pr",
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       sourceKind: "pull_request",
       sourceUrl: packetPr.url,
       labels: [repo.labels.agentReview],
@@ -5012,7 +5012,7 @@ test("deriveTasks re-derives packet review when packet head changes", () => {
 
   const parentWorkstream = baseIssueWorkstream({
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -5023,18 +5023,18 @@ test("deriveTasks re-derives packet review when packet head changes", () => {
   });
 
   const previousPacketPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
     labels: [repo.labels.agentReview],
     headSha: "packet-head-a",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const currentPacketPr = { ...previousPacketPr, headSha: "packet-head-b" };
 
   const completedPacketReviewTask: any = {
-    id: "task:review_pr:pull_request:eladaviv/repo-one:101",
+    id: "task:review_pr:pull_request:example-org/repo-one:101",
     kind: "review_pr",
     status: "completed",
     sourceId: currentPacketPr.id,
@@ -5043,10 +5043,10 @@ test("deriveTasks re-derives packet review when packet head changes", () => {
     summary: `Review packet PR #101: Add orchestrator tasks`,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     context: builder.build({
       taskKind: "review_pr",
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       sourceKind: "pull_request",
       sourceUrl: currentPacketPr.url,
       labels: [repo.labels.agentReview],
@@ -5085,7 +5085,7 @@ test("deriveTasks keeps sibling packet review state isolated", () => {
 
   const parentWorkstream = baseIssueWorkstream({
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-11",
+      branchName: "agent/example-org-repo-one/issue-11",
       prNumber: 100
     },
     packetPlan: {
@@ -5099,25 +5099,25 @@ test("deriveTasks keeps sibling packet review state isolated", () => {
   });
 
   const t1Pr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:101",
+    id: "pull_request:example-org/repo-one:101",
     number: 101,
     labels: [repo.labels.agentReview],
     headSha: "t1-head-a",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const t2Pr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:102",
+    id: "pull_request:example-org/repo-one:102",
     number: 102,
     labels: [repo.labels.agentReview],
     headSha: "t2-head-a",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const completedT1ReviewTask: any = {
-    id: "task:review_pr:pull_request:eladaviv/repo-one:101",
+    id: "task:review_pr:pull_request:example-org/repo-one:101",
     kind: "review_pr",
     status: "completed",
     sourceId: t1Pr.id,
@@ -5126,10 +5126,10 @@ test("deriveTasks keeps sibling packet review state isolated", () => {
     summary: `Review packet PR #101: Add orchestrator tasks`,
     repoId: "repo-1",
     repoName: "repo-one",
-    repoSlug: "eladaviv/repo-one",
+    repoSlug: "example-org/repo-one",
     context: builder.build({
       taskKind: "review_pr",
-      repoIdentifier: "eladaviv/repo-one",
+      repoIdentifier: "example-org/repo-one",
       sourceKind: "pull_request",
       sourceUrl: t1Pr.url,
       labels: [repo.labels.agentReview],
@@ -5170,18 +5170,18 @@ test("deriveTasks handles sync_parent_branch derivation", () => {
 
   const issue = baseIssue({ number: 110 });
   const parentPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:111",
+    id: "pull_request:example-org/repo-one:111",
     number: 111,
     labels: [repo.labels.agentSyncParentBranch],
-    url: "https://github.com/eladaviv/repo-one/pull/111"
+    url: "https://github.com/example-org/repo-one/pull/111"
   });
 
   const workstream = baseSyncPreflightWorkstream({
-    id: "eladaviv/repo-one:issue:110",
+    id: "example-org/repo-one:issue:110",
     origin: { type: "issue", number: 110 },
     linkedIssueNumber: 110,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-110",
+      branchName: "agent/example-org-repo-one/issue-110",
       prNumber: 111
     }
   });
@@ -5192,7 +5192,7 @@ test("deriveTasks handles sync_parent_branch derivation", () => {
   const continueAssessment = baseWaveAssessmentExecution("continue", {
     workstreamId: workstream.id,
     parentPrNumber: 111,
-    parentIntegrationBranch: "agent/eladaviv-repo-one/issue-110"
+    parentIntegrationBranch: "agent/example-org-repo-one/issue-110"
   });
 
   const tasks = deriveTasks({
@@ -5221,7 +5221,7 @@ test("deriveTasks handles sync_parent_branch derivation", () => {
   assert.match(task.summary, /wave 1/);
   assert.match(task.reason, /Explicit sync requested via label/);
   assert.match(task.reason, /#111/);
-  assert.match(task.reason, /Parent integration branch: agent\/eladaviv-repo-one\/issue-110/);
+  assert.match(task.reason, /Parent integration branch: agent\/example-org-repo-one\/issue-110/);
 
   assert.ok(task.context.preflight, "Task context should have preflight data");
   assert.equal(task.context.preflight.parentPrNumber, 111);
@@ -5302,17 +5302,17 @@ test("shouldCarryForwardUnresolvedTask for sync_parent_branch", () => {
 
   const issue = baseIssue({ number: 110 });
   const parentPr = basePullRequest({
-    id: "pull_request:eladaviv/repo-one:111",
+    id: "pull_request:example-org/repo-one:111",
     number: 111,
     labels: [repo.labels.agentSyncParentBranch]
   });
 
   const workstream = baseSyncPreflightWorkstream({
-    id: "eladaviv/repo-one:issue:110",
+    id: "example-org/repo-one:issue:110",
     origin: { type: "issue", number: 110 },
     linkedIssueNumber: 110,
     integration: {
-      branchName: "agent/eladaviv-repo-one/issue-110",
+      branchName: "agent/example-org-repo-one/issue-110",
       prNumber: 111
     }
   });
@@ -5323,7 +5323,7 @@ test("shouldCarryForwardUnresolvedTask for sync_parent_branch", () => {
   const continueAssessment = baseWaveAssessmentExecution("continue", {
     workstreamId: workstream.id,
     parentPrNumber: 111,
-    parentIntegrationBranch: "agent/eladaviv-repo-one/issue-110"
+    parentIntegrationBranch: "agent/example-org-repo-one/issue-110"
   });
 
   const firstTasks = deriveTasks({
@@ -5449,7 +5449,7 @@ test("deriveTasks derives prepare_pr_for_merge task when label is present on ope
   const worktree = baseWorktree({
     repoId: repo.id,
     branchName: "feature/tasks",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/pr-21"
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/pr-21"
   });
 
   const tasks = deriveTasks({
@@ -5694,12 +5694,12 @@ test("deriveTasks derives prepare_pr_for_merge for packet PR projections", () =>
 
   const issue = baseIssue();
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 11 },
     linkedIssueNumber: 11,
     phase: "implementing",
-    integration: { branchName: "agent/eladaviv-repo-one/issue-11", prNumber: 31 },
+    integration: { branchName: "agent/example-org-repo-one/issue-11", prNumber: 31 },
     packetPlan: {
       status: "approved",
       packets: {
@@ -5714,19 +5714,19 @@ test("deriveTasks derives prepare_pr_for_merge for packet PR projections", () =>
     number: 100,
     labels: ["prepare-for-merge"],
     headBranch: "packet/T1",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
   const packetWorktree = baseWorktree({
     id: "worktree:T1",
     branchName: "packet/T1",
-    path: "/tmp/code-root/_worktrees/eladaviv/repo-one/packet-T1",
+    path: "/tmp/code-root/_worktrees/example-org/repo-one/packet-T1",
     packet: {
       parentWorkstreamId: workstream.id,
       packetId: "T1",
       waveIndex: 0,
-      parentIntegrationBranch: "agent/eladaviv-repo-one/issue-11"
+      parentIntegrationBranch: "agent/example-org-repo-one/issue-11"
     }
   });
 
@@ -5748,7 +5748,7 @@ test("deriveTasks derives prepare_pr_for_merge for packet PR projections", () =>
   assert.equal(mergeTask.sourceId, packetPr.id);
   assert.equal(mergeTask.context.localRepoPath, packetWorktree.path);
   assert.equal(mergeTask.context.packetId, "T1");
-  assert.equal(mergeTask.context.prepareForMerge?.baseBranch, "agent/eladaviv-repo-one/issue-11");
+  assert.equal(mergeTask.context.prepareForMerge?.baseBranch, "agent/example-org-repo-one/issue-11");
   assert.match(mergeTask.summary, /packet/i);
   assert.match(mergeTask.reason, /packet: T1/);
 });
@@ -5761,12 +5761,12 @@ test("deriveTasks derives prepare_pr_for_merge for packet PR projection even wit
 
   const issue = baseIssue();
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
-    repoKey: "eladaviv/repo-one",
+    id: "example-org/repo-one:issue:11",
+    repoKey: "example-org/repo-one",
     origin: { type: "issue", number: 11 },
     linkedIssueNumber: 11,
     phase: "implementing",
-    integration: { branchName: "agent/eladaviv-repo-one/issue-11", prNumber: 31 },
+    integration: { branchName: "agent/example-org-repo-one/issue-11", prNumber: 31 },
     packetPlan: {
       status: "approved",
       packets: {
@@ -5781,7 +5781,7 @@ test("deriveTasks derives prepare_pr_for_merge for packet PR projection even wit
     number: 100,
     labels: ["prepare-for-merge"],
     headBranch: "packet/T1",
-    baseBranch: "agent/eladaviv-repo-one/issue-11",
+    baseBranch: "agent/example-org-repo-one/issue-11",
     baseClassification: "non_default_parent"
   });
 
@@ -5841,7 +5841,7 @@ test("deriveTasks does not duplicate prepare_pr_for_merge when PR is seen as bot
 
   const issue = baseIssue();
   const workstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:11",
+    id: "example-org/repo-one:issue:11",
     linkedIssueNumber: 11,
     activePrNumber: 100
   });
@@ -5945,7 +5945,7 @@ test("deriveTasks does not derive planning or implementation tasks for packet wo
   // Test 1: Parent workstream is abandoned
   const issue1 = baseIssue({ number: 97 });
   const abandonedWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:97",
+    id: "example-org/repo-one:issue:97",
     origin: { type: "issue", number: 97 },
     linkedIssueNumber: 97,
     status: "open",
@@ -5966,7 +5966,7 @@ test("deriveTasks does not derive planning or implementation tasks for packet wo
   // Test 2: Packet PR is closed
   const issue2 = baseIssue({ number: 98 });
   const activeWorkstream = baseIssueWorkstream({
-    id: "eladaviv/repo-one:issue:98",
+    id: "example-org/repo-one:issue:98",
     origin: { type: "issue", number: 98 },
     linkedIssueNumber: 98,
     status: "open",
