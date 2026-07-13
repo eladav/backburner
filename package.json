@@ -1,6 +1,6 @@
 {
   "name": "@backburner/cli",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "description": "Local GitHub-based agent orchestration CLI",
   "license": "MIT",
