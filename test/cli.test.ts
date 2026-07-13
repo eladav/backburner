@@ -151,7 +151,7 @@ test("runCli records partial failures, dispatches pending tasks, and persists au
       agentRunner: {
         async dispatch(task, context, agentConfig) {
           const promptPacket = buildPromptPacket(task, context);
-          const safeTaskId = task.id.replaceAll("/", "_");
+          const safeTaskId = task.id.replace(/[^a-zA-Z0-9_-]+/g, "_");
           const execution = {
             id: `exec:${task.id}:mock`,
             taskId: task.id,
@@ -362,9 +362,16 @@ test("runCli materializes product-approved issue into a worktree record and writ
     assert.equal(tasksState.tasks.some((task) => task.kind === "write_plan"), false);
     const writeProductSpecTask = tasksState.tasks.find((task) => task.kind === "write_product_spec");
     assert.equal(writeProductSpecTask?.status, "completed");
-    assert.match(
-      writeProductSpecTask?.context.productSpecDocumentPath ?? "",
-      /docs\/agents\/agent-example-org-repo-one-issue-17\/issue-17-product-spec\.md$/
+    assert.equal(
+      writeProductSpecTask?.context.productSpecDocumentPath?.endsWith(
+        path.join(
+          "docs",
+          "agents",
+          "agent-example-org-repo-one-issue-17",
+          "issue-17-product-spec.md"
+        )
+      ),
+      true
     );
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -554,10 +561,20 @@ test("runCli maps a plan-approved PR to an implement_plan task using the linked 
 
     const implementTask = dispatched.find((task) => task.kind === "implement_plan");
     assert.equal(summary.taskCount, 1);
-    assert.equal(implementTask?.context.localRepoPath?.includes("_worktrees/example-org/repo-one/issue-17"), true);
+    assert.equal(
+      implementTask?.context.localRepoPath?.includes(
+        path.join("_worktrees", "example-org", "repo-one", "issue-17")
+      ),
+      true
+    );
     assert.equal(
       implementTask?.context.planDocumentPath?.endsWith(
-        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-plan.md"
+        path.join(
+          "docs",
+          "agents",
+          "agent-example-org-repo-one-issue-17",
+          "issue-17-agent-plan.md"
+        )
       ),
       true
     );

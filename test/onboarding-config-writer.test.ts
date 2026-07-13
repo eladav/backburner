@@ -237,12 +237,21 @@ test("ConfigWriter: agents without model field omit the key", async () => {
   }
 });
 
-test("ConfigWriter: write into non-writable directory throws", async () => {
-  const writer = new ConfigWriter();
-  const draft = makeDraft("/proc/no-write-here-ever");
+test("ConfigWriter: write below a file path throws", async () => {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "backburner-config-blocked-path-"));
 
-  await assert.rejects(() => writer.write(draft), (err) => {
-    assert.ok(err instanceof Error);
-    return true;
-  });
+  try {
+    const blockingFile = path.join(tmpDir, "not-a-directory");
+    await fs.writeFile(blockingFile, "", "utf8");
+
+    const writer = new ConfigWriter();
+    const draft = makeDraft(path.join(blockingFile, "management"));
+
+    await assert.rejects(() => writer.write(draft), (err) => {
+      assert.ok(err instanceof Error);
+      return true;
+    });
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
 });

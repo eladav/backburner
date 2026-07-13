@@ -40,7 +40,7 @@
     "link:local": "npm run build && npm link",
     "install:local": "node scripts/install-local-package.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --import ./dist/test/setup.js --test --test-concurrency=1 dist/test/*.test.js",
+    "test": "npm run build && node scripts/run-tests.mjs",
     "run:backburner": "node dist/src/cli/run.js run",
     "run:github-broker": "node dist/src/cli/run.js broker",
     "smoke:github-broker": "node dist/src/cli/run.js broker-smoke",

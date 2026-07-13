@@ -31,10 +31,16 @@ test("loadPromptsConfig returns valid config when prompts.json is present", asyn
     await writeFile(path.join(tempDir, "prompts.json"), content, "utf8");
     const result = await loadPromptsConfig(tempDir);
     assert.ok(result !== undefined);
-    assert.equal(result.promptProfiles.default.plan, "prompts/plan.md");
-    assert.equal(result.promptProfiles.default.review, "prompts/review.md");
-    assert.equal(result.promptProfiles.default.waveAssessment, "prompts/wave-assessment.md");
-    assert.equal(result.promptProfiles.default.waveReplanning, "prompts/wave-replanning.md");
+    assert.equal(result.promptProfiles.default.plan, path.join("prompts", "plan.md"));
+    assert.equal(result.promptProfiles.default.review, path.join("prompts", "review.md"));
+    assert.equal(
+      result.promptProfiles.default.waveAssessment,
+      path.join("prompts", "wave-assessment.md")
+    );
+    assert.equal(
+      result.promptProfiles.default.waveReplanning,
+      path.join("prompts", "wave-replanning.md")
+    );
     assert.equal(result.promptProfiles.default.implement, undefined);
   } finally {
     await rm(tempDir, { recursive: true, force: true });

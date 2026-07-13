@@ -310,7 +310,12 @@ test("product approval label creates Product Specification worktree metadata and
 
     assert.equal(result.worktrees.length, 1);
     assert.equal(result.worktrees[0]?.branchName, "agent/example-org-repo-one/issue-17");
-    assert.match(result.worktrees[0]?.path ?? "", /_worktrees\/example-org\/repo-one\/issue-17$/);
+    assert.equal(
+      result.worktrees[0]?.path.endsWith(
+        path.join("_worktrees", "example-org", "repo-one", "issue-17")
+      ),
+      true
+    );
     assert.equal(result.worktrees[0]?.prNumber, 101);
     assert.equal(result.worktrees[0]?.status, "product_specification");
     assert.equal(result.tasks.some((task) => task.kind === "write_product_spec"), true);
@@ -322,13 +327,23 @@ test("product approval label creates Product Specification worktree metadata and
     const writePlanTask = result.tasks.find((task) => task.kind === "write_product_spec");
     assert.equal(
       writePlanTask?.context.productSpecDocumentPath?.endsWith(
-        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-product-spec.md"
+        path.join(
+          "docs",
+          "agents",
+          "agent-example-org-repo-one-issue-17",
+          "issue-17-product-spec.md"
+        )
       ),
       true
     );
     assert.equal(
       writePlanTask?.context.logDocumentPath?.endsWith(
-        "docs/agents/agent-example-org-repo-one-issue-17/issue-17-agent-log.md"
+        path.join(
+          "docs",
+          "agents",
+          "agent-example-org-repo-one-issue-17",
+          "issue-17-agent-log.md"
+        )
       ),
       true
     );

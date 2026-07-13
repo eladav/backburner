@@ -32,7 +32,9 @@ test("validateLearningProposals validates a valid proposal and resolves path", a
   const validated = result.proposals[0]!;
   assert.equal(validated.status, "validated");
   assert.equal(validated.validationStatus, "passed");
-  assert.ok(validated.resolvedArtifactPath?.endsWith("learnings/repos/repo1.md"));
+  assert.ok(
+    validated.resolvedArtifactPath?.endsWith(path.join("learnings", "repos", "repo1.md"))
+  );
 });
 
 test("validateLearningProposals narrows scope based on evidence", async () => {
