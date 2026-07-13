@@ -1,0 +1,63 @@
+{
+  "name": "@backburner/cli",
+  "version": "0.1.5",
+  "type": "module",
+  "description": "Local GitHub-based agent orchestration CLI",
+  "license": "MIT",
+  "author": "Elad Aviv",
+  "keywords": [
+    "cli",
+    "github",
+    "agents",
+    "orchestration",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eladav/backburner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eladav/backburner/issues"
+  },
+  "homepage": "https://github.com/eladav/backburner#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/src",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "bin": {
+    "backburner": "dist/src/cli/run.js"
+  },
+  "scripts": {
+    "clean": "node scripts/clean-dist.mjs",
+    "build": "npm run clean && tsc -p tsconfig.json && node scripts/ensure-npm-bin.mjs",
+    "build:backburner": "npm run build",
+    "build:github-broker": "npm run build",
+    "prepack": "npm run build",
+    "link:local": "npm run build && npm link",
+    "install:local": "node scripts/install-local-package.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --import ./dist/test/setup.js --test --test-concurrency=1 dist/test/*.test.js",
+    "run:backburner": "node dist/src/cli/run.js run",
+    "run:github-broker": "node dist/src/cli/run.js broker",
+    "smoke:github-broker": "node dist/src/cli/run.js broker-smoke",
+    "init": "node dist/src/cli/run.js init"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@smithery/api": "^0.67.0",
+    "cross-spawn": "^7.0.6",
+    "qrcode-terminal": "^0.12.0",
+    "xstate": "^5.31.0",
+    "zod": "^4.4.3"
+  }
+}
