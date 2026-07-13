@@ -40,35 +40,35 @@ test("ConfigurePathsStep: preserves --management-dir flag in non-interactive mod
   const ctx = makeCtx({ managementDir: "/tmp/mgmt" });
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
-  assert.equal(ctx.managementDir, "/tmp/mgmt");
+  assert.equal(ctx.managementDir, path.resolve("/tmp/mgmt"));
 });
 
 test("ConfigurePathsStep: preserves --outputs-dir flag in non-interactive mode", async () => {
   const ctx = makeCtx({ outputsDir: "/tmp/out" });
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
-  assert.equal(ctx.outputsDir, "/tmp/out");
+  assert.equal(ctx.outputsDir, path.resolve("/tmp/out"));
 });
 
 test("ConfigurePathsStep: preserves --log-dir flag in non-interactive mode", async () => {
   const ctx = makeCtx({ logDir: "/tmp/logs" });
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
-  assert.equal(ctx.logDir, "/tmp/logs");
+  assert.equal(ctx.logDir, path.resolve("/tmp/logs"));
 });
 
 test("ConfigurePathsStep: preserves --workspaces-dir flag in non-interactive mode", async () => {
   const ctx = makeCtx({ workspacesDir: "/tmp/ws" });
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
-  assert.equal(ctx.workspacesDir, "/tmp/ws");
+  assert.equal(ctx.workspacesDir, path.resolve("/tmp/ws"));
 });
 
 test("ConfigurePathsStep: workspaces default is nested under code root", async () => {
   const ctx = makeCtx({ codeRoot: "/tmp/code", workspacesDir: "" });
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
-  assert.equal(ctx.workspacesDir, "/tmp/code/_worktrees");
+  assert.equal(ctx.workspacesDir, path.resolve("/tmp/code/_worktrees"));
 });
 
 test("ConfigurePathsStep: all four flags preserved simultaneously", async () => {
@@ -81,10 +81,10 @@ test("ConfigurePathsStep: all four flags preserved simultaneously", async () => 
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
 
-  assert.equal(ctx.managementDir, "/tmp/mgmt");
-  assert.equal(ctx.outputsDir, "/tmp/out");
-  assert.equal(ctx.logDir, "/tmp/logs");
-  assert.equal(ctx.workspacesDir, "/tmp/ws");
+  assert.equal(ctx.managementDir, path.resolve("/tmp/mgmt"));
+  assert.equal(ctx.outputsDir, path.resolve("/tmp/out"));
+  assert.equal(ctx.logDir, path.resolve("/tmp/logs"));
+  assert.equal(ctx.workspacesDir, path.resolve("/tmp/ws"));
 });
 
 test("ConfigurePathsStep: log dir default does not use hardcoded legacy output paths", async () => {
@@ -94,7 +94,7 @@ test("ConfigurePathsStep: log dir default does not use hardcoded legacy output p
   const step = new ConfigurePathsStep();
   await step.run(ctx, new NonInteractivePrompter());
 
-  assert.equal(ctx.outputsDir, "/custom/outputs");
+  assert.equal(ctx.outputsDir, path.resolve("/custom/outputs"));
   assert.ok(
     !ctx.logDir.includes("backburner-outputs"),
     `logDir must not reference hardcoded legacy outputs, got: ${ctx.logDir}`

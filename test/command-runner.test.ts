@@ -128,6 +128,7 @@ test("ExecFileCommandRunner times out a descendant tree and retains captured out
         "});",
         "",
         "child.unref();",
+        "setInterval(() => {}, 1000);",
         ""
       ].join("\n"),
       "utf8"
@@ -197,7 +198,10 @@ test("ExecFileCommandRunner preserves spawn options for normal launches without 
   assert.equal(call.options.windowsHide, false);
   assert.equal(call.options.shell, undefined);
   assert.equal((call.options.env as NodeJS.ProcessEnv).CUSTOM_ENV_VALUE, "custom");
-  assert.equal((call.options.env as NodeJS.ProcessEnv).PATH, process.env.PATH);
+  assert.equal(
+    findEnvironmentValue(call.options.env as NodeJS.ProcessEnv, "PATH"),
+    findEnvironmentValue(process.env, "PATH")
+  );
 });
 
 test("ExecFileCommandRunner maps signal-only close events to exit code 1", async () => {
@@ -281,6 +285,11 @@ interface SpawnCall {
   command: string;
   args: string[];
   options: SpawnOptions;
+}
+
+function findEnvironmentValue(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  const entry = Object.entries(env).find(([key]) => key.toLowerCase() === name.toLowerCase());
+  return entry?.[1];
 }
 
 class FakeChildProcess extends EventEmitter {
