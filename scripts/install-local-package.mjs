@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -8,7 +9,7 @@ import { fileURLToPath } from "node:url";
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");
 const args = process.argv.slice(2);
-const npmExecutable = process.platform === "win32" ? "npm.cmd" : "npm";
+const npmInvocation = resolveNpmInvocation();
 
 main().catch((error) => {
   const message = error instanceof Error ? error.message : String(error);
@@ -22,7 +23,7 @@ async function main() {
   const packDir = await mkdtemp(path.join(os.tmpdir(), "backburner-pack-"));
 
   try {
-    const packResult = run(npmExecutable, ["pack", "--pack-destination", packDir], repoRoot);
+    const packResult = runNpm(["pack", "--pack-destination", packDir], repoRoot);
     const tarballName = packResult.stdout
       .trim()
       .split(/\r?\n/)
@@ -41,16 +42,20 @@ async function main() {
     }
     installArgs.push(tarballPath);
 
-    run(npmExecutable, installArgs, repoRoot);
+    runNpm(installArgs, repoRoot);
 
-    const binCommand = resolveInstalledBinCommand(prefix);
+    const installedCommand = resolveInstalledCommand(prefix);
 
     const verifyOutputsDir = path.join(packDir, "verify-outputs");
-    const verifyResult = run(binCommand, ["journal", "--outputs-dir", verifyOutputsDir, "--last", "1", "--json"], repoRoot);
-    assertJsonArrayOutput(verifyResult.stdout, binCommand);
+    const verifyResult = run(
+      installedCommand.command,
+      [...installedCommand.args, "journal", "--outputs-dir", verifyOutputsDir, "--last", "1", "--json"],
+      repoRoot
+    );
+    assertJsonArrayOutput(verifyResult.stdout, installedCommand.displayName);
 
     process.stdout.write(`Installed local package from ${tarballPath}\n`);
-    process.stdout.write(`Verified command: ${binCommand}\n`);
+    process.stdout.write(`Verified command: ${installedCommand.displayName}\n`);
     if (!keepTarball) {
       process.stdout.write("Use --keep-tarball to preserve the generated package archive.\n");
     }
@@ -98,13 +103,54 @@ function run(command, commandArgs, cwd) {
   return { stdout: result.stdout };
 }
 
-function resolveInstalledBinCommand(prefix) {
+function runNpm(commandArgs, cwd) {
+  return run(npmInvocation.command, [...npmInvocation.args, ...commandArgs], cwd);
+}
+
+function resolveNpmInvocation() {
+  const bundledNpmCli = path.join(path.dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js");
+  const npmCli = [process.env.npm_execpath, bundledNpmCli].find(
+    (candidate) => candidate !== undefined && existsSync(candidate)
+  );
+
+  if (npmCli !== undefined) {
+    return { command: process.execPath, args: [npmCli] };
+  }
+
+  return { command: process.platform === "win32" ? "npm.cmd" : "npm", args: [] };
+}
+
+function resolveInstalledCommand(prefix) {
   const resolvedPrefix = prefix !== undefined ? path.resolve(prefix) : readGlobalNpmPrefix();
-  return path.join(resolvedPrefix, process.platform === "win32" ? "backburner.cmd" : "bin/backburner");
+  const binCommand = path.join(resolvedPrefix, process.platform === "win32" ? "backburner.cmd" : "bin/backburner");
+
+  if (process.platform !== "win32") {
+    return { command: binCommand, args: [], displayName: binCommand };
+  }
+
+  if (!existsSync(binCommand)) {
+    throw new Error(`Installed command was not created: ${binCommand}`);
+  }
+
+  const cliEntryPoint = path.join(
+    resolvedPrefix,
+    "node_modules",
+    "@backburner",
+    "cli",
+    "dist",
+    "src",
+    "cli",
+    "run.js"
+  );
+  if (!existsSync(cliEntryPoint)) {
+    throw new Error(`Installed CLI entry point was not found: ${cliEntryPoint}`);
+  }
+
+  return { command: process.execPath, args: [cliEntryPoint], displayName: binCommand };
 }
 
 function readGlobalNpmPrefix() {
-  const result = run(npmExecutable, ["prefix", "--global"], repoRoot);
+  const result = runNpm(["prefix", "--global"], repoRoot);
   const prefix = result.stdout.trim();
   if (!prefix) {
     throw new Error("Could not determine npm global prefix for installed command verification");
