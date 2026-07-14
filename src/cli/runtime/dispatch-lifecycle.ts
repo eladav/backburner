@@ -527,6 +527,12 @@ export async function runDispatchWithMergePrepLifecycle(input: {
   commandRunner: CommandRunner;
   gitGateway: GitGateway;
   workspaceRecoveryService: WorkspaceRecoveryService;
+  /**
+   * The outer orchestration run performs workspace recovery before its first
+   * dispatch. Follow-up dispatches must not reset a worktree before completed
+   * tasks have been handed off.
+   */
+  skipWorkspaceRecovery?: boolean;
   agentPool?: AgentPool | undefined;
 }): Promise<{ tasks: TaskRecord[]; executions: ExecutionRecord[]; workstreams: WorkstreamRecord[] }> {
   const {
@@ -557,8 +563,11 @@ export async function runDispatchWithMergePrepLifecycle(input: {
   }
 
   // ── Phase 0: Recover workspaces of failed workspace-write tasks ─────────────
+  // This phase is intentionally skipped for follow-up dispatches in the same
+  // outer run so a failed sibling cannot erase a completed task's handoff.
 
   const seenRecoveryPaths = new Set<string>();
+  const recoveryResultByPath = new Map<string, WorkspaceRecoveryRecord>();
   const existingRecoveryRecords = await stateStore.loadWorkspaceRecoveryState();
   const recoveryRecords = [...existingRecoveryRecords];
   let recoveryStateChanged = false;
@@ -574,12 +583,23 @@ export async function runDispatchWithMergePrepLifecycle(input: {
   const recoveryResultByTaskId = new Map<string, WorkspaceRecoveryRecord>();
 
   for (const task of hydratedInputTasks) {
-    if (!workspaceRecoveryService.isRecoveryNeeded(task)) {
+    if (input.skipWorkspaceRecovery || !workspaceRecoveryService.isRecoveryNeeded(task)) {
       continue;
     }
 
     const localPath = workspaceRecoveryService.resolveTaskWorkspacePath(task);
     if (localPath && seenRecoveryPaths.has(localPath)) {
+      const sharedRecoveryResult = recoveryResultByPath.get(localPath);
+      if (sharedRecoveryResult) {
+        recoveryResultByTaskId.set(task.id, sharedRecoveryResult);
+        if (
+          sharedRecoveryResult.outcome === "recovered" ||
+          sharedRecoveryResult.outcome === "skipped"
+        ) {
+          task.context.recoveryNeeded = false;
+          taskStateChangedByRecovery = true;
+        }
+      }
       continue;
     }
     if (localPath) {
@@ -595,6 +615,9 @@ export async function runDispatchWithMergePrepLifecycle(input: {
     counts[recoveryResult.outcome]++;
     recoveryRecords.push(recoveryResult);
     recoveryResultByTaskId.set(task.id, recoveryResult);
+    if (localPath) {
+      recoveryResultByPath.set(localPath, recoveryResult);
+    }
     recoveryStateChanged = true;
 
     if (recoveryResult.outcome === "recovered" || recoveryResult.outcome === "skipped") {

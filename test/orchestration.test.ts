@@ -2927,6 +2927,16 @@ test("runCli workspace recovery: duplicate workspace paths are recovered only on
     });
 
     assert.equal(recoverCallCount, 1, "recoverWorkspace should be called exactly once for a shared workspace path");
+    const recoveredTasks = JSON.parse(await readFile(path.join(stateDir, "tasks.json"), "utf8")) as TaskStateFile;
+    for (const task of recoveredTasks.tasks) {
+      if (task.id.includes("pull_request:example-org/repo-one:")) {
+        assert.equal(
+          task.context.recoveryNeeded,
+          false,
+          "a successful shared-worktree recovery must satisfy every failed task using that path"
+        );
+      }
+    }
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }

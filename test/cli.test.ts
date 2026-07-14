@@ -592,7 +592,10 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
   const managementDir = path.join(tempDir, "management");
   const stateDir = path.join(managementDir, "state");
   const codeRoot = path.join(tempDir, "code-root");
-  const gitGateway = new RecordingHandoffGitGateway();
+  const events: string[] = [];
+  const workspaceState = { dirty: false };
+  const gitGateway = new OrderingHandoffGitGateway(workspaceState, events);
+  const worktreePath = path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17");
 
   try {
     await mkdir(stateDir, { recursive: true });
@@ -637,9 +640,9 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
               prNumber: 23,
               prUrl: "https://github.com/example-org/repo-one/pull/23",
               branchName: "agent/example-org-repo-one/issue-17",
-              path: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17"),
-              planDocumentPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17", "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-plan.md"),
-              logDocumentPath: path.join(codeRoot, "_worktrees", "example-org", "repo-one", "issue-17", "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-log.md"),
+              path: worktreePath,
+              planDocumentPath: path.join(worktreePath, "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-plan.md"),
+              logDocumentPath: path.join(worktreePath, "docs", "agents", "agent-example-org-repo-one-issue-17", "issue-17-agent-log.md"),
               status: "implementation_ready",
               createdAt: "2026-04-18T11:00:00.000Z",
               updatedAt: "2026-04-18T11:00:00.000Z"
@@ -649,6 +652,67 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
         null,
         2
       ),
+      "utf8"
+    );
+    await writeFile(
+      path.join(stateDir, "tasks.json"),
+      JSON.stringify({
+        tasks: [{
+          id: "task:respond_pr_comment:comment:example-org/repo-one:pull_request_comment:old-review",
+          kind: "respond_pr_comment",
+          status: "failed",
+          executionPermission: "workspace-write",
+          handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
+          repoId: "repo-1",
+          repoName: "repo-one",
+          repoSlug: "example-org/repo-one",
+          sourceKind: "comment",
+          sourceId: "comment:example-org/repo-one:pull_request_comment:old-review",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23#issuecomment-old-review",
+          parentSourceKind: "pull_request",
+          parentSourceId: "pull_request:example-org/repo-one:23",
+          relevant: true,
+          reason: "Prior task timed out.",
+          summary: "Respond to prior comment",
+          createdAt: "2026-04-18T10:00:00.000Z",
+          updatedAt: "2026-04-18T10:00:00.000Z",
+          context: {
+            repoIdentifier: "example-org/repo-one",
+            localRepoPath: worktreePath,
+            branchName: "agent/example-org/repo-one/issue-17",
+            labels: ["agent-plan-approved"],
+            instruction: "Respond to the pull request comment.",
+            recoveryNeeded: true
+          }
+        }, {
+          id: "task:respond_pr_comment:comment:example-org/repo-one:pull_request_comment:stale-sibling",
+          kind: "respond_pr_comment",
+          status: "failed",
+          executionPermission: "workspace-write",
+          handoffPolicy: { expectsPushableHandoff: true, orchestratorOwnsPush: true, remotePublishOwner: "orchestrator" },
+          repoId: "repo-1",
+          repoName: "repo-one",
+          repoSlug: "example-org/repo-one",
+          sourceKind: "comment",
+          sourceId: "comment:example-org/repo-one:pull_request_comment:stale-sibling",
+          sourceUrl: "https://github.com/example-org/repo-one/pull/23#issuecomment-stale-sibling",
+          parentSourceKind: "pull_request",
+          parentSourceId: "pull_request:example-org/repo-one:23",
+          relevant: true,
+          reason: "Prior sibling task timed out.",
+          summary: "Respond to sibling comment",
+          createdAt: "2026-04-18T10:00:00.000Z",
+          updatedAt: "2026-04-18T10:00:00.000Z",
+          context: {
+            repoIdentifier: "example-org/repo-one",
+            localRepoPath: worktreePath,
+            branchName: "agent/example-org-repo-one/issue-17",
+            labels: ["agent-plan-approved"],
+            instruction: "Respond to the sibling pull request comment.",
+            recoveryNeeded: true
+          }
+        }]
+      }, null, 2),
       "utf8"
     );
 
@@ -691,7 +755,17 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
                 headBranch: "agent/example-org-repo-one/issue-17"
               })
             ],
-            comments: [],
+            comments: [{
+              ...sampleComment(),
+              id: "comment:example-org/repo-one:pull_request_comment:old-review",
+              sourceId: "old-review",
+              url: "https://github.com/example-org/repo-one/pull/23#issuecomment-old-review"
+            }, {
+              ...sampleComment(),
+              id: "comment:example-org/repo-one:pull_request_comment:stale-sibling",
+              sourceId: "stale-sibling",
+              url: "https://github.com/example-org/repo-one/pull/23#issuecomment-stale-sibling"
+            }],
             repoResults: [createRepoResult("repo-1", "repo-one", codeRoot, "synced", "ok")],
             failures: []
           };
@@ -699,6 +773,8 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
       },
       agentRunner: {
         async dispatch(task, context, agentConfig) {
+          events.push("dispatch");
+          workspaceState.dirty = true;
           return {
             taskStatus: "completed",
             execution: {
@@ -727,6 +803,22 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
           };
         }
       },
+      workspaceRecoveryService: {
+        isRecoveryNeeded: (task: TaskRecord) => task.context.recoveryNeeded === true,
+        resolveTaskWorkspacePath: (task: TaskRecord) => task.context.localRepoPath ?? null,
+        recoverWorkspace: async (input: { task: TaskRecord }) => {
+          events.push("recovery");
+          workspaceState.dirty = false;
+          return {
+            taskId: input.task.id,
+            taskKind: input.task.kind,
+            workspacePath: worktreePath,
+            outcome: "recovered" as const,
+            reason: "Workspace reset.",
+            recoveredAt: "2026-04-18T10:00:01.000Z"
+          };
+        }
+      } as any,
       logger: { info: () => undefined, warn: () => undefined }
     });
 
@@ -742,6 +834,7 @@ test("runCli commits and pushes completed workspace-write handoffs from the orch
         branch: "agent/example-org-repo-one/issue-17"
       }
     ]);
+    assert.deepEqual(events, ["recovery", "dispatch", "commit", "push"]);
 
     const worktreesState = JSON.parse(await readFile(path.join(stateDir, "worktrees.json"), "utf8")) as {
       worktrees: WorktreeRecord[];
@@ -996,20 +1089,23 @@ class TestGitGateway implements GitGateway {
   }
 }
 
-class RecordingHandoffGitGateway extends TestGitGateway {
+class OrderingHandoffGitGateway extends TestGitGateway {
   readonly commitAllCalls: Array<{ localPath: string; message: string }> = [];
   readonly pushBranchCalls: Array<{ localPath: string; branch: string }> = [];
 
-  private readonly cleanCheckCounts = new Map<string, number>();
+  constructor(
+    private readonly workspaceState: { dirty: boolean },
+    private readonly events: string[]
+  ) {
+    super();
+  }
 
   override async isWorkingTreeClean(localPath: string): Promise<boolean> {
     if (localPath.includes("management") || localPath.includes("outputs")) {
       return true;
     }
     if (localPath.includes("_worktrees")) {
-      const count = this.cleanCheckCounts.get(localPath) ?? 0;
-      this.cleanCheckCounts.set(localPath, count + 1);
-      return count === 0;
+      return !this.workspaceState.dirty;
     }
     return true;
   }
@@ -1023,11 +1119,13 @@ class RecordingHandoffGitGateway extends TestGitGateway {
 
   override async commitAll(localPath: string, message: string): Promise<boolean> {
     this.commitAllCalls.push({ localPath, message });
+    this.events.push("commit");
     return true;
   }
 
   override async pushBranch(localPath: string, branch: string): Promise<void> {
     this.pushBranchCalls.push({ localPath, branch });
+    this.events.push("push");
   }
 }
 
