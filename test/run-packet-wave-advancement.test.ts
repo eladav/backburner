@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import {
+  buildPacketProvisioningRepoPathMap,
   buildPacketWaveAdvancementEvaluationForRun,
   runCli,
   type ParentBranchSyncPreflightRunSummary
@@ -167,6 +168,58 @@ function preflightSummary(
 
   return summary;
 }
+
+function repoResult(input: {
+  id: string;
+  status: RepoSyncRecord["status"];
+  fetched: boolean;
+  defaultBranchSyncStatus?: RepoSyncRecord["defaultBranchSyncStatus"];
+}): RepoSyncRecord {
+  return {
+    repoId: input.id,
+    repoName: input.id,
+    repoSlug: `owner/${input.id}`,
+    localPath: `/tmp/${input.id}`,
+    codeRoot: "/tmp",
+    status: input.status,
+    existedBeforeSync: true,
+    cloned: false,
+    fetched: input.fetched,
+    defaultBranch: "main",
+    defaultBranchSource: "config",
+    currentBranchBefore: "main",
+    currentBranchAfter: "main",
+    syncedAt: "2026-07-14T00:00:00.000Z",
+    message: "test",
+    ...(input.defaultBranchSyncStatus
+      ? { defaultBranchSyncStatus: input.defaultBranchSyncStatus }
+      : {})
+  };
+}
+
+test("packet provisioning accepts fetched repositories even when checkout synchronization failed", () => {
+  const paths = buildPacketProvisioningRepoPathMap([
+    repoResult({ id: "synced", status: "synced", fetched: true }),
+    repoResult({
+      id: "dirty-after-fetch",
+      status: "failed",
+      fetched: true,
+      defaultBranchSyncStatus: "blocked_dirty"
+    }),
+    repoResult({
+      id: "other-sync-failure",
+      status: "failed",
+      fetched: true,
+      defaultBranchSyncStatus: "failed"
+    }),
+    repoResult({ id: "fetch-failed", status: "failed", fetched: false })
+  ]);
+
+  assert.equal(paths.get("synced"), "/tmp/synced");
+  assert.equal(paths.get("dirty-after-fetch"), "/tmp/dirty-after-fetch");
+  assert.equal(paths.has("other-sync-failure"), false);
+  assert.equal(paths.has("fetch-failed"), false);
+});
 
 describe("buildPacketWaveAdvancementEvaluationForRun", () => {
   it("advances a ready and complete workstream", () => {
@@ -1013,6 +1066,11 @@ describe("runCli persistence of packet-wave advancement", () => {
         }
       };
 
+      const dirtyAfterFetchRepoResult = {
+        ...createRepoResult("repo-1", "repo-one", codeRoot, "failed"),
+        defaultBranchSyncStatus: "blocked_dirty" as const
+      };
+
       const options = {
         managementDir,
         stateDir,
@@ -1020,7 +1078,7 @@ describe("runCli persistence of packet-wave advancement", () => {
         gitHubGateway: gitHubGateway as any,
         syncService: {
           async syncRepository(): Promise<RepoSyncRecord> {
-            return createRepoResult("repo-1", "repo-one", codeRoot);
+            return dirtyAfterFetchRepoResult;
           }
         },
         scanService: {
@@ -1029,7 +1087,7 @@ describe("runCli persistence of packet-wave advancement", () => {
               issues: [issue],
               prs: [],
               comments: [],
-              repoResults: [createRepoResult("repo-1", "repo-one", codeRoot)],
+              repoResults: [dirtyAfterFetchRepoResult],
               failures: []
             };
           }

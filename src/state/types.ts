@@ -396,6 +396,8 @@ export interface RepoSyncRecord {
   existedBeforeSync: boolean;
   cloned: boolean;
   fetched: boolean;
+  /** Outcome of synchronizing the primary checkout after fetching origin. */
+  defaultBranchSyncStatus?: "not_attempted" | "synced" | "blocked_dirty" | "failed";
   defaultBranch: string | null;
   defaultBranchSource: "config" | "github" | "git" | "unknown";
   currentBranchBefore: string | null;

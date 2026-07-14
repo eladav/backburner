@@ -167,6 +167,7 @@ test("GitCliGateway.compareBranchSyncStatus: diverged (ahead=2, behind=4)", asyn
 
 test("GitCliGateway.compareBranchSyncStatus: missing_default_branch", async () => {
   const runner = new SequenceCommandRunner([
+    { stdout: "ok", stderr: "", exitCode: 0 }, // show-ref parent
     { stdout: "", stderr: "fatal: ...", exitCode: 1, throws: true }
   ]);
   const gateway = new GitCliGateway(runner);
@@ -178,7 +179,6 @@ test("GitCliGateway.compareBranchSyncStatus: missing_default_branch", async () =
 
 test("GitCliGateway.compareBranchSyncStatus: missing_parent_branch", async () => {
   const runner = new SequenceCommandRunner([
-    { stdout: "ok", stderr: "", exitCode: 0 },
     { stdout: "", stderr: "fatal: ...", exitCode: 1, throws: true }
   ]);
   const gateway = new GitCliGateway(runner);
@@ -186,6 +186,17 @@ test("GitCliGateway.compareBranchSyncStatus: missing_parent_branch", async () =>
 
   assert.strictEqual(result.status, "missing_parent_branch");
   assert.strictEqual(result.message, "Parent branch ref was not found locally.");
+});
+
+test("GitCliGateway.compareBranchSyncStatus reports a missing parent when both refs are absent", async () => {
+  const runner = new SequenceCommandRunner([
+    { stdout: "", stderr: "fatal: ...", exitCode: 1, throws: true }
+  ]);
+  const gateway = new GitCliGateway(runner);
+  const result = await gateway.compareBranchSyncStatus("/tmp", "agent/feat", "main");
+
+  assert.strictEqual(result.status, "missing_parent_branch");
+  assert.strictEqual(runner.calls.length, 1);
 });
 
 test("GitCliGateway.compareBranchSyncStatus: unknown (show-ref fatal error)", async () => {
@@ -236,8 +247,8 @@ test("GitCliGateway.compareBranchSyncStatus: happy path calls correct commands",
 
   assert.strictEqual(runner.calls.length, 3);
 
-  assert.deepEqual(runner.calls[0]!.args, ["show-ref", "--verify", "--quiet", "refs/remotes/origin/main"]);
-  assert.deepEqual(runner.calls[1]!.args, ["show-ref", "--verify", "--quiet", "refs/remotes/origin/agent/my-feature"]);
+  assert.deepEqual(runner.calls[0]!.args, ["show-ref", "--verify", "--quiet", "refs/remotes/origin/agent/my-feature"]);
+  assert.deepEqual(runner.calls[1]!.args, ["show-ref", "--verify", "--quiet", "refs/remotes/origin/main"]);
   assert.deepEqual(runner.calls[2]!.args, [
     "rev-list",
     "--left-right",
