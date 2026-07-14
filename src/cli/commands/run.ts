@@ -126,6 +126,35 @@ export function buildPacketWaveAdvancementEvaluationForRun(input: {
   });
 }
 
+/**
+ * Returns local repositories that can safely provide packet worktrees.
+ *
+ * Packet worktrees start at an exact `origin/<integration-branch>` ref, so a
+ * successfully fetched repository remains usable only when its primary
+ * checkout was explicitly blocked for local changes. Other failed sync states
+ * remain excluded because their remote refs may be stale or unavailable.
+ */
+export function buildPacketProvisioningRepoPathMap(
+  repoResults: readonly RepoSyncRecord[]
+): Map<string, string> {
+  return new Map(
+    repoResults
+      .filter(isPacketProvisioningRepo)
+      .map((result) => [result.repoId, result.localPath] as const)
+  );
+}
+
+function isPacketProvisioningRepo(result: RepoSyncRecord): boolean {
+  if (result.status === "synced") {
+    return true;
+  }
+
+  return (
+    result.fetched &&
+    result.defaultBranchSyncStatus === "blocked_dirty"
+  );
+}
+
 export async function processProviderLimitResumption(input: {
   previousState: PersistedState;
   stateStore: StateStore;
@@ -1144,11 +1173,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       });
 
       // Packet planning artifact creation
-      const repoPathMap = new Map(
-        scanResult.repoResults
-          .filter((result) => result.status === "synced")
-          .map((result) => [result.repoId, result.localPath] as const)
-      );
+      const repoPathMap = buildPacketProvisioningRepoPathMap(scanResult.repoResults);
 
       let currentWorktrees = finalWorktrees;
       let currentWorkstreams = enrichedWorkstreams;
@@ -1169,14 +1194,48 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
           continue;
         }
 
-        const packetWorktreeResults =
-          await implementationWorkflowService.ensurePacketPlanningWorktreesForCurrentWave({
-            repo,
+        const parentIntegrationBranch = workstream.integration?.branchName;
+        if (!parentIntegrationBranch) {
+          continue;
+        }
+
+        try {
+          const comparison = await gitGateway.compareBranchSyncStatus(
             repoPath,
-            codeRoot,
-            parentWorkstream: workstream,
-            existingWorktrees: currentWorktrees
-          });
+            parentIntegrationBranch,
+            repo.defaultBranch ?? "main"
+          );
+          if (comparison.status === "missing_parent_branch" || comparison.status === "unknown") {
+            logger.warn(
+              `Packet worktree start point origin/${parentIntegrationBranch} is unavailable for ${workstream.id}; will retry next cycle.`
+            );
+            continue;
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logger.warn(
+            `Could not verify packet worktree start point for ${workstream.id}; will retry next cycle: ${message}`
+          );
+          continue;
+        }
+
+        let packetWorktreeResults;
+        try {
+          packetWorktreeResults =
+            await implementationWorkflowService.ensurePacketPlanningWorktreesForCurrentWave({
+              repo,
+              repoPath,
+              codeRoot,
+              parentWorkstream: workstream,
+              existingWorktrees: currentWorktrees
+            });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          logger.warn(
+            `Failed to provision packet worktrees for ${workstream.id}; will retry next cycle: ${message}`
+          );
+          continue;
+        }
 
         if (packetWorktreeResults.length > 0) {
           for (const result of packetWorktreeResults) {

@@ -250,7 +250,7 @@ The normal orchestrator starts its own broker on loopback. The standalone broker
 
 ## What a run does
 
-Each cycle loads configuration and state, syncs enabled repositories, scans GitHub through `gh`, derives eligible tasks, starts a local GitHub broker for provider access, dispatches work to provider CLIs, and writes state, journal events, and execution logs.
+Each cycle loads configuration and state, fetches and synchronizes enabled repositories, scans GitHub through `gh`, derives eligible tasks, starts a local GitHub broker for provider access, dispatches work to provider CLIs, and writes state, journal events, and execution logs. If a managed checkout has local changes, Backburner does not modify it; after a successful fetch, packet worktrees may still be created from the exact remote integration-branch ref.
 
 Backburner uses isolated git worktrees as implementation units. Generated control-plane state is readable JSON under `<outputs-dir>/state`; execution logs and artifacts are under `<outputs-dir>/logs`; journal events are under `<outputs-dir>/journal`.
 

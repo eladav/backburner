@@ -238,19 +238,19 @@ export class GitCliGateway implements GitGateway {
     };
 
     try {
-      if (!(await this.hasRef(localPath, defaultRef))) {
-        return {
-          ...baseComparison,
-          status: "missing_default_branch",
-          message: "Default branch ref was not found locally."
-        };
-      }
-
       if (!(await this.hasRef(localPath, parentRef))) {
         return {
           ...baseComparison,
           status: "missing_parent_branch",
           message: "Parent branch ref was not found locally."
+        };
+      }
+
+      if (!(await this.hasRef(localPath, defaultRef))) {
+        return {
+          ...baseComparison,
+          status: "missing_default_branch",
+          message: "Default branch ref was not found locally."
         };
       }
 
@@ -652,6 +652,9 @@ export class LocalRepoSyncService implements RepoSyncService {
     const existedBeforeSync = await pathExists(localPath);
     let currentBranchBefore: string | null = null;
     let currentBranchAfter: string | null = null;
+    let fetched = false;
+    let defaultBranchSyncStatus: NonNullable<RepoSyncRecord["defaultBranchSyncStatus"]> =
+      "not_attempted";
     let defaultBranch: string | null = repo.defaultBranch ?? null;
     let defaultBranchSource: RepoSyncRecord["defaultBranchSource"] =
       repo.defaultBranch ? "config" : "unknown";
@@ -662,6 +665,7 @@ export class LocalRepoSyncService implements RepoSyncService {
       }
 
       await this.gitGateway.fetchRepository(localPath);
+      fetched = true;
       currentBranchBefore = await this.gitGateway.getCurrentBranch(localPath);
 
       if (!defaultBranch) {
@@ -676,11 +680,13 @@ export class LocalRepoSyncService implements RepoSyncService {
 
       const clean = await this.gitGateway.isWorkingTreeClean(localPath);
       if (!clean) {
+        defaultBranchSyncStatus = "blocked_dirty";
         throw new Error("working tree is dirty; refusing to switch or fast-forward the default branch");
       }
 
       await this.gitGateway.ensureDefaultBranchCheckedOut(localPath, defaultBranch);
       await this.gitGateway.fastForwardDefaultBranch(localPath, defaultBranch);
+      defaultBranchSyncStatus = "synced";
       currentBranchAfter = await this.gitGateway.getCurrentBranch(localPath);
 
       return {
@@ -692,7 +698,8 @@ export class LocalRepoSyncService implements RepoSyncService {
         status: "synced",
         existedBeforeSync,
         cloned: !existedBeforeSync,
-        fetched: true,
+        fetched,
+        defaultBranchSyncStatus,
         defaultBranch,
         defaultBranchSource,
         currentBranchBefore,
@@ -714,7 +721,9 @@ export class LocalRepoSyncService implements RepoSyncService {
         status: "failed",
         existedBeforeSync,
         cloned: !existedBeforeSync && currentBranchAfter !== null,
-        fetched: existedBeforeSync,
+        fetched,
+        defaultBranchSyncStatus:
+          defaultBranchSyncStatus === "blocked_dirty" ? "blocked_dirty" : "failed",
         defaultBranch,
         defaultBranchSource,
         currentBranchBefore,

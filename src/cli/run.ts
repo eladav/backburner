@@ -2,7 +2,11 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-export { runCli, buildPacketWaveAdvancementEvaluationForRun } from "./commands/run.js";
+export {
+  runCli,
+  buildPacketProvisioningRepoPathMap,
+  buildPacketWaveAdvancementEvaluationForRun
+} from "./commands/run.js";
 export { buildEffectiveProviderBrokerToolAllowLists } from "./runtime/provider-tools.js";
 export { runDispatchWithMergePrepLifecycle } from "./runtime/dispatch-lifecycle.js";
 export type { RunCliOptions, RunSummary, ParentBranchSyncPreflightRunSummary } from "./run-types.js";
