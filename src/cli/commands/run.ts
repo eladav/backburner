@@ -1000,6 +1000,9 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         await stateStore.writeTaskState(finalTasksToDispatch);
       }
 
+      // Workspace recovery already ran before the initial dispatch. Deferring
+      // further recovery until the next outer run preserves completed task
+      // handoffs produced earlier in this run.
       dispatchResult = await runDispatchWithMergePrepLifecycle({
         tasks: finalTasksToDispatch,
         worktrees: projectionAwareTriageWorktrees,
@@ -1033,6 +1036,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         commandRunner,
         gitGateway,
         workspaceRecoveryService,
+        skipWorkspaceRecovery: true,
         agentPool
       });
 
