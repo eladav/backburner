@@ -8,14 +8,32 @@ Open an issue from your phone, get back to your day, and manage the work through
 
 Follow work from the GitHub mobile app while Backburner runs the agent workflow on your machine:
 
-<p align="center">
-  <img src="docs/images/workflow-story/01-issue.jpg" alt="A GitHub issue describing OAuth support for hosted MCP" width="23%" />
-  <img src="docs/images/workflow-story/02-product-discovery.jpg" alt="An agent posts product discovery analysis on the GitHub issue" width="23%" />
-  <img src="docs/images/workflow-story/03-plan-pr.jpg" alt="Backburner creates a planning pull request with product spec and plan documents" width="23%" />
-  <img src="docs/images/workflow-story/04-reviewed-change.jpg" alt="A packet pull request receives an approved review and is merged" width="23%" />
-</p>
-
-Issue → product discovery → plan PR → reviewed, mergeable change.
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/workflow-story/01-issue.jpg" alt="A GitHub issue describing OAuth support for hosted MCP" />
+      <br />
+      <strong>1. Open an issue from your phone</strong>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/workflow-story/02-product-discovery.jpg" alt="An agent posts product discovery analysis on the GitHub issue" />
+      <br />
+      <strong>2. Review the product direction</strong>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/images/workflow-story/03-plan-pr.jpg" alt="Backburner creates a planning pull request with product spec and plan documents" />
+      <br />
+      <strong>3. Approve the implementation plan</strong>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/images/workflow-story/04-reviewed-change.jpg" alt="The implemented change is reviewed and ready for a human merge" />
+      <br />
+      <strong>4. Review the completed work</strong>
+    </td>
+  </tr>
+</table>
 
 ## How it works
 
