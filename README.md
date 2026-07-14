@@ -4,6 +4,19 @@ Backburner turns GitHub issues into reviewable pull requests using coding agents
 
 Open an issue from your phone, get back to your day, and manage the work through GitHub comments, labels, and PR reviews. Your computer does the planning, coding, testing, committing, and pushing through the agent CLIs and credentials you already use. GitHub is the control plane; your computer is the worker.
 
+## From phone to pull request
+
+Follow work from the GitHub mobile app while Backburner runs the agent workflow on your machine:
+
+<p align="center">
+  <img src="docs/images/workflow-story/01-issue.jpg" alt="A GitHub issue describing OAuth support for hosted MCP" width="23%" />
+  <img src="docs/images/workflow-story/02-product-discovery.jpg" alt="An agent posts product discovery analysis on the GitHub issue" width="23%" />
+  <img src="docs/images/workflow-story/03-plan-pr.jpg" alt="Backburner creates a planning pull request with product spec and plan documents" width="23%" />
+  <img src="docs/images/workflow-story/04-reviewed-change.jpg" alt="A packet pull request receives an approved review and is merged" width="23%" />
+</p>
+
+Issue → product discovery → plan PR → reviewed, mergeable change.
+
 ## How it works
 
 1. You open an issue in a repository managed by Backburner.
