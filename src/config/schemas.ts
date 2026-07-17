@@ -129,6 +129,11 @@ const BaseAgentConfigSchema = z.object({
     message: "must be an array of strings"
   }),
   command: nonEmptyString("must be a non-empty string"),
+  timeoutMs: z.number({ message: "must be a number" })
+    .int({ message: "must be an integer" })
+    .positive({ message: "must be greater than 0" })
+    .max(2_147_483_647, { message: "must be at most 2147483647" })
+    .optional(),
   enabled: z.boolean({ message: "must be a boolean" })
 });
 

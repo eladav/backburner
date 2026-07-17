@@ -40,7 +40,12 @@ test("OpenCodeCliAgent successful dispatch with normalization", async () => {
 
     const task = baseTask({ id: "task:1", kind: "respond_issue_comment" });
     const context = baseContext({ localRepoPath: repoDir });
-    const config = baseAgent({ id: "opencode-agent", command: "opencode", model: "gemma" });
+    const config = baseAgent({
+      id: "opencode-agent",
+      command: "opencode",
+      model: "gemma",
+      timeoutMs: 1_800_000
+    });
 
     const result = await agent.dispatch(task, context, config);
 
@@ -59,6 +64,7 @@ test("OpenCodeCliAgent successful dispatch with normalization", async () => {
     ]);
     assert.equal(call.args[7], await readFile(result.execution.promptArtifactPath, "utf8"));
     assert.equal(call.options.env?.OPENCODE_CONFIG, result.execution.settingsArtifactPath);
+    assert.equal(call.options.timeoutMs, 1_800_000);
 
     // Verify Result
     assert.equal(result.taskStatus, "completed");

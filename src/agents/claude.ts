@@ -91,6 +91,7 @@ export class ClaudeCodeCliAgent implements AgentRunner {
     await mkdir(artifactDir, { recursive: true });
 
     const cwd = context.localRepoPath ?? process.cwd();
+    const timeoutMs = agentConfig.timeoutMs ?? this.timeoutMs;
 
     const writeTasks: Promise<void>[] = [
       writeJsonFileAtomic(promptPacketPath, promptPacket),
@@ -160,7 +161,7 @@ export class ClaudeCodeCliAgent implements AgentRunner {
       const result = await this.options.commandRunner.run(agentConfig.command, args, {
         cwd,
         input: promptText,
-        timeoutMs: this.timeoutMs
+        timeoutMs
       });
       exitCode = result.exitCode;
       stdout = result.stdout;
@@ -243,7 +244,7 @@ export class ClaudeCodeCliAgent implements AgentRunner {
         executable: agentConfig.command,
         args,
         cwd,
-        timeoutMs: this.timeoutMs
+        timeoutMs
       },
       promptArtifactPath,
       stdoutArtifactPath,

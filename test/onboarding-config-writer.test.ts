@@ -31,6 +31,7 @@ function makeDraft(managementDir: string): ConfigDraft {
         id: "claude-strong",
         provider: "claude",
         command: "claude",
+        timeoutMs: 1_200_000,
         model: "claude-sonnet-4-6",
         modelClass: "strong",
         roles: ["planning", "review", "discussion", "implementation_manager", "retrospective"],
@@ -40,6 +41,7 @@ function makeDraft(managementDir: string): ConfigDraft {
         id: "antigravity-cheap",
         provider: "antigravity",
         command: "agy",
+        timeoutMs: 1_200_000,
         model: "Gemini 3.5 Flash (Low)",
         modelClass: "cheap",
         roles: ["implementation", "discussion"],
@@ -77,6 +79,7 @@ test("ConfigWriter: fresh config generation writes both files", async () => {
     assert.equal(agents.agents[0].id, "claude-strong");
     assert.equal(agents.agents[0].provider, "claude");
     assert.equal(agents.agents[0].modelClass, "strong");
+    assert.equal(agents.agents[0].timeoutMs, 1_200_000);
     assert.equal(agents.agents[1].provider, "antigravity");
   } finally {
     await fs.rm(tmpDir, { recursive: true, force: true });

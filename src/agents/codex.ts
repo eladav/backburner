@@ -36,7 +36,7 @@ import { PlanBreakdownSessionStore } from "../workstreams/plan-breakdown-generat
 import { WaveAssessmentSessionStore } from "../workstreams/wave-assessment/store.js";
 import type { ResolvedPromptContent } from "../prompts/resolver.js";
 
-const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
 
 export interface CodexGitHubBrokerConfig {
   serverName: string;
@@ -110,6 +110,7 @@ export class CodexCliAgent implements AgentRunner {
       ...(agentConfig.model ? { model: agentConfig.model } : {})
     });
     const cwd = context.localRepoPath ?? process.cwd();
+    const timeoutMs = agentConfig.timeoutMs ?? this.timeoutMs;
 
     await mkdir(artifactDir, { recursive: true });
     await Promise.all([
@@ -160,7 +161,7 @@ export class CodexCliAgent implements AgentRunner {
       const result = await this.options.commandRunner.run(agentConfig.command, args, {
         cwd,
         input: promptText,
-        timeoutMs: this.timeoutMs,
+        timeoutMs,
         onOutputChunk: (stream, chunk) => {
           if (stream === "stdout" && stdoutStreamFd !== undefined) {
             writeSync(stdoutStreamFd, chunk);
@@ -243,7 +244,7 @@ export class CodexCliAgent implements AgentRunner {
         executable: agentConfig.command,
         args,
         cwd,
-        timeoutMs: this.timeoutMs
+        timeoutMs
       },
       promptArtifactPath,
       stdoutArtifactPath,

@@ -4,8 +4,74 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
 import { CodexCliAgent } from "../src/agents/codex.js";
+import { GeminiCliAgent } from "../src/agents/gemini.js";
 import { PlanBreakdownSessionStore } from "../src/workstreams/plan-breakdown-generator/store.js";
 import type { PlanBreakdownSession } from "../src/workstreams/plan-breakdown-generator/types.js";
+
+test("CodexCliAgent uses the extended 20 minute default timeout", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "codex-timeout-default-"));
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "ok",
+      stderr: "",
+      exitCode: 0
+    });
+    const agent = new CodexCliAgent({ commandRunner, logDir: tempDir });
+
+    await agent.dispatch(baseTask(), baseContext(), baseAgent());
+
+    assert.equal(commandRunner.calls[0]?.options.timeoutMs, 20 * 60 * 1000);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("CodexCliAgent prefers the timeout configured on the selected agent", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "codex-timeout-config-"));
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "ok",
+      stderr: "",
+      exitCode: 0
+    });
+    const agent = new CodexCliAgent({ commandRunner, logDir: tempDir });
+
+    await agent.dispatch(baseTask(), baseContext(), baseAgent({ timeoutMs: 2_400_000 }));
+
+    assert.equal(commandRunner.calls[0]?.options.timeoutMs, 2_400_000);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("GeminiCliAgent prefers the timeout configured on the selected agent", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "gemini-timeout-config-"));
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "ok",
+      stderr: "",
+      exitCode: 0
+    });
+    const agent = new GeminiCliAgent({ commandRunner, logDir: tempDir });
+
+    await agent.dispatch(
+      baseTask(),
+      baseContext(),
+      baseAgent({
+        provider: "gemini",
+        command: "gemini",
+        timeoutMs: 1_800_000
+      })
+    );
+
+    assert.equal(commandRunner.calls[0]?.options.timeoutMs, 1_800_000);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
 
 test("CodexCliAgent fails plan_breakdown when exit code is 0 but sessionId is missing", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "orchestrator-codex-plan-fail-"));
@@ -810,6 +876,9 @@ test("buildGlobalCodexLaunchInstructions tells Codex to use the broker instead o
   assert.match(instructions, /Do not call `gh` directly/);
   assert.match(instructions, /If a needed GitHub capability is missing/);
   assert.match(instructions, /Repo-local `AGENTS\.md` files still apply/);
+  assert.match(instructions, /already starts in the exact target repository/);
+  assert.match(instructions, /copy the exact local path from the task packet/);
+  assert.match(instructions, /verify the workdir first/);
   assert.match(instructions, /`get_issue`/);
   assert.match(instructions, /`post_issue_comment`/);
 });

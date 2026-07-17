@@ -18,6 +18,12 @@ import type { ExecutionRecord } from "../src/state/types.js";
 import type { StateStore } from "../src/state/loader.js";
 import type { TaskRecord } from "../src/tasks/types.js";
 import { detectProviderLimit } from "../src/agents/extraction.js";
+import {
+  getProviderSessionRecordId,
+  resolveProviderSessionScope
+} from "../src/agents/provider-sessions.js";
+import type { BuiltContext } from "../src/context/types.js";
+import type { ProviderSessionDecision } from "../src/agents/provider-sessions.js";
 
 // ── Stubs ─────────────────────────────────────────────────────────────────────
 
@@ -28,10 +34,11 @@ import { detectProviderLimit } from "../src/agents/extraction.js";
 function makeStateStore(opts: {
   /** If true, writeExecutionState always throws (simulates persistence failure). */
   throwOnWriteExecution?: boolean;
+  providerSessions?: any[];
 } = {}): StateStore {
   const stored = {
     jobAgentAssignments: [] as any[],
-    providerSessions: [] as any[],
+    providerSessions: [...(opts.providerSessions ?? [])],
   };
 
   return {
@@ -183,6 +190,77 @@ function baseInput(
     ...extras,
   };
 }
+
+test("dispatch: native resume after a preserved failed workspace carries retry-aware prompt context", async () => {
+  const task = {
+    ...makeTask("task-retry", {
+      workstreamId: "ws-retry",
+      branchName: "feature/retry",
+      localRepoPath: "/tmp/retry-worktree"
+    }),
+    kind: "write_plan",
+    lastExecutionId: "exec-prior-failure",
+    executionPermission: "workspace-write",
+    handoffPolicy: {
+      expectsPushableHandoff: true,
+      orchestratorOwnsPush: true,
+      remotePublishOwner: "orchestrator"
+    },
+    context: {
+      ...makeTask("task-retry").context,
+      repoIdentifier: "test-repo",
+      labels: [],
+      instruction: "Write the plan",
+      branchName: "feature/retry",
+      localRepoPath: "/tmp/retry-worktree",
+      recoveryNeeded: true
+    }
+  } as TaskRecord;
+  const agent = {
+    ...makeAgent({ id: "codex-planner", provider: "codex" }),
+    roles: ["planning"]
+  } as AgentConfig;
+  const scope = resolveProviderSessionScope(task, agent);
+  const providerSession = {
+    id: getProviderSessionRecordId(scope),
+    scope,
+    capability: "verified_headless_resume",
+    status: "active",
+    providerSessionId: "session-retry",
+    createdAt: "2024-01-01T00:00:00.000Z",
+    updatedAt: "2024-01-01T00:00:00.000Z"
+  };
+  const failedExecution = {
+    ...makeExecution(task, agent),
+    id: "exec-prior-failure",
+    taskStatus: "failed"
+  } as ExecutionRecord;
+
+  let dispatchedContext: BuiltContext | undefined;
+  let dispatchedDecision: ProviderSessionDecision | undefined;
+  const runner: FakeRunner = {
+    dispatch: async (dispatchedTask, context, dispatchedAgent, sessionDecision) => {
+      dispatchedContext = context;
+      dispatchedDecision = sessionDecision;
+      return {
+        taskStatus: "completed" as const,
+        execution: makeExecution(dispatchedTask, dispatchedAgent)
+      };
+    }
+  };
+
+  await dispatchPendingTasks(
+    baseInput([task], [agent], runner, undefined, {
+      existingExecutions: [failedExecution],
+      stateStore: makeStateStore({ providerSessions: [providerSession] })
+    })
+  );
+
+  assert.equal(dispatchedDecision?.mode, "native_resume_candidate");
+  assert.deepEqual(dispatchedContext?.nativeResumeRetry, {
+    previousExecutionFailed: true
+  });
+});
 
 // ── Test 1: provider allow-list boundary — different lists fall back to sequential ──
 

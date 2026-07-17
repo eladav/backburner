@@ -459,11 +459,27 @@ export async function dispatchPendingTasks(input: DispatchCycleInput): Promise<D
         memoryBackground,
         taskCapabilities
       );
+      const isNativeResumeAfterFailure =
+        sessionDecision?.mode === "native_resume_candidate" &&
+        input.existingExecutions.some(
+          execution =>
+            execution.id === preparingTask.lastExecutionId &&
+            execution.taskId === preparingTask.id &&
+            execution.taskStatus === "failed"
+        );
+      const retryAwareAgentContext: BuiltContext = isNativeResumeAfterFailure
+        ? {
+            ...agentContext,
+            nativeResumeRetry: {
+              previousExecutionFailed: true
+            }
+          }
+        : agentContext;
 
       const executionCwdOverride = input.executionCwdByTaskId?.get(preparingTask.id);
       const contextForDispatch: BuiltContext = executionCwdOverride
-        ? { ...agentContext, localRepoPath: executionCwdOverride }
-        : agentContext;
+        ? { ...retryAwareAgentContext, localRepoPath: executionCwdOverride }
+        : retryAwareAgentContext;
 
       // In sequential mode only: bind the broker tool scope for this task so
       // the ScopedBrokerToolService enforces the per-provider allowlist.

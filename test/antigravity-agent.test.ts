@@ -40,7 +40,10 @@ test("Antigravity launch maps permissions and builds print args", () => {
       "Gemini 3.1 Pro (High)",
       "--conversation",
       "conversation-123",
+      "--mode",
+      "plan",
       "--sandbox",
+      "--dangerously-skip-permissions",
       "--print",
       "Do the work"
     ]
@@ -108,7 +111,7 @@ test("AntigravityCliAgent dispatches prompt via print arg and bootstraps MCP con
     const result = await agent.dispatch(
       baseTask({ id: "task:1", kind: "respond_issue_comment", executionPermission: "read-only" }),
       baseContext({ localRepoPath: repoDir }),
-      baseAgent({ model: "Gemini 3.5 Flash (Low)" })
+      baseAgent({ model: "Gemini 3.5 Flash (Low)", timeoutMs: 1_800_000 })
     );
 
     assert.equal(commandRunner.calls.length, 1);
@@ -119,8 +122,11 @@ test("AntigravityCliAgent dispatches prompt via print arg and bootstraps MCP con
     assert.match(call.args.at(-1) ?? "", /Global Antigravity Instructions/);
     assert.match(call.args.at(-1) ?? "", /memory_search/);
     assert.ok(call.args.includes("--sandbox"));
-    assert.ok(!call.args.includes("--dangerously-skip-permissions"));
+    assert.ok(call.args.includes("--dangerously-skip-permissions"));
+    assert.equal(call.args[call.args.indexOf("--mode") + 1], "plan");
+    assert.equal(call.args[call.args.indexOf("--print-timeout") + 1], "1800000ms");
     assert.equal(call.options.cwd, repoDir);
+    assert.equal(call.options.timeoutMs, 1_800_000);
     assert.equal(call.options.input, undefined);
     assert.equal(call.options.env?.HOME, undefined);
 
@@ -313,7 +319,8 @@ test("AntigravityCliAgent uses non-interactive permission bypass for workspace w
     const agent = new AntigravityCliAgent({
       commandRunner,
       logDir: tempDir,
-      configHome
+      configHome,
+      printTimeout: "7m"
     });
 
     await agent.dispatch(baseTask(), baseContext(), baseAgent());
@@ -321,6 +328,87 @@ test("AntigravityCliAgent uses non-interactive permission bypass for workspace w
     const args = commandRunner.calls[0]!.args;
     assert.ok(args.includes("--dangerously-skip-permissions"));
     assert.ok(!args.includes("--sandbox"));
+    assert.equal(args[args.indexOf("--print-timeout") + 1], "7m");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("AntigravityCliAgent preserves headless permission stderr when review output is empty", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "antigravity-review-permission-test-"));
+  const configHome = path.join(tempDir, "antigravity-home");
+  await mkdir(configHome, { recursive: true });
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "",
+      stderr: "headless mode auto-denied command permission",
+      exitCode: 0
+    });
+    const agent = new AntigravityCliAgent({
+      commandRunner,
+      logDir: tempDir,
+      configHome
+    });
+
+    const result = await agent.dispatch(
+      baseTask({
+        kind: "review_pr",
+        executionPermission: "read-only",
+        handoffPolicy: {
+          expectsPushableHandoff: false,
+          orchestratorOwnsPush: true,
+          remotePublishOwner: "orchestrator"
+        }
+      }),
+      baseContext(),
+      baseAgent({ roles: ["review"] })
+    );
+
+    assert.equal(result.taskStatus, "failed");
+    assert.equal(result.execution.errorMessage, "headless mode auto-denied command permission");
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("AntigravityCliAgent retains structured review error for malformed nonempty output", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "antigravity-review-malformed-test-"));
+  const configHome = path.join(tempDir, "antigravity-home");
+  await mkdir(configHome, { recursive: true });
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "I reviewed the pull request, but omitted the required JSON.",
+      stderr: "review parser warning",
+      exitCode: 0
+    });
+    const agent = new AntigravityCliAgent({
+      commandRunner,
+      logDir: tempDir,
+      configHome
+    });
+
+    const result = await agent.dispatch(
+      baseTask({
+        kind: "review_pr",
+        executionPermission: "read-only",
+        handoffPolicy: {
+          expectsPushableHandoff: false,
+          orchestratorOwnsPush: true,
+          remotePublishOwner: "orchestrator"
+        }
+      }),
+      baseContext(),
+      baseAgent({ roles: ["review"] })
+    );
+
+    assert.equal(result.taskStatus, "failed");
+    assert.match(
+      result.execution.errorMessage ?? "",
+      /Agent output did not contain a valid structured review result/
+    );
+    assert.match(result.execution.errorMessage ?? "", /review parser warning/);
   } finally {
     await rm(tempDir, { recursive: true, force: true });
   }

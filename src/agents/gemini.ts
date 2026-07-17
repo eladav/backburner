@@ -103,6 +103,7 @@ export class GeminiCliAgent implements AgentRunner {
     const approvalMode = mapPermissionToApprovalMode(task.executionPermission);
     const envOverrides = getGeminiEnvOverrides(settingsArtifactPath);
     const cwd = context.localRepoPath ?? process.cwd();
+    const timeoutMs = agentConfig.timeoutMs ?? this.timeoutMs;
 
     this.logger?.info(
       JSON.stringify({
@@ -132,6 +133,7 @@ export class GeminiCliAgent implements AgentRunner {
         cwd,
         env: envOverrides,
         promptText,
+        timeoutMs,
         resumeSessionId,
         ...(agentConfig.model ? { model: agentConfig.model } : {}),
         onOutputChunk: (stream, chunk) => {
@@ -206,7 +208,7 @@ export class GeminiCliAgent implements AgentRunner {
           executable: agentConfig.command,
           args: result.args,
           cwd,
-          timeoutMs: this.timeoutMs
+          timeoutMs
         },
         promptArtifactPath,
         stdoutArtifactPath,
@@ -269,6 +271,7 @@ export class GeminiCliAgent implements AgentRunner {
     cwd: string;
     env: NodeJS.ProcessEnv;
     promptText: string;
+    timeoutMs: number;
     resumeSessionId?: string | undefined;
     model?: string;
     onOutputChunk?: (stream: "stdout" | "stderr", chunk: string) => void;
@@ -300,7 +303,7 @@ export class GeminiCliAgent implements AgentRunner {
           cwd: input.cwd,
           env: input.env,
           input: input.promptText,
-          timeoutMs: this.timeoutMs,
+          timeoutMs: input.timeoutMs,
           ...(input.onOutputChunk ? { onOutputChunk: input.onOutputChunk } : {})
         });
         return { args, exitCode: result.exitCode, stdout: result.stdout, stderr: result.stderr, attemptNotes };

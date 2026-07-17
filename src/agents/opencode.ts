@@ -95,6 +95,7 @@ export class OpenCodeCliAgent implements AgentRunner {
 
     const envOverrides = getOpenCodeEnvOverrides(settingsArtifactPath);
     const cwd = context.localRepoPath ?? process.cwd();
+    const timeoutMs = agentConfig.timeoutMs ?? this.timeoutMs;
 
     this.logger?.info(
       JSON.stringify({
@@ -120,7 +121,7 @@ export class OpenCodeCliAgent implements AgentRunner {
       const result = await this.options.commandRunner.run(agentConfig.command, args, {
         cwd,
         env: { ...process.env, ...envOverrides },
-        timeoutMs: this.timeoutMs
+        timeoutMs
       });
       rawStdout = result.stdout;
       rawStderr = result.stderr;
@@ -190,7 +191,7 @@ export class OpenCodeCliAgent implements AgentRunner {
         executable: agentConfig.command,
         args,
         cwd,
-        timeoutMs: this.timeoutMs
+        timeoutMs
       },
       promptArtifactPath,
       stdoutArtifactPath,

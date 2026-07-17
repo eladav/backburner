@@ -110,6 +110,10 @@ function buildAgentEntry(agent: AgentDraft): unknown {
     enabled: agent.enabled
   };
 
+  if (agent.timeoutMs !== undefined) {
+    base["timeoutMs"] = agent.timeoutMs;
+  }
+
   if (agent.model !== undefined) {
     base["model"] = agent.model;
   }
