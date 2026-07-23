@@ -53,6 +53,13 @@ export interface ContextBuildInput {
 export interface BuiltContext extends TaskContextPacket {
   taskId?: string;
   capabilities?: AgentVisibleCapabilities;
+  /**
+   * Execution-local context for a native provider-session resume after a
+   * failed prior execution.
+   */
+  nativeResumeRetry?: {
+    previousExecutionFailed: true;
+  };
 }
 
 export interface ContextBuilder {

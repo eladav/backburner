@@ -58,6 +58,29 @@ test("renderPrompt uses built-in constraints when customConstraints is undefined
   assert.ok(output.includes("The plan must consider every thing"));  // built-in present
 });
 
+test("renderPrompt warns a natively resumed retry to re-read the current workspace", () => {
+  const task = buildMinimalTask("implement_plan");
+  const context: BuiltContext = {
+    ...buildMinimalContext(),
+    nativeResumeRetry: {
+      previousExecutionFailed: true
+    }
+  };
+  const output = renderPrompt(task, buildPromptPacket(task, context));
+
+  assert.match(output, /prior execution failed/);
+  assert.match(output, /may have preserved, recovered, or reset the workspace/);
+  assert.match(output, /prior edits or checkout state may therefore be stale/);
+  assert.match(output, /re-read `git status`, the current files, and the current diff/);
+});
+
+test("renderPrompt omits native resume retry guidance for an ordinary dispatch", () => {
+  const task = buildMinimalTask("implement_plan");
+  const output = renderPrompt(task, buildPromptPacket(task, buildMinimalContext()));
+
+  assert.doesNotMatch(output, /Native resume retry context/);
+});
+
 test("renderPrompt renders MCP skip contexts as explicit constraints", () => {
   const task = {
     ...buildMinimalTask("implement_plan"),

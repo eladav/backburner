@@ -204,6 +204,7 @@ Minimal `agents.json`:
       "provider": "codex",
       "modelClass": "strong",
       "model": "sol",
+      "timeoutMs": 1200000,
       "roles": [
         "product",
         "planning",
@@ -219,6 +220,7 @@ Minimal `agents.json`:
       "provider": "codex",
       "modelClass": "cheap",
       "model": "luna",
+      "timeoutMs": 1200000,
       "roles": [
         "implementation",
         "discussion"
@@ -231,6 +233,7 @@ Minimal `agents.json`:
 ~~~
 
 Agent selection filters enabled agents by role and `modelClass`, then breaks ties by the lowest agent ID. Model names are passed through to the provider CLI and are not validated against vendor catalogs.
+`timeoutMs` sets the execution timeout for that agent. It is optional for existing configurations; provider defaults apply when it is omitted.
 
 ## Commands
 

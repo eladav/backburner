@@ -67,6 +67,9 @@ export interface PromptPacket {
   retrospectiveCandidate?: RetrospectiveCandidateRecord;
   retrospectiveProblem?: RetrospectiveProblemRecord;
   learningOpportunity?: LearningOpportunityRecord;
+  nativeResumeRetry?: {
+    previousExecutionFailed: true;
+  };
   action: string;
   localPaths: string[];
   reminder: string;

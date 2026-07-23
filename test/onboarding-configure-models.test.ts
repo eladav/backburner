@@ -75,8 +75,14 @@ test("ConfigureModelsStep: --yes configures strong and cheap agents for every av
 
   const codexStrong = ctx.configDraft?.agents.find((agent) => agent.id === "codex-strong");
   const codexCheap = ctx.configDraft?.agents.find((agent) => agent.id === "codex-cheap");
+  const geminiStrong = ctx.configDraft?.agents.find((agent) => agent.id === "gemini-strong");
+  const geminiCheap = ctx.configDraft?.agents.find((agent) => agent.id === "gemini-cheap");
   assert.equal(codexStrong?.model, "sol");
   assert.equal(codexCheap?.model, "luna");
+  assert.equal(codexStrong?.timeoutMs, 20 * 60 * 1000);
+  assert.equal(codexCheap?.timeoutMs, 20 * 60 * 1000);
+  assert.equal(geminiStrong?.timeoutMs, 15 * 60 * 1000);
+  assert.equal(geminiCheap?.timeoutMs, 15 * 60 * 1000);
 });
 
 test("ConfigureModelsStep: interactive selection configures only selected providers", async () => {

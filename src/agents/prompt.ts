@@ -34,6 +34,7 @@ export function buildPromptPacket(task: TaskRecord, context: BuiltContext): Prom
     ...(context.retrospectiveProblem ? { retrospectiveProblem: context.retrospectiveProblem } : {}),
     ...(context.learningOpportunity ? { learningOpportunity: context.learningOpportunity } : {}),
     ...(context.capabilities ? { capabilities: context.capabilities } : {}),
+    ...(context.nativeResumeRetry ? { nativeResumeRetry: context.nativeResumeRetry } : {}),
     action: context.instruction,
     localPaths,
     reminder: 'Any GitHub-authored message you post must begin with "🤖".'
@@ -100,6 +101,16 @@ export function renderPrompt(
     ...(packet.retrospectiveProblem ? [`- retrospective problem: ${packet.retrospectiveProblem.id}`] : []),
     ...(packet.learningOpportunity ? [`- learning opportunity: ${packet.learningOpportunity.id}`] : []),
     ...(packet.capabilities ? renderCapabilities(packet.capabilities) : []),
+    ...(packet.nativeResumeRetry?.previousExecutionFailed
+      ? [
+          "",
+          "Native resume retry context:",
+          "- This provider session is resuming after the prior execution failed.",
+          "- Backburner may have preserved, recovered, or reset the workspace after that failure.",
+          "- Claims in the resumed conversation about prior edits or checkout state may therefore be stale.",
+          "- Before continuing, re-read `git status`, the current files, and the current diff. Trust the current checkout over the prior conversation."
+        ]
+      : []),
     "",
     "Constraints:",
     `- Run inside the repository at ${normalizeForPrompt(targetPath)} when a local path is provided.`,

@@ -306,6 +306,32 @@ test("ClaudeCodeCliAgent uses a 20 minute default timeout", async () => {
   }
 });
 
+test("ClaudeCodeCliAgent prefers the timeout configured on the selected agent", async () => {
+  const tempDir = await mkdtemp(path.join(os.tmpdir(), "claude-timeout-config-"));
+
+  try {
+    const commandRunner = new RecordingCommandRunner({
+      stdout: "ok",
+      stderr: "",
+      exitCode: 0
+    });
+    const agent = new ClaudeCodeCliAgent({
+      commandRunner,
+      logDir: tempDir
+    });
+
+    await agent.dispatch(
+      baseTask(),
+      baseContext(),
+      baseAgent({ command: "claude", timeoutMs: 1_800_000 })
+    );
+
+    assert.equal(commandRunner.calls[0]?.options.timeoutMs, 1_800_000);
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("ClaudeCodeCliAgent captures latest Claude project transcript on failure", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "claude-transcript-capture-"));
   const repoDir = path.join(tempDir, "repo-one");

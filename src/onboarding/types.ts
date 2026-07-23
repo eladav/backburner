@@ -52,6 +52,7 @@ export interface AgentDraft {
   id: string;
   provider: ProviderName;
   command: string;
+  timeoutMs?: number;
   /** Optional for most providers; required for opencode. */
   model?: string;
   modelClass: ModelClass;

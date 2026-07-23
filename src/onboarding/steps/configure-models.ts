@@ -36,6 +36,14 @@ const BACKBURNER_MODEL_DEFAULTS: Record<ModelClass | "balanced", string> = {
   cheap: "luna"
 };
 
+const DEFAULT_TIMEOUT_MS: Record<ProviderName, number> = {
+  codex: 20 * 60 * 1000,
+  gemini: 15 * 60 * 1000,
+  claude: 20 * 60 * 1000,
+  opencode: 15 * 60 * 1000,
+  antigravity: 20 * 60 * 1000
+};
+
 export class ConfigureModelsStep implements OnboardingStep {
   readonly name = "configure-models";
   readonly description = "Configure model assignments";
@@ -234,6 +242,7 @@ function buildAgent(
     id,
     provider,
     command,
+    timeoutMs: DEFAULT_TIMEOUT_MS[provider],
     modelClass,
     roles,
     enabled: true,

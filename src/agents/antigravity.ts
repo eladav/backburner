@@ -37,7 +37,6 @@ import type { ProviderSessionDecision } from "./provider-sessions.js";
 import type { AgentRunner, DispatchResult } from "./types.js";
 
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
-const DEFAULT_PRINT_TIMEOUT = "20m";
 
 export interface AntigravityCliAgentOptions {
   commandRunner: CommandRunner;
@@ -56,13 +55,13 @@ export interface AntigravityCliAgentOptions {
 export class AntigravityCliAgent implements AgentRunner {
   private readonly now: () => string;
   private readonly timeoutMs: number;
-  private readonly printTimeout: string;
+  private readonly printTimeoutOverride: string | undefined;
   private readonly logger: Logger | undefined;
 
   constructor(private readonly options: AntigravityCliAgentOptions) {
     this.now = options.now ?? (() => new Date().toISOString());
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-    this.printTimeout = options.printTimeout ?? DEFAULT_PRINT_TIMEOUT;
+    this.printTimeoutOverride = options.printTimeout;
     this.logger = options.logger;
   }
 
@@ -99,6 +98,8 @@ export class AntigravityCliAgent implements AgentRunner {
       this.options.legacyGeminiConfigHome ??
       (this.options.configHome ? undefined : path.join(os.homedir(), ".gemini", "config"));
     const cwd = context.localRepoPath ?? process.cwd();
+    const timeoutMs = agentConfig.timeoutMs ?? this.timeoutMs;
+    const printTimeout = this.printTimeoutOverride ?? `${timeoutMs}ms`;
     const permissionMode = mapPermissionToAntigravityMode(task.executionPermission);
     const resumeConversationId =
       _sessionDecision?.mode === "native_resume_candidate"
@@ -123,7 +124,7 @@ export class AntigravityCliAgent implements AgentRunner {
       permissionMode,
       ...(agentConfig.model ? { model: agentConfig.model } : {}),
       ...(resumeConversationId ? { conversationId: resumeConversationId } : {}),
-      printTimeout: this.printTimeout,
+      printTimeout,
       logFilePath,
       promptText
     });
@@ -176,7 +177,7 @@ export class AntigravityCliAgent implements AgentRunner {
       const result = await this.options.commandRunner.run(agentConfig.command, args, {
         cwd,
         env: getAntigravityEnvOverrides(),
-        timeoutMs: this.timeoutMs
+        timeoutMs
       });
       exitCode = result.exitCode;
       rawStdout = result.stdout;
@@ -224,7 +225,15 @@ export class AntigravityCliAgent implements AgentRunner {
 
     if (task.kind === "review_pr" && exitCode === 0 && !reviewResult) {
       taskStatus = "failed";
-      errorMessage = "Agent output did not contain a valid structured review result.";
+      const structuredReviewError =
+        "Agent output did not contain a valid structured review result.";
+      const stderr = rawStderr.trim();
+      errorMessage =
+        stdout.trim().length === 0 && stderr.length > 0
+          ? stderr
+          : stderr.length > 0
+            ? `${structuredReviewError} Antigravity stderr: ${stderr}`
+            : structuredReviewError;
     }
 
     if (
@@ -255,7 +264,7 @@ export class AntigravityCliAgent implements AgentRunner {
         executable: agentConfig.command,
         args,
         cwd,
-        timeoutMs: this.timeoutMs
+        timeoutMs
       },
       promptArtifactPath,
       stdoutArtifactPath,

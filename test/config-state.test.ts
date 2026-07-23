@@ -4,8 +4,72 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { test } from "node:test";
 import { loadConfig } from "../src/config/loader.js";
+import { AgentsConfigFileSchema } from "../src/config/schemas.js";
 import { StateStore } from "../src/state/loader.js";
 import { resolveOutputsStateRoot, resolveOutputsLogsRoot } from "../src/utils/paths.js";
+
+test("agents config accepts a positive per-agent timeout", () => {
+  const result = AgentsConfigFileSchema.safeParse({
+    agents: [
+      {
+        id: "codex-strong",
+        provider: "codex",
+        modelClass: "strong",
+        roles: ["planning"],
+        command: "codex",
+        timeoutMs: 1_200_000,
+        enabled: true
+      }
+    ]
+  });
+
+  assert.equal(result.success, true);
+  if (result.success) {
+    assert.equal(result.data.agents[0]?.timeoutMs, 1_200_000);
+  }
+});
+
+test("agents config rejects non-positive per-agent timeouts", () => {
+  const result = AgentsConfigFileSchema.safeParse({
+    agents: [
+      {
+        id: "codex-strong",
+        provider: "codex",
+        modelClass: "strong",
+        roles: ["planning"],
+        command: "codex",
+        timeoutMs: 0,
+        enabled: true
+      }
+    ]
+  });
+
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.equal(result.error.issues[0]?.path.join("."), "agents.0.timeoutMs");
+  }
+});
+
+test("agents config rejects per-agent timeouts above the Node timer limit", () => {
+  const result = AgentsConfigFileSchema.safeParse({
+    agents: [
+      {
+        id: "codex-strong",
+        provider: "codex",
+        modelClass: "strong",
+        roles: ["planning"],
+        command: "codex",
+        timeoutMs: 2_147_483_648,
+        enabled: true
+      }
+    ]
+  });
+
+  assert.equal(result.success, false);
+  if (!result.success) {
+    assert.equal(result.error.issues[0]?.path.join("."), "agents.0.timeoutMs");
+  }
+});
 
 test("loadConfig validates repos.json with useful errors", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "orchestrator-config-"));

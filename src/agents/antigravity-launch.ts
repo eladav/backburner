@@ -46,7 +46,7 @@ export function buildAntigravityCliArgs(options: {
   }
 
   if (options.permissionMode === "sandbox") {
-    args.push("--sandbox");
+    args.push("--mode", "plan", "--sandbox", "--dangerously-skip-permissions");
   } else {
     args.push("--dangerously-skip-permissions");
   }
