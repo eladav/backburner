@@ -672,7 +672,7 @@ test("GitCliGateway.createWorktree preserves the requested start point by defaul
       "add",
       "-b",
       "agent/issue-17",
-      "/code/_worktrees/example-org/repo-one/issue-17",
+      path.resolve("/code/_worktrees/example-org/repo-one/issue-17"),
       "origin/agent/issue-17"
     ]
   ]);
@@ -703,7 +703,7 @@ test("GitCliGateway.createWorktree can recreate a pruned branch for recovery", a
       "add",
       "-b",
       "agent/issue-17",
-      "/code/_worktrees/example-org/repo-one/issue-17",
+      path.resolve("/code/_worktrees/example-org/repo-one/issue-17"),
       "origin/agent/issue-17"
     ]
   ]);
@@ -729,7 +729,7 @@ test("GitCliGateway.createWorktree reuses an existing local branch only for reco
   assert.deepEqual(runner.calls[2]?.args, [
     "worktree",
     "add",
-    "/code/_worktrees/example-org/repo-one/issue-17",
+    path.resolve("/code/_worktrees/example-org/repo-one/issue-17"),
     "agent/issue-17"
   ]);
 });
