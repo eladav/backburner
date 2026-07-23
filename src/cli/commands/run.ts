@@ -87,6 +87,7 @@ import {
 import {
   LocalParentBranchSyncService,
 } from "../../workstreams/parent-branch-sync.js";
+import { reconcileDurableWorktreeLocations } from "../../worktrees/workspace-relocation.js";
 
 import {
   executeParentBranchSyncActions
@@ -497,6 +498,43 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         syncedAt: result.syncedAt
       }
     });
+  }
+
+  const workspaceRelocation = await reconcileDurableWorktreeLocations({
+    codeRoot,
+    worktrees: previousState.worktrees,
+    tasks: previousState.tasks,
+    repoSyncRecords: results,
+    gitGateway
+  });
+  const workspaceStateChanged = workspaceRelocation.relocatedCount > 0;
+  const taskStateChangedByRelocation = workspaceRelocation.taskRelocatedCount > 0;
+  if (workspaceStateChanged || taskStateChangedByRelocation) {
+    previousState = {
+      ...previousState,
+      worktrees: workspaceRelocation.worktrees,
+      tasks: workspaceRelocation.tasks
+    };
+    if (workspaceStateChanged) {
+      await stateStore.writeWorktreeState(previousState.worktrees);
+    }
+    if (taskStateChangedByRelocation) {
+      await stateStore.writeTaskState(previousState.tasks);
+    }
+  }
+  if (
+    workspaceRelocation.relocatedCount > 0 ||
+    workspaceRelocation.recreatedCount > 0 ||
+    workspaceRelocation.taskRelocatedCount > 0
+  ) {
+    logger.info(
+      `Workspace relocation: relocated=${workspaceRelocation.relocatedCount}, recreated=${workspaceRelocation.recreatedCount}, tasks=${workspaceRelocation.taskRelocatedCount}`
+    );
+  }
+  for (const failure of workspaceRelocation.failures) {
+    logger.warn(
+      `Workspace relocation skipped for ${failure.worktreeId}: ${failure.reason}`
+    );
   }
 
   options.statusTracker?.onGitHubScanStart();
