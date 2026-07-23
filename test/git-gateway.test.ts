@@ -652,6 +652,88 @@ test("GitCliGateway.removeDirectory calls rm -rf", async () => {
   }
 });
 
+test("GitCliGateway.createWorktree preserves the requested start point by default", async () => {
+  const runner = new SequenceCommandRunner([
+    { stdout: "", stderr: "", exitCode: 0 }
+  ]);
+  const gateway = new GitCliGateway(runner);
+
+  await gateway.createWorktree(
+    "/code/repo-one",
+    "/code",
+    "/code/_worktrees/example-org/repo-one/issue-17",
+    "agent/issue-17",
+    "origin/agent/issue-17"
+  );
+
+  assert.deepEqual(runner.calls.map((call) => call.args), [
+    [
+      "worktree",
+      "add",
+      "-b",
+      "agent/issue-17",
+      "/code/_worktrees/example-org/repo-one/issue-17",
+      "origin/agent/issue-17"
+    ]
+  ]);
+});
+
+test("GitCliGateway.createWorktree can recreate a pruned branch for recovery", async () => {
+  const runner = new SequenceCommandRunner([
+    { stdout: "", stderr: "", exitCode: 0 },
+    { stdout: "", stderr: "missing", exitCode: 1, throws: true },
+    { stdout: "", stderr: "", exitCode: 0 }
+  ]);
+  const gateway = new GitCliGateway(runner);
+
+  await gateway.createWorktree(
+    "/code/repo-one",
+    "/code",
+    "/code/_worktrees/example-org/repo-one/issue-17",
+    "agent/issue-17",
+    "origin/agent/issue-17",
+    { reuseExistingBranch: true }
+  );
+
+  assert.deepEqual(runner.calls.map((call) => call.args), [
+    ["worktree", "prune"],
+    ["show-ref", "--verify", "--quiet", "refs/heads/agent/issue-17"],
+    [
+      "worktree",
+      "add",
+      "-b",
+      "agent/issue-17",
+      "/code/_worktrees/example-org/repo-one/issue-17",
+      "origin/agent/issue-17"
+    ]
+  ]);
+});
+
+test("GitCliGateway.createWorktree reuses an existing local branch only for recovery", async () => {
+  const runner = new SequenceCommandRunner([
+    { stdout: "", stderr: "", exitCode: 0 },
+    { stdout: "", stderr: "", exitCode: 0 },
+    { stdout: "", stderr: "", exitCode: 0 }
+  ]);
+  const gateway = new GitCliGateway(runner);
+
+  await gateway.createWorktree(
+    "/code/repo-one",
+    "/code",
+    "/code/_worktrees/example-org/repo-one/issue-17",
+    "agent/issue-17",
+    "origin/agent/issue-17",
+    { reuseExistingBranch: true }
+  );
+
+  assert.deepEqual(runner.calls[2]?.args, [
+    "worktree",
+    "add",
+    "/code/_worktrees/example-org/repo-one/issue-17",
+    "agent/issue-17"
+  ]);
+});
+
 test("GitCliGateway.getCommitLogSince returns trimmed output", async () => {
   const runner = new SequenceCommandRunner([{ stdout: " abc commit\n", stderr: "", exitCode: 0 }]);
   const gateway = new GitCliGateway(runner);

@@ -5,6 +5,7 @@ import type { GitHubGateway } from "../github/types.js";
 import type { RepoSyncRecord } from "../state/types.js";
 import type { CommandRunner } from "../utils/command-runner.js";
 import { CommandExecutionError } from "../utils/command-runner.js";
+import { assertNoSymlinkedPathComponents } from "../utils/path-safety.js";
 
 export type BranchSyncStatus =
   | "up_to_date"
@@ -46,8 +47,10 @@ export interface GitGateway {
     codeRoot: string,
     worktreePath: string,
     branch: string,
-    startPoint: string
+    startPoint: string,
+    options?: { reuseExistingBranch?: boolean }
   ): Promise<string>;
+  getRemoteUrl?(localPath: string, remote: string): Promise<string>;
   hasCommitsAhead(localPath: string, baseRef: string): Promise<boolean>;
   commitAll(localPath: string, message: string): Promise<boolean>;
   pushBranch(localPath: string, branch: string): Promise<void>;
@@ -344,15 +347,40 @@ export class GitCliGateway implements GitGateway {
     codeRoot: string,
     worktreePath: string,
     branch: string,
-    startPoint: string
+    startPoint: string,
+    options?: { reuseExistingBranch?: boolean }
   ): Promise<string> {
     const safeWorktreePath = resolvePathWithinCodeRoot(codeRoot, worktreePath);
+    await assertNoSymlinkedPathComponents(codeRoot, safeWorktreePath);
+
+    if (options?.reuseExistingBranch) {
+      await this.commandRunner.run("git", ["worktree", "prune"], { cwd: repoPath });
+      const hasLocalBranch = await this.hasLocalBranch(repoPath, branch);
+      if (hasLocalBranch) {
+        await this.commandRunner.run(
+          "git",
+          ["worktree", "add", safeWorktreePath, branch],
+          { cwd: repoPath }
+        );
+        return safeWorktreePath;
+      }
+    }
+
     await this.commandRunner.run(
       "git",
       ["worktree", "add", "-b", branch, safeWorktreePath, startPoint],
       { cwd: repoPath }
     );
     return safeWorktreePath;
+  }
+
+  async getRemoteUrl(localPath: string, remote: string): Promise<string> {
+    const result = await this.commandRunner.run(
+      "git",
+      ["remote", "get-url", remote],
+      { cwd: localPath }
+    );
+    return result.stdout.trim();
   }
 
   async hasCommitsAhead(localPath: string, baseRef: string): Promise<boolean> {
