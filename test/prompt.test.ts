@@ -222,6 +222,73 @@ test("renderPrompt renders wave assessment checkpoint instructions", () => {
   assert.ok(!output.includes("post only the parent PR assessment"));
 });
 
+test("renderPrompt includes the full wave reassessment command, reason, and prior blocked result", () => {
+  const task = {
+    ...buildMinimalTask("wave_plan_assessment"),
+    executionPermission: "read-only" as const,
+    sourceKind: "pull_request" as const,
+    sourceUrl: "https://github.com/owner/repo/pull/31"
+  };
+  const checkpoint = {
+    id: "checkpoint-1",
+    sessionId: "checkpoint-1:reassess:7001",
+    identity: {
+      repoKey: "owner/repo",
+      workstreamId: "owner/repo:issue:11",
+      waveId: "wave-0",
+      parentPrNumber: 31,
+      parentHeadSha: "abc123",
+      parentIntegrationBranch: "agent/owner-repo/issue-11",
+      defaultBranch: "main",
+      planRevision: "rev-1",
+      originalPlanningSessionId: "planner-session-1",
+      currentWaveIndex: 0,
+      nextWaveIndex: 1,
+      completedPacketIds: ["T1"],
+      pendingFuturePacketIds: ["T2"],
+      planNodeIds: ["T1", "T2"]
+    }
+  };
+  const commentText = "wave-reassess\nreason: Integration risk is explicitly deferred.";
+  const priorAssessment = {
+    id: "assessment:checkpoint-1",
+    sessionId: "checkpoint-1",
+    checkpoint: { ...checkpoint, sessionId: "checkpoint-1" },
+    decision: "blocked" as const,
+    summary: "Verification is incomplete.",
+    findings: [],
+    status: "finalized" as const,
+    postedCommentId: "6999"
+  };
+  const context: BuiltContext = {
+    ...buildMinimalContext(),
+    pullRequestUrl: task.sourceUrl,
+    waveAssessmentCheckpoint: checkpoint,
+    finalizedWaveAssessment: priorAssessment,
+    waveReassessment: {
+      sourceCommentId: "7001",
+      sourceCommentUrl: `${task.sourceUrl}#issuecomment-7001`,
+      sourceCommentAuthor: "owner",
+      commentText,
+      reason: "Integration risk is explicitly deferred."
+    },
+    instruction: "Perform a fresh wave assessment."
+  };
+  task.context = context;
+
+  const packet = buildPromptPacket(task, context);
+  const output = renderPrompt(task, packet);
+
+  assert.equal(packet.waveReassessment?.commentText, commentText);
+  assert.equal(packet.finalizedWaveAssessment?.id, priorAssessment.id);
+  assert.match(output, /Human-requested wave reassessment:/);
+  assert.match(output, /Parsed reason: Integration risk is explicitly deferred\./);
+  assert.match(output, /wave-reassess\nreason: Integration risk is explicitly deferred\./);
+  assert.match(output, /Decision: blocked/);
+  assert.match(output, /repeated attempt for the same checkpoint/);
+  assert.match(output, /not a human override/);
+});
+
 test("renderPrompt renders finalized wave assessment for replanning", () => {
   const task = buildMinimalTask("wave_plan_replanning");
   const checkpoint = {

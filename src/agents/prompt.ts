@@ -30,6 +30,7 @@ export function buildPromptPacket(task: TaskRecord, context: BuiltContext): Prom
     ...(context.prepareForMerge ? { prepareForMerge: context.prepareForMerge } : {}),
     ...(context.waveAssessmentCheckpoint ? { waveAssessmentCheckpoint: context.waveAssessmentCheckpoint } : {}),
     ...(context.finalizedWaveAssessment ? { finalizedWaveAssessment: context.finalizedWaveAssessment } : {}),
+    ...(context.waveReassessment ? { waveReassessment: context.waveReassessment } : {}),
     ...(context.retrospectiveCandidate ? { retrospectiveCandidate: context.retrospectiveCandidate } : {}),
     ...(context.retrospectiveProblem ? { retrospectiveProblem: context.retrospectiveProblem } : {}),
     ...(context.learningOpportunity ? { learningOpportunity: context.learningOpportunity } : {}),
@@ -97,6 +98,7 @@ export function renderPrompt(
     ...(packet.prepareForMerge ? renderPrepareForMerge(packet.prepareForMerge) : []),
     ...(packet.waveAssessmentCheckpoint ? renderWaveAssessmentCheckpoint(packet.waveAssessmentCheckpoint) : []),
     ...(packet.finalizedWaveAssessment ? renderFinalizedWaveAssessment(packet.finalizedWaveAssessment) : []),
+    ...(packet.waveReassessment ? renderWaveReassessment(packet.waveReassessment) : []),
     ...(packet.retrospectiveCandidate ? [`- retrospective candidate: ${packet.retrospectiveCandidate.id}`] : []),
     ...(packet.retrospectiveProblem ? [`- retrospective problem: ${packet.retrospectiveProblem.id}`] : []),
     ...(packet.learningOpportunity ? [`- learning opportunity: ${packet.learningOpportunity.id}`] : []),
@@ -184,6 +186,18 @@ function renderFinalizedWaveAssessment(assessment: NonNullable<PromptPacket["fin
     `- Decision: ${assessment.decision}`,
     `- Summary: ${assessment.summary}`,
     ...(assessment.postedCommentId ? [`- Posted comment ID: ${assessment.postedCommentId}`] : [])
+  ];
+}
+
+function renderWaveReassessment(reassessment: NonNullable<PromptPacket["waveReassessment"]>): string[] {
+  return [
+    "Human-requested wave reassessment:",
+    `- Source comment ID: ${reassessment.sourceCommentId}`,
+    `- Source comment URL: ${reassessment.sourceCommentUrl}`,
+    `- Source comment author: ${reassessment.sourceCommentAuthor}`,
+    `- Parsed reason: ${reassessment.reason}`,
+    "- Complete source comment:",
+    reassessment.commentText
   ];
 }
 
@@ -395,6 +409,12 @@ function buildTaskSpecificConstraints(task: TaskRecord): string[] {
       return [
         ...executionConstraints,
         "- This is a plan-level checkpoint between packet waves.",
+        ...(task.context.waveReassessment
+          ? [
+              "- This is a human-requested repeated attempt for the same checkpoint, not a technical retry and not a human override.",
+              "- Reconsider the prior published blocked assessment using the complete control comment and parsed reason in the prompt packet."
+            ]
+          : []),
         "- Assess only the parent issue and parent PR plan; do not review packet PR implementation details as code review findings.",
         "- You must use the wave_assessment MCP tools for the checkpoint in the prompt packet.",
         "- Finalize the assessment through the MCP tool flow before returning.",

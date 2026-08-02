@@ -2920,6 +2920,175 @@ test("deriveTasks derives wave_plan_assessment before sync-parent tasks for comp
   assert.ok(!tasks.some((task) => task.kind === "sync_parent_branch"));
 });
 
+test("deriveTasks turns a strict parent PR wave-reassess comment into one same-checkpoint assessment attempt", () => {
+  const comment = basePrComment({
+    id: "comment:example-org/repo-one:pull_request_comment:7001",
+    sourceId: "7001",
+    parentNumber: 31,
+    parentKey: "example-org/repo-one:pull_request:31",
+    url: "https://github.com/example-org/repo-one/pull/31#issuecomment-7001",
+    body: "wave-reassess\nreason: The owner supplied new plan-level evidence.",
+    author: "owner"
+  });
+  const priorExecution = baseWaveAssessmentExecution("blocked");
+  const priorAssessment = priorExecution.result!.waveAssessment!;
+
+  const tasks = deriveTasks({
+    repos: [baseRepo()],
+    repoSyncRecords: [baseRepoSync()],
+    previousState: {
+      ...emptyState(),
+      executions: [priorExecution]
+    },
+    currentIssues: [baseIssue()],
+    currentPullRequests: [baseParentPullRequest()],
+    currentComments: [comment],
+    workstreams: [baseSyncPreflightWorkstream()],
+    attention: [baseSyncPreflightAttention({
+      needsAction: true,
+      issueNumber: 11,
+      pullRequestNumbers: [31],
+      commentIds: [comment.id],
+      reasons: ["packet_wave_complete_sync_needed", "pr_comment_added"]
+    })],
+    contextBuilder: new DefaultContextBuilder(),
+    now: "2026-04-18T10:00:00.000Z"
+  });
+
+  const assessmentTasks = tasks.filter((task) => task.kind === "wave_plan_assessment");
+  assert.equal(assessmentTasks.length, 1);
+  const task = assessmentTasks[0]!;
+  assert.match(task.id, /:reassess:7001$/);
+  assert.equal(task.executionPermission, "read-only");
+  assert.equal(task.context.waveAssessmentCheckpoint?.identity.parentHeadSha, "abc123");
+  assert.equal(
+    task.context.waveAssessmentCheckpoint?.sessionId,
+    `${task.context.waveAssessmentCheckpoint?.id}:reassess:7001`
+  );
+  assert.equal(task.context.finalizedWaveAssessment?.id, priorAssessment.id);
+  assert.deepEqual(task.context.waveReassessment, {
+    sourceCommentId: "7001",
+    sourceCommentUrl: comment.url,
+    sourceCommentAuthor: "owner",
+    commentText: comment.body,
+    reason: "The owner supplied new plan-level evidence."
+  });
+  assert.ok(!tasks.some((task) => task.kind === "respond_pr_comment"));
+});
+
+test("deriveTasks keeps a wave reassessment idempotent by source comment ID", () => {
+  const comment = basePrComment({
+    id: "comment:example-org/repo-one:pull_request_comment:7002",
+    sourceId: "7002",
+    parentNumber: 31,
+    parentKey: "example-org/repo-one:pull_request:31",
+    url: "https://github.com/example-org/repo-one/pull/31#issuecomment-7002",
+    body: "wave-reassess\nreason: Reconsider the new evidence."
+  });
+  const previousState = {
+    ...emptyState(),
+    executions: [baseWaveAssessmentExecution("blocked")]
+  };
+  const input = {
+    repos: [baseRepo()],
+    repoSyncRecords: [baseRepoSync()],
+    currentIssues: [baseIssue()],
+    currentPullRequests: [baseParentPullRequest()],
+    currentComments: [comment],
+    workstreams: [baseSyncPreflightWorkstream()],
+    attention: [baseSyncPreflightAttention({
+      needsAction: true,
+      issueNumber: 11,
+      pullRequestNumbers: [31],
+      commentIds: [comment.id],
+      reasons: ["packet_wave_complete_sync_needed", "pr_comment_added"]
+    })],
+    contextBuilder: new DefaultContextBuilder(),
+    now: "2026-04-18T10:00:00.000Z"
+  };
+  const firstTasks = deriveTasks({ ...input, previousState });
+  const first = firstTasks.find((task) => task.context.waveReassessment);
+  assert.ok(first);
+
+  const repeated = deriveTasks({
+    ...input,
+    previousState: {
+      ...previousState,
+      comments: [comment],
+      tasks: [first]
+    }
+  });
+
+  assert.deepEqual(repeated.filter((task) => task.context.waveReassessment).map((task) => task.id), [first.id]);
+});
+
+test("deriveTasks sends malformed wave-reassess syntax to ordinary PR discussion", () => {
+  const comment = basePrComment({
+    parentNumber: 31,
+    parentKey: "example-org/repo-one:pull_request:31",
+    url: "https://github.com/example-org/repo-one/pull/31#issuecomment-6001",
+    body: "wave-reassess\nreason: New evidence.\nplease continue"
+  });
+
+  const tasks = deriveTasks({
+    repos: [baseRepo()],
+    repoSyncRecords: [baseRepoSync()],
+    previousState: {
+      ...emptyState(),
+      prs: [baseParentPullRequest()],
+      executions: [baseWaveAssessmentExecution("blocked")]
+    },
+    currentIssues: [baseIssue()],
+    currentPullRequests: [baseParentPullRequest()],
+    currentComments: [comment],
+    workstreams: [baseSyncPreflightWorkstream()],
+    attention: [baseSyncPreflightAttention({
+      needsAction: true,
+      issueNumber: 11,
+      pullRequestNumbers: [31],
+      commentIds: [comment.id],
+      reasons: ["packet_wave_complete_sync_needed", "pr_comment_added"]
+    })],
+    contextBuilder: new DefaultContextBuilder(),
+    now: "2026-04-18T10:00:00.000Z"
+  });
+
+  assert.ok(tasks.some((task) => task.kind === "respond_pr_comment"));
+  assert.ok(!tasks.some((task) => task.context.waveReassessment));
+});
+
+test("deriveTasks does not create reassessment work unless the current published assessment is blocked", () => {
+  const comment = basePrComment({
+    parentNumber: 31,
+    parentKey: "example-org/repo-one:pull_request:31",
+    body: "wave-reassess\nreason: Recheck the current result."
+  });
+  const tasks = deriveTasks({
+    repos: [baseRepo()],
+    repoSyncRecords: [baseRepoSync()],
+    previousState: {
+      ...emptyState(),
+      executions: [baseWaveAssessmentExecution("continue")]
+    },
+    currentIssues: [baseIssue()],
+    currentPullRequests: [baseParentPullRequest()],
+    currentComments: [comment],
+    workstreams: [baseSyncPreflightWorkstream()],
+    attention: [baseSyncPreflightAttention({
+      needsAction: true,
+      issueNumber: 11,
+      pullRequestNumbers: [31],
+      commentIds: [comment.id],
+      reasons: ["packet_wave_complete_sync_needed", "pr_comment_added"]
+    })],
+    contextBuilder: new DefaultContextBuilder(),
+    now: "2026-04-18T10:00:00.000Z"
+  });
+
+  assert.ok(!tasks.some((task) => task.context.waveReassessment));
+  assert.ok(!tasks.some((task) => task.kind === "respond_pr_comment"));
+});
+
 test("deriveTasks derives wave_plan_replanning when finalized assessment requires replan", () => {
   const tasks = deriveTasks({
     repos: [baseRepo()],

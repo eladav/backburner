@@ -6,6 +6,7 @@ import type {
   TaskContextPacket,
   TaskKind,
   TaskRecord,
+  WaveReassessmentContext,
   TaskSourceKind
 } from "../tasks/types.js";
 import type {
@@ -45,6 +46,7 @@ export interface ContextBuildInput {
   prepareForMerge?: PrepareForMergePreflight;
   waveAssessmentCheckpoint?: WaveAssessmentCheckpoint;
   finalizedWaveAssessment?: WaveAssessmentResult;
+  waveReassessment?: WaveReassessmentContext;
   retrospectiveCandidate?: RetrospectiveCandidateRecord;
   retrospectiveProblem?: RetrospectiveProblemRecord;
   learningOpportunity?: LearningOpportunityRecord;
@@ -84,6 +86,7 @@ export class DefaultContextBuilder implements ContextBuilder {
       ...(input.prepareForMerge ? { prepareForMerge: input.prepareForMerge } : {}),
       ...(input.waveAssessmentCheckpoint ? { waveAssessmentCheckpoint: input.waveAssessmentCheckpoint } : {}),
       ...(input.finalizedWaveAssessment ? { finalizedWaveAssessment: input.finalizedWaveAssessment } : {}),
+      ...(input.waveReassessment ? { waveReassessment: input.waveReassessment } : {}),
       ...(input.retrospectiveCandidate ? { retrospectiveCandidate: input.retrospectiveCandidate } : {}),
       ...(input.retrospectiveProblem ? { retrospectiveProblem: input.retrospectiveProblem } : {}),
       ...(input.learningOpportunity ? { learningOpportunity: input.learningOpportunity } : {})
@@ -200,6 +203,12 @@ export class DefaultContextBuilder implements ContextBuilder {
           ...(input.issueBody ? { issueBody: compactText(input.issueBody, 2000) } : {}),
           instruction: [
             "Assess the completed packet wave at the plan level before the next wave starts.",
+            ...(input.waveReassessment
+              ? [
+                  "This is a human-requested reassessment of the prior published blocked decision for the same checkpoint.",
+                  "Use the complete source comment, parsed reassessment reason, and prior finalized assessment in the task packet as new clarification; perform a fresh assessment rather than repeating the prior conclusion without reconsideration."
+                ]
+              : []),
             "This task is only about the parent issue/parent PR plan, not packet PR implementation review.",
             "Use the wave_assessment MCP tools to create and finalize the assessment for the provided checkpoint.",
             "Call wave_assessment.start_session with sessionId, workstreamId, waveId, parentPrNumber, assessedParentHeadSha, originalPlanningSessionId, currentPlanRevision, and planNodeIds from the task packet.",

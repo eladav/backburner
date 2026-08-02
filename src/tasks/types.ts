@@ -93,6 +93,14 @@ export interface McpSkipContext {
   skipReason: string;
 }
 
+export interface WaveReassessmentContext {
+  sourceCommentId: string;
+  sourceCommentUrl: string;
+  sourceCommentAuthor: string;
+  commentText: string;
+  reason: string;
+}
+
 export interface TaskContextPacket {
   repoIdentifier: string;
   localRepoPath?: string;
@@ -115,6 +123,7 @@ export interface TaskContextPacket {
   prepareForMerge?: PrepareForMergePreflight;
   waveAssessmentCheckpoint?: WaveAssessmentCheckpoint;
   finalizedWaveAssessment?: WaveAssessmentResult;
+  waveReassessment?: WaveReassessmentContext;
   retrospectiveCandidate?: any;
   retrospectiveProblem?: any;
   learningOpportunity?: any;

@@ -6,6 +6,7 @@ import type {
 import { classifyManagementPullRequest } from "../../../github/pr-classification.js";
 import { workflowRegistry } from "../../../workflows/registry.js";
 import { isRetryLinkCommand } from "../../retry.js";
+import { parseWaveReassessCommand } from "../../wave-reassess.js";
 import type {
   PullRequestReviewCommentLocationContext,
   TaskKind,
@@ -170,6 +171,17 @@ function derivePullRequestCommentTask(
     !isPacketPR &&
     !env.previousPullRequests.has(parentPullRequest.id) &&
     parentPullRequest.number === comment.parentNumber
+  ) {
+    return undefined;
+  }
+
+  if (
+    !isPacketPR &&
+    comment.commentKind === "pull_request_comment" &&
+    context.workstream.origin.type === "issue" &&
+    context.workstream.packetPlan !== undefined &&
+    context.workstream.integration?.prNumber === comment.parentNumber &&
+    parseWaveReassessCommand(comment.body)
   ) {
     return undefined;
   }

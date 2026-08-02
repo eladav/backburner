@@ -10,6 +10,7 @@ import {
 } from "../../../workstreams/wave-assessment/checkpoint.js";
 import type { ExecutionRecord } from "../../../state/types.js";
 import type { TaskRecord } from "../../types.js";
+import { parseWaveReassessCommand } from "../../wave-reassess.js";
 import { buildTaskRecord } from "../builders.js";
 import type {
   ResolvedWorkstreamContext,
@@ -20,6 +21,11 @@ import type {
 export const waveAssessmentHandler: TaskDerivationHandler = {
   name: "wave_assessment",
   derive(context, env) {
+    const reassessmentTask = deriveWavePlanReassessmentTask(context, env);
+    if (reassessmentTask) {
+      return [reassessmentTask];
+    }
+
     const assessmentTask = deriveWavePlanAssessmentTask(context, env);
     if (assessmentTask) {
       return [assessmentTask];
@@ -29,6 +35,101 @@ export const waveAssessmentHandler: TaskDerivationHandler = {
     return replanningTask ? [replanningTask] : [];
   }
 };
+
+function deriveWavePlanReassessmentTask(
+  context: ResolvedWorkstreamContext,
+  env: TaskDerivationEnvironment
+): TaskRecord | undefined {
+  const resolved = resolveWaveAssessmentTaskContext(context, env);
+  if (!resolved) {
+    return undefined;
+  }
+
+  const { checkpoint, issue, parentPr, repoSyncRecord, workstream } = resolved;
+  const priorAssessment = findMatchingPublishedFinalizedWaveAssessment(
+    workstream,
+    env,
+    checkpoint.identity
+  );
+  if (!priorAssessment || priorAssessment.decision !== "blocked") {
+    return undefined;
+  }
+
+  const reassessmentRequest = [...(context.attention?.commentIds ?? [])]
+    .sort((left, right) => left.localeCompare(right))
+    .map((commentId) => env.currentCommentsById.get(commentId))
+    .find((comment) => {
+      if (
+        !comment ||
+        comment.parentType !== "pull_request" ||
+        comment.commentKind !== "pull_request_comment" ||
+        comment.parentNumber !== parentPr.number ||
+        !parseWaveReassessCommand(comment.body)
+      ) {
+        return false;
+      }
+
+      const previousComment = env.previousComments.get(comment.id);
+      const isNewOrEdited =
+        !previousComment ||
+        previousComment.updatedAt !== comment.updatedAt ||
+        previousComment.body !== comment.body;
+      return isNewOrEdited && !env.existingTasksById.has(buildWaveReassessmentTaskId(checkpoint, comment.sourceId));
+    });
+
+  if (!reassessmentRequest) {
+    return undefined;
+  }
+
+  const command = parseWaveReassessCommand(reassessmentRequest.body);
+  if (!command) {
+    return undefined;
+  }
+
+  const taskId = buildWaveReassessmentTaskId(checkpoint, reassessmentRequest.sourceId);
+  const reassessmentCheckpoint: WaveAssessmentCheckpoint = {
+    ...checkpoint,
+    sessionId: `${checkpoint.sessionId}:reassess:${reassessmentRequest.sourceId}`
+  };
+
+  return buildTaskRecord(
+    taskId,
+    "wave_plan_assessment",
+    parentPr,
+    repoSyncRecord,
+    {
+      reason: [
+        `An authorized user requested a fresh assessment of blocked wave ${checkpoint.identity.currentWaveIndex}.`,
+        `Reassessment reason: ${command.reason}`,
+        `Prior assessment: ${priorAssessment.id}.`
+      ].join(" "),
+      summary: `Reassess blocked packet wave ${checkpoint.identity.currentWaveIndex} before wave ${checkpoint.identity.nextWaveIndex}`,
+      contextBuilder: env.input.contextBuilder,
+      now: env.input.now
+    },
+    env.input.contextBuilder.build({
+      taskKind: "wave_plan_assessment",
+      repoIdentifier: parentPr.repoSlug,
+      sourceKind: "pull_request",
+      sourceUrl: parentPr.url,
+      parentUrl: issue.url,
+      labels: parentPr.labels,
+      issueTitle: issue.title,
+      issueBody: issue.body,
+      waveAssessmentCheckpoint: reassessmentCheckpoint,
+      finalizedWaveAssessment: priorAssessment,
+      waveReassessment: {
+        sourceCommentId: reassessmentRequest.sourceId,
+        sourceCommentUrl: reassessmentRequest.url,
+        sourceCommentAuthor: reassessmentRequest.author,
+        commentText: reassessmentRequest.body,
+        reason: command.reason
+      },
+      ...(repoSyncRecord?.localPath ? { localRepoPath: repoSyncRecord.localPath } : {})
+    }),
+    workstream.id
+  );
+}
 
 export function isWaveAssessmentCheckpointAllowed(
   context: ResolvedWorkstreamContext,
@@ -261,6 +362,13 @@ function buildWaveAssessmentTaskId(checkpoint: WaveAssessmentCheckpoint): string
   return `task:wave_plan_assessment:${checkpoint.id}`;
 }
 
+function buildWaveReassessmentTaskId(
+  checkpoint: WaveAssessmentCheckpoint,
+  sourceCommentId: string
+): string {
+  return `task:wave_plan_assessment:${checkpoint.id}:reassess:${sourceCommentId}`;
+}
+
 function buildWaveReplanningTaskId(checkpoint: WaveAssessmentCheckpoint): string {
   return `task:wave_plan_replanning:${checkpoint.id}`;
 }
@@ -313,11 +421,12 @@ function readWaveAssessmentResult(execution: ExecutionRecord): WaveAssessmentRes
 }
 
 function compareAssessmentsNewestFirst(left: WaveAssessmentResult, right: WaveAssessmentResult): number {
-  return getAssessmentTimestamp(right).localeCompare(getAssessmentTimestamp(left));
+  const timestampComparison = getAssessmentTimestamp(right).localeCompare(getAssessmentTimestamp(left));
+  return timestampComparison !== 0 ? timestampComparison : right.id.localeCompare(left.id);
 }
 
 function getAssessmentTimestamp(assessment: WaveAssessmentResult): string {
-  return assessment.finalizedAt ?? assessment.updatedAt ?? assessment.createdAt ?? "";
+  return assessment.updatedAt ?? assessment.finalizedAt ?? assessment.createdAt ?? "";
 }
 
 function checkpointIdentitiesEqual(
