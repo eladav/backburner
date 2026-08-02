@@ -2943,7 +2943,10 @@ test("deriveTasks turns a strict parent PR wave-reassess comment into one same-c
     currentIssues: [baseIssue()],
     currentPullRequests: [baseParentPullRequest()],
     currentComments: [comment],
-    workstreams: [baseSyncPreflightWorkstream()],
+    workstreams: [baseSyncPreflightWorkstream({
+      activePrNumber: 31,
+      linkedPrs: [{ number: 31 }]
+    })],
     attention: [baseSyncPreflightAttention({
       needsAction: true,
       issueNumber: 11,
@@ -2995,7 +2998,10 @@ test("deriveTasks keeps a wave reassessment idempotent by source comment ID", ()
     currentIssues: [baseIssue()],
     currentPullRequests: [baseParentPullRequest()],
     currentComments: [comment],
-    workstreams: [baseSyncPreflightWorkstream()],
+    workstreams: [baseSyncPreflightWorkstream({
+      activePrNumber: 31,
+      linkedPrs: [{ number: 31 }]
+    })],
     attention: [baseSyncPreflightAttention({
       needsAction: true,
       issueNumber: 11,
@@ -3041,7 +3047,10 @@ test("deriveTasks sends malformed wave-reassess syntax to ordinary PR discussion
     currentIssues: [baseIssue()],
     currentPullRequests: [baseParentPullRequest()],
     currentComments: [comment],
-    workstreams: [baseSyncPreflightWorkstream()],
+    workstreams: [baseSyncPreflightWorkstream({
+      activePrNumber: 31,
+      linkedPrs: [{ number: 31 }]
+    })],
     attention: [baseSyncPreflightAttention({
       needsAction: true,
       issueNumber: 11,
@@ -3073,7 +3082,10 @@ test("deriveTasks does not create reassessment work unless the current published
     currentIssues: [baseIssue()],
     currentPullRequests: [baseParentPullRequest()],
     currentComments: [comment],
-    workstreams: [baseSyncPreflightWorkstream()],
+    workstreams: [baseSyncPreflightWorkstream({
+      activePrNumber: 31,
+      linkedPrs: [{ number: 31 }]
+    })],
     attention: [baseSyncPreflightAttention({
       needsAction: true,
       issueNumber: 11,
