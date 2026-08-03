@@ -34,6 +34,8 @@ export function buildPromptPacket(task: TaskRecord, context: BuiltContext): Prom
     ...(context.retrospectiveCandidate ? { retrospectiveCandidate: context.retrospectiveCandidate } : {}),
     ...(context.retrospectiveProblem ? { retrospectiveProblem: context.retrospectiveProblem } : {}),
     ...(context.learningOpportunity ? { learningOpportunity: context.learningOpportunity } : {}),
+    ...(context.reviewCycle ? { reviewCycle: context.reviewCycle } : {}),
+    ...(context.reviewCycleFix ? { reviewCycleFix: context.reviewCycleFix } : {}),
     ...(context.capabilities ? { capabilities: context.capabilities } : {}),
     ...(context.nativeResumeRetry ? { nativeResumeRetry: context.nativeResumeRetry } : {}),
     action: context.instruction,
@@ -102,6 +104,23 @@ export function renderPrompt(
     ...(packet.retrospectiveCandidate ? [`- retrospective candidate: ${packet.retrospectiveCandidate.id}`] : []),
     ...(packet.retrospectiveProblem ? [`- retrospective problem: ${packet.retrospectiveProblem.id}`] : []),
     ...(packet.learningOpportunity ? [`- learning opportunity: ${packet.learningOpportunity.id}`] : []),
+    ...(packet.reviewCycle
+      ? [
+          `- review session: ${packet.reviewCycle.sessionId}`,
+          `- review ordinal: ${packet.reviewCycle.reviewOrdinal}`,
+          ...(packet.reviewCycle.turnNumber !== undefined
+            ? [`- review turn: ${packet.reviewCycle.turnNumber}`]
+            : []),
+          `- exact target head: ${packet.reviewCycle.targetHeadSha}`
+        ]
+      : []),
+    ...(packet.reviewCycleFix
+      ? [
+          `- owned finding: ${packet.reviewCycleFix.finding.id} — ${packet.reviewCycleFix.finding.title}`,
+          `- full review finding index: ${packet.reviewCycleFix.findings.map((finding) => `${finding.id}: ${finding.title}`).join("; ")}`,
+          `- preceding finding dispositions: ${packet.reviewCycleFix.precedingDispositions.length === 0 ? "none" : packet.reviewCycleFix.precedingDispositions.map((item) => `${item.findingId}=${item.disposition}`).join(", ")}`
+        ]
+      : []),
     ...(packet.capabilities ? renderCapabilities(packet.capabilities) : []),
     ...(packet.nativeResumeRetry?.previousExecutionFailed
       ? [
@@ -119,6 +138,7 @@ export function renderPrompt(
     "- Stay inside the assigned worktree or repository path; do not operate outside it.",
     "- Rebuild your understanding from the local checkout and the packet; do not assume hidden orchestration state.",
     "- Do not claim files changed unless you actually changed them.",
+    "- Run every local build, test, lint, typecheck, package, or other potentially long-running command with a bounded timeout shorter than the remaining agent-run budget. Never wait indefinitely or poll remote CI. If a command times out, stop it, report the timeout and partial evidence, and leave the worktree in a clean, recoverable state. Use the execution tool's timeout facility or a platform-appropriate bounded runner; do not assume the POSIX `timeout` command is installed.",
     "- Use sensors for read/context needs and controllers for write/action needs.",
     "- Do not use a blocked capability.",
     "- Orchestrator-owned publication stays separate unless the task packet explicitly delegates that publication to an agent-visible controller.",
@@ -375,6 +395,23 @@ function buildTaskSpecificConstraints(task: TaskRecord): string[] {
         "- Local commits are allowed if they help keep the worktree in a clean, reviewable state, but do not push them."
       ];
     case "review_pr":
+      if (task.context.reviewCycle) {
+        return [
+          ...executionConstraints,
+          ...(productSpecReviewConstraint ? [productSpecReviewConstraint] : []),
+          "- Review only the exact target head SHA in the review-cycle packet and re-read the checkout from scratch.",
+          "- Do not post to GitHub; the orchestrator publishes the canonical comment-style review.",
+          "- Output exactly one schemaVersion 2 JSON object and no Markdown wrapper.",
+          '- The object is strict and permits no extra keys. Its top-level keys are exactly schemaVersion, action, reviewedHeadSha, summary, and findings. Use action, never decision.',
+          '- Each finding uses id, title, category, severity, actionable, optional flat path/line/side, evidence, impact, instruction, acceptanceCriteria, verification, dependsOn, and overlapsWith. Never nest a location and never use blocking, dependencies, or overlaps as field names.',
+          "- verification is an array of strings. Prefer the documented array form; a single string is canonicalized only as a compatibility safeguard.",
+          '- severity must be exactly blocking, major, minor, or advisory; do not use high, medium, or low. Omit absent optional fields instead of returning null.',
+          "- Include every finding in findings, including actionable findings without an inline location.",
+          "- Actionable findings require evidence, impact, a concrete instruction, and at least one acceptance criterion.",
+          "- Keep finding IDs stable and unique within this review. Declare dependencies and overlaps by finding ID.",
+          "- Use APPROVE only with zero actionable findings, COMMENT only for non-actionable feedback, and REQUEST_CHANGES with at least one actionable blocking finding."
+        ];
+      }
       return [
         ...executionConstraints,
         ...(productSpecReviewConstraint ? [productSpecReviewConstraint] : []),
@@ -387,6 +424,19 @@ function buildTaskSpecificConstraints(task: TaskRecord): string[] {
         "- Inline comments are optional and should be concrete, location-specific, and limited.",
         "- Do not post the review directly to GitHub; the orchestrator owns publication."
       ];
+    case "fix_review_finding": {
+      const findingId = task.context.reviewCycle?.findingId ?? "<owned-finding-id>";
+      return [
+        ...executionConstraints,
+        "- You own exactly the finding identified in the review-cycle packet, as one item in a longer sequential review batch.",
+        "- Re-read the current checkout and diff before editing; earlier fix agents may already have addressed or overlapped this finding.",
+        "- If the current checkout already satisfies every acceptance criterion, return already_covered and make no changes.",
+        "- Keep changes focused. Flag related findings naturally covered, but do not broaden scope merely to optimize the list.",
+        "- Validate the finding's acceptance criteria and use bounded timeouts for every local check.",
+        "- Do not post to GitHub and do not push; the orchestrator owns the exact handoff and canonical PR report.",
+        `- Output contract: finish with exactly one JSON object, using the owned finding ID verbatim: {"schemaVersion":1,"findingId":${JSON.stringify(findingId)},"disposition":"fixed|already_covered|blocked","summary":"...","filesChanged":["repo/relative/path"],"checks":[{"command":"...","outcome":"passed|failed|timed_out|skipped","durationMs":123}],"relatedFindingIds":[],"notes":[]}.`
+      ];
+    }
     case "plan_breakdown":
       return [
         ...executionConstraints,

@@ -31,7 +31,8 @@ import type {
   WorkspaceRecoveryRecord,
   WorkspaceRecoveryStateFile,
   ProviderLimitRecord,
-  ProviderLimitStateFile
+  ProviderLimitStateFile,
+  ReviewSessionStateFile
 } from "./types.js";
 import type {
   LearningOpportunityRecord,
@@ -42,6 +43,11 @@ import type {
 } from "../retrospectives/types.js";
 import type { AgentProvider } from "../config/types.js";
 import { ProviderLimitStateFileSchema } from "../config/schemas.js";
+import {
+  REVIEW_SESSION_SCHEMA_VERSION,
+  ReviewSessionStateFileSchema,
+  type ReviewSessionRecord
+} from "../reviews/session.js";
 import {
   readJsonFileIfExists,
   writeJsonFileAtomic
@@ -101,6 +107,7 @@ export class StateStore {
         "workstreams.json",
         "workstreams"
       ),
+      reviewSessions: await this.loadReviewSessionState(),
       attention: await this.loadArrayFile<AttentionStateFile["attention"]>(
         this.stateDir,
         "attention.json",
@@ -205,6 +212,14 @@ export class StateStore {
     });
   }
 
+  async writeReviewSessionState(records: ReviewSessionRecord[]): Promise<void> {
+    const state = ReviewSessionStateFileSchema.parse({
+      schemaVersion: REVIEW_SESSION_SCHEMA_VERSION,
+      reviewSessions: [...records].sort(compareReviewSessions)
+    });
+    await writeJsonFileAtomic(path.join(this.stateDir, "review-sessions.json"), state);
+  }
+
   async writeAttentionState(attention: AttentionRecord[]): Promise<void> {
     await writeJsonFileAtomic(path.join(this.stateDir, "attention.json"), {
       attention: [...attention].sort(compareAttentionRecords).map(sortAttentionRecord)
@@ -295,6 +310,29 @@ export class StateStore {
       throw result.error;
     }
     return result.data.providerLimits;
+  }
+
+  async loadReviewSessionState(): Promise<ReviewSessionRecord[]> {
+    const filePath = path.join(this.stateDir, "review-sessions.json");
+    const existing = await readJsonFileIfExists<unknown>(filePath);
+    if (existing === undefined) {
+      const initialState: ReviewSessionStateFile = {
+        schemaVersion: REVIEW_SESSION_SCHEMA_VERSION,
+        reviewSessions: []
+      };
+      await writeJsonFileAtomic(filePath, initialState);
+      return [];
+    }
+
+    const result = ReviewSessionStateFileSchema.safeParse(existing);
+    if (!result.success) {
+      const issue = result.error.issues[0];
+      const issuePath = issue?.path.length ? `.${issue.path.join(".")}` : "";
+      throw new Error(
+        `${filePath}${issuePath}: ${issue?.message ?? "invalid review session state"}`
+      );
+    }
+    return result.data.reviewSessions;
   }
 
 
@@ -526,6 +564,17 @@ function compareWorkstreams(left: WorkstreamRecord, right: WorkstreamRecord): nu
   const repoComparison = left.repoKey.localeCompare(right.repoKey);
   if (repoComparison !== 0) {
     return repoComparison;
+  }
+
+  return left.id.localeCompare(right.id);
+}
+
+function compareReviewSessions(left: ReviewSessionRecord, right: ReviewSessionRecord): number {
+  const repoComparison = left.repoSlug.localeCompare(right.repoSlug);
+  if (repoComparison !== 0) return repoComparison;
+
+  if (left.pullRequestNumber !== right.pullRequestNumber) {
+    return left.pullRequestNumber - right.pullRequestNumber;
   }
 
   return left.id.localeCompare(right.id);

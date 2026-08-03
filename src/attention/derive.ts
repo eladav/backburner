@@ -15,6 +15,7 @@ import type {
 import type { TaskRecord } from "../tasks/types.js";
 import { extractRetryCommentId } from "../tasks/retry.js";
 import { extractMcpSkipCommand } from "../tasks/mcp-skip.js";
+import { isOrchestratorOwnedReviewComment } from "../reviews/comment-ownership.js";
 import { hasGeneratedPlanBreakdown, isParentSyncNeededBeforeNextWave } from "../workstreams/packet-plan.js";
 import {
   collectPacketPullRequestCommentProjections,
@@ -192,7 +193,10 @@ export function deriveAttentionRecords(input: AttentionDerivationInput): Attenti
   }
 
   for (const comment of [...input.currentComments].sort(compareComments)) {
-    if (isAgentAuthoredComment(comment.body)) {
+    if (
+      isAgentAuthoredComment(comment.body) ||
+      isOrchestratorOwnedReviewComment(comment, input.previousState.reviewSessions ?? [])
+    ) {
       continue;
     }
 
@@ -344,8 +348,25 @@ function buildHandledReviewHeadShaByPrId(
   const previousPrsById = new Map(previousState.prs.map((pr) => [pr.id, pr]));
   const currentPrsById = new Map(currentPullRequests.map((pr) => [pr.id, pr]));
 
+  const terminalSessions = [...(previousState.reviewSessions ?? [])]
+    .filter((session) =>
+      session.terminalHeadSha !== undefined &&
+      ["approved", "no_actionable", "max_turns"].includes(session.status)
+    )
+    .sort((left, right) =>
+      (left.terminalAt ?? left.updatedAt).localeCompare(right.terminalAt ?? right.updatedAt)
+    );
+  for (const session of terminalSessions) {
+    handledByPrId.set(session.pullRequestId, session.terminalHeadSha!);
+  }
+
   for (const task of previousState.tasks) {
-    if (task.kind !== "review_pr" || task.status !== "completed") {
+    if (
+      task.kind !== "review_pr" ||
+      task.status !== "completed" ||
+      task.context?.reviewCycle !== undefined ||
+      handledByPrId.has(task.sourceId)
+    ) {
       continue;
     }
 
@@ -356,7 +377,12 @@ function buildHandledReviewHeadShaByPrId(
   }
 
   for (const task of tasks) {
-    if (task.kind !== "review_pr" || task.status !== "completed") {
+    if (
+      task.kind !== "review_pr" ||
+      task.status !== "completed" ||
+      task.context?.reviewCycle !== undefined ||
+      handledByPrId.has(task.sourceId)
+    ) {
       continue;
     }
 

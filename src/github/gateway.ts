@@ -18,7 +18,19 @@ import type {
 } from "./types.js";
 
 export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
+  private authenticatedUser?: Promise<string>;
+
   constructor(private readonly commandRunner: CommandRunner) {}
+
+  async getAuthenticatedUser(): Promise<string> {
+    this.authenticatedUser ??= this.runGhJson<{ login?: string }>(["api", "user"])
+      .then((user) => {
+        const login = user.login?.trim();
+        if (!login) throw new Error("gh api user did not return an authenticated login");
+        return login;
+      });
+    return this.authenticatedUser;
+  }
 
   async getRepositoryMetadata(owner: string, name: string): Promise<GitHubRepositoryMetadata> {
     const data = await this.runGhJson<{

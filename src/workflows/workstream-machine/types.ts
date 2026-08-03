@@ -13,6 +13,12 @@ export interface WorkstreamMachineContext {
   activePullRequestState: "open" | "closed" | "merged" | undefined;
   activePullRequestLabels: string[];
   attentionReasons: AttentionReason[];
+  /**
+   * The review label is authorization, while this projection says whether the
+   * active PR head still needs a review session. A terminal session for the
+   * current head clears this even when the label remains applied.
+   */
+  reviewOutstandingForActiveHead?: boolean;
   inProgressLabel: string | undefined;
   reviewLabel: string | undefined;
   approvalLabel: string | undefined;

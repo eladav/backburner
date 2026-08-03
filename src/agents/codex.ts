@@ -24,6 +24,8 @@ import {
   extractExitCode,
   extractAndExportPlanBreakdownResult,
   extractAndExportWaveAssessmentResult,
+  extractReviewCycleResult,
+  extractReviewFixResult,
   extractReviewResult,
   extractStderr,
   extractStdout,
@@ -196,6 +198,8 @@ export class CodexCliAgent implements AgentRunner {
 
     const triageResult = extractTriageResult(task, derivedStdout);
     const reviewResult = extractReviewResult(task, derivedStdout);
+    const reviewCycleResult = extractReviewCycleResult(task, derivedStdout);
+    const reviewFixResult = extractReviewFixResult(task, derivedStdout);
     const planBreakdownExtraction = extractAndExportPlanBreakdownResult(
       task,
       derivedStdout,
@@ -211,9 +215,18 @@ export class CodexCliAgent implements AgentRunner {
     let errorMessage =
       exitCode === 0 ? undefined : stderr.trim() || "Codex CLI exited with a non-zero status.";
 
-    if (task.kind === "review_pr" && exitCode === 0 && !reviewResult) {
+    if (
+      task.kind === "review_pr" &&
+      exitCode === 0 &&
+      !(task.context.reviewCycle ? reviewCycleResult : reviewResult)
+    ) {
       taskStatus = "failed";
       errorMessage = "Agent output did not contain a valid structured review result.";
+    }
+
+    if (task.kind === "fix_review_finding" && exitCode === 0 && !reviewFixResult) {
+      taskStatus = "failed";
+      errorMessage = "Agent output did not contain a valid structured review-fix result.";
     }
 
     if ((task.kind === "plan_breakdown" || task.kind === "wave_plan_replanning") && exitCode === 0) {
@@ -255,11 +268,13 @@ export class CodexCliAgent implements AgentRunner {
       endedAt,
       exitCode,
       ...(errorMessage ? { errorMessage } : {}),
-      ...(triageResult || reviewResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
+      ...(triageResult || reviewResult || reviewCycleResult || reviewFixResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
         ? {
             result: {
               ...(triageResult ? { triage: triageResult } : {}),
               ...(reviewResult ? { review: reviewResult } : {}),
+              ...(reviewCycleResult ? { reviewCycleReview: reviewCycleResult } : {}),
+              ...(reviewFixResult ? { reviewCycleFix: reviewFixResult } : {}),
               ...(planBreakdownExtraction.ok
                 ? {
                     planBreakdown: planBreakdownExtraction.planBreakdown,

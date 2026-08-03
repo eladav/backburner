@@ -77,6 +77,19 @@ export const RepoLabelsSchema = z.object({
   ).default("prepare-for-merge")
 });
 
+export const DEFAULT_REVIEW_AUTOMATION_MAX_TURNS = 5;
+export const MAX_REVIEW_AUTOMATION_TURNS = 50;
+
+export const ReviewAutomationConfigSchema = z.object({
+  maxTurns: z.number({ message: "must be a number" })
+    .int({ message: "must be an integer" })
+    .min(0, { message: "must be at least 0" })
+    .max(MAX_REVIEW_AUTOMATION_TURNS, {
+      message: `must be at most ${MAX_REVIEW_AUTOMATION_TURNS}`
+    })
+    .default(DEFAULT_REVIEW_AUTOMATION_MAX_TURNS)
+}).default({ maxTurns: DEFAULT_REVIEW_AUTOMATION_MAX_TURNS });
+
 export const RepoConfigSchema = z.object({
   id: nonEmptyString("must be a non-empty string"),
   owner: nonEmptyString("must be a non-empty string"),
@@ -87,7 +100,8 @@ export const RepoConfigSchema = z.object({
     "must stay within the provided code root"
   ),
   enabled: z.boolean({ message: "must be a boolean" }),
-  labels: RepoLabelsSchema
+  labels: RepoLabelsSchema,
+  reviewAutomation: ReviewAutomationConfigSchema
 });
 
 export const ReposConfigFileSchema = z.object({
@@ -506,7 +520,15 @@ export const McpsConfigFileSchema = z
   });
 
 export type GitHubBrokerConfig = z.infer<typeof GitHubBrokerSchema>;
-export type RepoConfig = z.infer<typeof RepoConfigSchema>;
+/** Repository shape returned by configuration loading, with all defaults resolved. */
+export type NormalizedRepoConfig = z.output<typeof RepoConfigSchema>;
+/**
+ * Source-compatible repository shape used by callers and fixtures. Configuration loading
+ * always returns NormalizedRepoConfig, while direct callers may omit the new automation block.
+ */
+export type RepoConfig = Omit<NormalizedRepoConfig, "reviewAutomation"> & {
+  reviewAutomation?: NormalizedRepoConfig["reviewAutomation"];
+};
 export type AgentProvider = z.infer<typeof AgentProviderSchema>;
 export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 export type ReposConfigFile = z.infer<typeof ReposConfigFileSchema>;

@@ -77,6 +77,9 @@ export interface RepoDraft {
     agentSyncParentBranch: string;
     prepareForMerge: string;
   };
+  reviewAutomation?: {
+    maxTurns: number;
+  };
 }
 
 /** Complete configuration draft built up during the onboarding flow. */

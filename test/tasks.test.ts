@@ -183,6 +183,68 @@ test("deriveTasks creates deterministic task packets for new issues, PRs, commen
   assert.equal(writePlanTasks[0]?.executionPermission, "workspace-write");
 });
 
+test("deriveTasks carries a failed review-cycle fix so its workspace can be recovered", () => {
+  const now = "2026-08-03T10:00:00.000Z";
+  const repo = baseRepo();
+  const pullRequest = basePullRequest({ labels: [repo.labels.agentReview] });
+  const failedFix = {
+    id: "task:fix_review_finding:review-session:repo-1:pr-21:1:F001",
+    kind: "fix_review_finding",
+    status: "failed",
+    executionPermission: "workspace-write",
+    handoffPolicy: {
+      expectsPushableHandoff: true,
+      orchestratorOwnsPush: true,
+      remotePublishOwner: "orchestrator"
+    },
+    repoId: repo.id,
+    repoName: repo.name,
+    repoSlug: `${repo.owner}/${repo.name}`,
+    sourceKind: "pull_request",
+    sourceId: pullRequest.id,
+    sourceUrl: pullRequest.url,
+    relevant: true,
+    reason: "Automatic review finding needs a fix.",
+    summary: "Fix F001",
+    context: {
+      repoIdentifier: pullRequest.repoSlug,
+      localRepoPath: "/tmp/code-root/_worktrees/repo-one/pr-21",
+      branchName: pullRequest.headBranch,
+      labels: pullRequest.labels,
+      instruction: "Fix F001",
+      recoveryNeeded: true,
+      reviewCycle: {
+        sessionId: "review-session:repo-1:pr-21:1",
+        reviewOrdinal: 1,
+        turnNumber: 1,
+        findingId: "F001",
+        targetHeadSha: "a".repeat(40),
+        retryScope: "review_session"
+      }
+    },
+    createdAt: now,
+    updatedAt: now
+  } as TaskRecord;
+
+  const tasks = deriveTasks({
+    repos: [repo],
+    repoSyncRecords: [baseRepoSync()],
+    previousState: {
+      ...emptyState(),
+      prs: [pullRequest],
+      tasks: [failedFix]
+    },
+    currentIssues: [],
+    currentPullRequests: [pullRequest],
+    currentComments: [],
+    contextBuilder: new DefaultContextBuilder(),
+    now
+  });
+
+  assert.equal(tasks.find((task) => task.id === failedFix.id)?.status, "failed");
+  assert.equal(tasks.find((task) => task.id === failedFix.id)?.context.recoveryNeeded, true);
+});
+
 test("product discovery is the default new issue phase and task", () => {
   const now = "2026-06-28T10:00:00.000Z";
   const repo = baseRepo();

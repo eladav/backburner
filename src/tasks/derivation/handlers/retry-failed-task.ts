@@ -104,6 +104,7 @@ function findMatchingFailedTasks(
   const candidates = env.existingTasks.filter(
     (task) =>
       task.status === "failed" &&
+      task.context.reviewCycle === undefined &&
       task.lastFailureCommentId === request.targetFailureCommentId &&
       taskMatchesRepo(task, context)
   );

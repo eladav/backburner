@@ -12,6 +12,7 @@ import type {
   WorktreeRecord
 } from "../src/state/types.js";
 import { deriveAttentionRecords } from "../src/attention/derive.js";
+import { createReviewSession } from "../src/reviews/session.js";
 
 test("deriveAttentionRecords creates attention for a human packet PR comment", () => {
   const issue = baseIssue();
@@ -463,6 +464,55 @@ test("deriveAttentionRecords records same-cycle completed review tasks from the 
       lastHandledReviewHeadSha: "newest-head-sha"
     }
   ]);
+});
+
+test("deriveAttentionRecords does not treat a failed review session as a handled head", () => {
+  const pr = basePullRequest({ number: 23, labels: ["agent-review"], headSha: "c".repeat(40) });
+  const workstream = prWorkstream(pr.number);
+  const started = createReviewSession({
+    repoId: pr.repoId,
+    repoSlug: pr.repoSlug,
+    pullRequestId: pr.id,
+    pullRequestNumber: pr.number,
+    pullRequestUrl: pr.url,
+    workstreamId: workstream.id,
+    trigger: "label",
+    maxTurns: 5,
+    headSha: pr.headSha,
+    ordinal: 1,
+    now: "2026-04-20T09:00:00.000Z"
+  });
+  const failed = {
+    ...started,
+    status: "failed" as const,
+    terminalHeadSha: pr.headSha,
+    terminalAt: "2026-04-20T09:05:00.000Z",
+    updatedAt: "2026-04-20T09:05:00.000Z",
+    failure: {
+      step: "review" as const,
+      reason: "reviewer failed",
+      failedAt: "2026-04-20T09:05:00.000Z"
+    }
+  };
+
+  const attention = deriveAttentionRecords({
+    repos: [baseRepo()],
+    workstreams: [workstream],
+    previousState: {
+      ...emptyState(),
+      prs: [pr],
+      reviewSessions: [failed]
+    },
+    currentIssues: [],
+    currentPullRequests: [pr],
+    currentComments: [],
+    tasks: [],
+    now: "2026-04-20T10:00:00.000Z"
+  });
+
+  assert.equal(attention[0]?.lastHandledReviewHeadSha, undefined);
+  assert.ok(attention[0]?.reasons.includes("pr_review_requested"));
+  assert.ok(attention[0]?.gaps?.some((gap) => gap.includes("Review handling is inferred")));
 });
 
 test("deriveAttentionRecords ignores bot-prefixed comments and treats human retry comments as actionable", () => {

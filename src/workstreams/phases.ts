@@ -14,6 +14,7 @@ export interface WorkstreamPhaseReducerInput {
   activePullRequestState: "open" | "closed" | "merged" | undefined;
   activePullRequestLabels: string[];
   attentionReasons: AttentionReason[];
+  reviewOutstandingForActiveHead?: boolean;
   inProgressLabel: string | undefined;
   reviewLabel: string | undefined;
   approvalLabel: string | undefined;

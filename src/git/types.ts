@@ -117,6 +117,8 @@ export interface GitGateway {
 
   /** Returns the diff --stat for baseSha..HEAD. */
   getDiffStatSince(localPath: string, baseSha: string): Promise<string>;
+  /** Repo-relative paths changed between baseSha and the current worktree state. */
+  getChangedPathsSince?(localPath: string, baseSha: string): Promise<string[]>;
 
   /**
    * Hard-reset the working tree to the given ref.
@@ -618,6 +620,19 @@ export class GitCliGateway implements GitGateway {
       { cwd: localPath }
     );
     return result.stdout.trim();
+  }
+
+  async getChangedPathsSince(localPath: string, baseSha: string): Promise<string[]> {
+    const result = await this.commandRunner.run(
+      "git",
+      ["diff", "--name-only", `${baseSha}...HEAD`],
+      { cwd: localPath }
+    );
+    return result.stdout
+      .split(/\r?\n/u)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0)
+      .sort((left, right) => left.localeCompare(right));
   }
 
   async resetHard(localPath: string, ref: string): Promise<void> {

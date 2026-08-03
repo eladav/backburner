@@ -15,16 +15,16 @@ import type {
   BackburnerSensorCapability,
   GitHubBrokerConfig,
   McpDependency,
+  NormalizedRepoConfig,
   NormalizedCapabilities,
-  PromptsConfigFile,
-  RepoConfig
+  PromptsConfigFile
 } from "./types.js";
 import { readJsonFile } from "../utils/json.js";
 import { managementRoot } from "../utils/paths.js";
 
 export interface LoadedConfig {
   allowedUsers: string[];
-  repos: RepoConfig[];
+  repos: NormalizedRepoConfig[];
   agents: AgentConfig[];
   codex: {
     githubBroker: GitHubBrokerConfig;

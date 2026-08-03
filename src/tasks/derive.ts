@@ -858,6 +858,17 @@ function shouldCarryForwardUnresolvedTask(
           pullRequest.labels.includes(repoConfig.labels.agentReview)
       );
     }
+    case "fix_review_finding": {
+      const pullRequest = input.currentPullRequestsById.get(task.sourceId);
+      const repoConfig = input.repoConfigs.get(task.repoId);
+      return Boolean(
+        task.context.reviewCycle !== undefined &&
+          pullRequest &&
+          pullRequest.state === "open" &&
+          repoConfig &&
+          pullRequest.labels.includes(repoConfig.labels.agentReview)
+      );
+    }
     case "write_plan": {
       if (task.context.localRepoPath && input.currentWorktreePaths.has(task.context.localRepoPath)) {
         const worktree = input.worktreesByPath.get(task.context.localRepoPath);

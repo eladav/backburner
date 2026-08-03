@@ -8,6 +8,7 @@ import { GitHubWaveAssessmentPublisher, type WaveAssessmentPublisher } from "../
 import { GitHubTaskLifecycleNotifier, type TaskLifecycleNotifier } from "../../agents/lifecycle-feedback.js";
 import {
   buildSinglePreDispatchFailureExecution,
+  dispatchPendingTasks,
   materializePreDispatchFailure,
   safelyNotifyFailure
 } from "../../agents/service.js";
@@ -88,6 +89,7 @@ import {
   LocalParentBranchSyncService,
 } from "../../workstreams/parent-branch-sync.js";
 import { reconcileDurableWorktreeLocations } from "../../worktrees/workspace-relocation.js";
+import { ReviewCycleOrchestrator } from "../../reviews/controller.js";
 
 import {
   executeParentBranchSyncActions
@@ -654,6 +656,14 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     now: generatedAt,
     ...(managementRepo ? { managementRepo } : {})
   });
+  // Automatic labeled reviews are owned by the durable review-session
+  // controller below. Preserve completed legacy history, but do not dispatch a
+  // parallel legacy review for the same authorization signal.
+  tasks = tasks.filter((task) => !(
+    task.kind === "review_pr" &&
+    task.status === "pending" &&
+    task.context.reviewCycle === undefined
+  ));
 
   const mcpSkipApplication = applyMcpSkipRequests({
     tasks,
@@ -1078,6 +1088,66 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         agentPool
       });
 
+      // Human discussion/implementation changes take precedence over the next
+      // automatic review child. Push those ordinary handoffs first; the review
+      // controller then observes the live terminal head and starts/resets its
+      // own budget there.
+      const reviewReadyWorktrees = await implementationWorkflowService.finalizePushableHandoffs(
+        projectionAwareTriageWorktrees,
+        dispatchResult.tasks,
+        logger
+      );
+      await stateStore.writeWorktreeState(reviewReadyWorktrees);
+
+      const reviewCycleOrchestrator = new ReviewCycleOrchestrator(
+        stateStore,
+        gitHubGateway,
+        reviewPublisher,
+        implementationWorkflowService,
+        logger
+      );
+      const reviewCycleResult = await reviewCycleOrchestrator.run({
+        repos: enabledRepos,
+        pullRequests: scanResult.prs,
+        previousPullRequests: previousState.prs,
+        comments: scanResult.comments,
+        previousComments: previousState.comments,
+        workstreams: dispatchResult.workstreams,
+        worktrees: reviewReadyWorktrees,
+        sessions: previousState.reviewSessions ?? [],
+        tasks: dispatchResult.tasks,
+        executions: dispatchResult.executions,
+        allowedUsers: config.allowedUsers,
+        dispatchChild: async (taskId, cycleTasks, cycleExecutions) =>
+          dispatchPendingTasks({
+            tasks: cycleTasks,
+            agents: config.agents,
+            existingExecutions: cycleExecutions,
+            stateStore,
+            logDir,
+            agentRunner: dispatchAgentRunner,
+            jobMemoryRuntime: { store: memoryStore, toolService: memoryToolService },
+            logger,
+            promptsConfig: config.prompts,
+            managementRoot: managementDir,
+            ...(capabilitiesByProvider ? { capabilitiesByProvider } : {}),
+            ...(providerBrokerToolAllowLists ? { providerBrokerToolAllowLists } : {}),
+            ...(brokerToolScope ? { brokerToolScope } : {}),
+            eligibleTaskIds: new Set([taskId]),
+            deferFailureNotifications: true,
+            agentPool
+          })
+      });
+      dispatchResult = {
+        ...dispatchResult,
+        tasks: reviewCycleResult.tasks,
+        executions: reviewCycleResult.executions
+      };
+      previousState = {
+        ...previousState,
+        reviewSessions: reviewCycleResult.sessions
+      };
+
       // Journal new executions (dedup via executionIdsBeforeCycle)
       await journalNewExecutions({
         cycleId,
@@ -1156,7 +1226,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       await stateStore.writeManagementPrState(materializationResult.managementPrs);
 
       const reconciledWorktrees = implementationWorkflowService.reconcileTaskState(
-        projectionAwareTriageWorktrees,
+        reviewReadyWorktrees,
         dispatchResult.tasks
       );
       const projectionAwareReconciledWorktrees =
@@ -1168,11 +1238,11 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
           dispatchResult.workstreams,
           scanResult.prs
         );
-      const finalWorktrees = await implementationWorkflowService.finalizePushableHandoffs(
-        projectionAwareReconciledWorktrees,
-        dispatchResult.tasks,
-        logger
-      );
+      // Ordinary pushable handoffs were finalized before automatic review so
+      // the controller could start from their remote head. Cycle fix handoffs
+      // are finalized explicitly by the controller; do not process either set
+      // a second time here.
+      const finalWorktrees = projectionAwareReconciledWorktrees;
       await stateStore.writeWorktreeState(finalWorktrees);
       const finalWorkstreams = deriveWorkstreams({
         repos: enabledRepos,

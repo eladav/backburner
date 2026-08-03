@@ -8,9 +8,25 @@ import type {
 import { Task } from "../tasks/task.js";
 import type { TaskRecord } from "../tasks/types.js";
 import type { Logger } from "../utils/logger.js";
+import type { ReviewResultV2 } from "../reviews/contracts.js";
 
 export interface ReviewPublisher {
   publishReview(task: TaskRecord, execution: ExecutionRecord): Promise<void>;
+}
+
+export interface ReviewCyclePublicationReceipt {
+  id: string;
+  url: string;
+  commentKind: "pull_request_review" | "pull_request_comment";
+  author?: string;
+  ownedReviewCommentIds: string[];
+}
+
+export interface ReviewCyclePublisher {
+  publishCycleReview(
+    task: TaskRecord,
+    execution: ExecutionRecord
+  ): Promise<ReviewCyclePublicationReceipt>;
 }
 
 export interface ValidationResult {
@@ -151,6 +167,109 @@ export class GitHubPullRequestReviewPublisher implements ReviewPublisher {
     }
   }
 
+  async publishCycleReview(
+    task: TaskRecord,
+    execution: ExecutionRecord
+  ): Promise<ReviewCyclePublicationReceipt> {
+    const lineage = task.context.reviewCycle;
+    const review = execution.result?.reviewCycleReview;
+    if (task.kind !== "review_pr" || execution.taskStatus !== "completed" || !lineage || !review) {
+      throw new Error(`Task ${task.id} is not a completed automatic review-cycle review.`);
+    }
+
+    const repo = this.reposById.get(task.repoId);
+    const pullRequestNumber = Task.from(task).owningPullRequestNumber();
+    if (!repo || pullRequestNumber === undefined) {
+      throw new Error(`Could not resolve repository or pull request for review-cycle task ${task.id}.`);
+    }
+
+    const pr = await this.gitHubGateway.getPullRequest(repo.owner, repo.name, pullRequestNumber);
+    if (pr.headSha !== lineage.targetHeadSha || review.reviewedHeadSha !== lineage.targetHeadSha) {
+      throw new Error(
+        `Refusing stale review publication for ${repo.owner}/${repo.name}#${pullRequestNumber}: ` +
+          `expected ${lineage.targetHeadSha}, live ${pr.headSha ?? "unknown"}, reviewed ${review.reviewedHeadSha}.`
+      );
+    }
+
+    const marker = reviewCycleMarker(lineage.sessionId, "review", lineage.reviewOrdinal);
+    const existing = await findExistingCycleReview(
+      this.gitHubGateway,
+      repo.owner,
+      repo.name,
+      pullRequestNumber,
+      marker
+    );
+    if (existing) {
+      return existing;
+    }
+
+    const changedFiles = await this.gitHubGateway.listPullRequestChangedFiles(
+      repo.owner,
+      repo.name,
+      pullRequestNumber
+    );
+    const validation = validateCycleReview(review, changedFiles, marker);
+    const body = buildCycleReviewBody(review, validation.movedToSummary, marker);
+
+    try {
+      const submission = await this.gitHubGateway.submitPullRequestReview({
+        owner: repo.owner,
+        name: repo.name,
+        pullRequestNumber,
+        event: "COMMENT",
+        body,
+        commitId: lineage.targetHeadSha,
+        comments: validation.validInlineComments
+      });
+      const ownedReviewCommentIds = await findOwnedInlineCommentIds(
+        this.gitHubGateway,
+        repo.owner,
+        repo.name,
+        pullRequestNumber,
+        marker
+      );
+      return {
+        id: String(submission.id),
+        url: submission.url,
+        commentKind: "pull_request_review",
+        ...(submission.author?.login ? { author: submission.author.login } : {}),
+        ownedReviewCommentIds
+      };
+    } catch (error) {
+      this.logger?.warn(
+        `Failed to publish automatic review with inline findings; posting the complete review as a PR comment: ${error instanceof Error ? error.message : String(error)}`
+      );
+      // A transport failure can arrive after GitHub accepted the review. Check
+      // the durable marker again before creating a summary fallback.
+      const acceptedReview = await findExistingCycleReview(
+        this.gitHubGateway,
+        repo.owner,
+        repo.name,
+        pullRequestNumber,
+        marker
+      );
+      if (acceptedReview) {
+        return acceptedReview;
+      }
+      const fallback = await this.gitHubGateway.postIssueComment({
+        owner: repo.owner,
+        name: repo.name,
+        issueNumber: pullRequestNumber,
+        body: buildCycleReviewBody(review, review.findings.map((finding) => ({
+          finding,
+          reason: "published in summary fallback"
+        })), marker)
+      });
+      return {
+        id: String(fallback.id),
+        url: fallback.url,
+        commentKind: "pull_request_comment",
+        ...(fallback.author?.login ? { author: fallback.author.login } : {}),
+        ownedReviewCommentIds: []
+      };
+    }
+  }
+
   private validateReview(
     review: ReviewDecisionResult,
     changedFiles: GhPullRequestChangedFile[]
@@ -198,6 +317,160 @@ export class GitHubPullRequestReviewPublisher implements ReviewPublisher {
       }
     };
   }
+}
+
+async function findExistingCycleReview(
+  gateway: GitHubGateway,
+  owner: string,
+  name: string,
+  pullRequestNumber: number,
+  marker: string
+): Promise<ReviewCyclePublicationReceipt | undefined> {
+  const [authenticatedUser, reviews, comments] = await Promise.all([
+    gateway.getAuthenticatedUser(),
+    gateway.listPullRequestReviews(owner, name, pullRequestNumber),
+    gateway.listIssueComments(owner, name, pullRequestNumber)
+  ]);
+  const review = reviews.find((candidate) =>
+    sameLogin(candidate.author?.login, authenticatedUser) && candidate.body?.includes(marker)
+  );
+  if (review?.url) {
+    return {
+      id: String(review.id),
+      url: review.url,
+      commentKind: "pull_request_review",
+      ...(review.author?.login ? { author: review.author.login } : {}),
+      ownedReviewCommentIds: await findOwnedInlineCommentIds(
+        gateway,
+        owner,
+        name,
+        pullRequestNumber,
+        marker,
+        authenticatedUser
+      )
+    };
+  }
+
+  const comment = comments.find((candidate) =>
+    sameLogin(candidate.author?.login, authenticatedUser) && candidate.body.includes(marker)
+  );
+  if (!comment) return undefined;
+  return {
+    id: String(comment.id),
+    url: comment.url,
+    commentKind: "pull_request_comment",
+    ...(comment.author?.login ? { author: comment.author.login } : {}),
+    ownedReviewCommentIds: []
+  };
+}
+
+interface CycleReviewValidation {
+  validInlineComments: Array<{
+    path: string;
+    line: number;
+    side: "LEFT" | "RIGHT";
+    body: string;
+  }>;
+  movedToSummary: Array<{ finding: ReviewResultV2["findings"][number]; reason: string }>;
+}
+
+function validateCycleReview(
+  review: ReviewResultV2,
+  changedFiles: GhPullRequestChangedFile[],
+  marker: string
+): CycleReviewValidation {
+  const changedFileByPath = new Map(changedFiles.map((file) => [file.path, file]));
+  const validInlineComments: CycleReviewValidation["validInlineComments"] = [];
+  const movedToSummary: CycleReviewValidation["movedToSummary"] = [];
+
+  for (const finding of review.findings) {
+    if (!finding.path || finding.line === undefined || !finding.side) {
+      movedToSummary.push({ finding, reason: "no inline location" });
+      continue;
+    }
+    const anchor = validateInlineCommentAnchor(
+      {
+        path: finding.path,
+        line: finding.line,
+        side: finding.side,
+        ...(finding.instruction ? { body: finding.instruction } : {})
+      },
+      changedFileByPath.get(finding.path)
+    );
+    if (!anchor.isValid) {
+      movedToSummary.push({ finding, reason: anchor.reason ?? "invalid inline location" });
+      continue;
+    }
+    validInlineComments.push({
+      path: finding.path,
+      line: finding.line,
+      side: finding.side,
+      body: `${withBotPrefix(`${finding.id} — ${finding.title}: ${finding.instruction ?? finding.evidence ?? "Review finding."}`)}\n\n${marker}`
+    });
+  }
+
+  return { validInlineComments, movedToSummary };
+}
+
+function buildCycleReviewBody(
+  review: ReviewResultV2,
+  movedToSummary: CycleReviewValidation["movedToSummary"],
+  marker: string
+): string {
+  const lines = [
+    withBotPrefix(`Review result: ${formatReviewAction(review.action)}`),
+    "",
+    `Reviewed head: \`${review.reviewedHeadSha.slice(0, 12)}\``,
+    "",
+    review.summary
+  ];
+  if (review.findings.length > 0) {
+    const movedIds = new Set(movedToSummary.map((item) => item.finding.id));
+    lines.push("", "Findings:");
+    for (const finding of review.findings) {
+      const location = finding.path && finding.line ? ` — \`${finding.path}:${finding.line}\`` : "";
+      const publication = movedIds.has(finding.id) ? " — summary" : " — inline";
+      lines.push(
+        `- **${escapeReviewText(finding.id)} · ${escapeReviewText(finding.title)}**${location}${publication}: ${escapeReviewText(finding.instruction ?? finding.evidence ?? "Review feedback.")}`
+      );
+    }
+  }
+  lines.push("", marker);
+  return lines.join("\n");
+}
+
+function escapeReviewText(value: string): string {
+  return value.replace(/[\r\n]+/g, " ").replace(/[<>]/g, "").slice(0, 600);
+}
+
+function reviewCycleMarker(sessionId: string, kind: string, ordinal: number): string {
+  return `<!-- backburner-review-cycle:v1 session=${sessionId} kind=${kind} ordinal=${ordinal} -->`;
+}
+
+async function findOwnedInlineCommentIds(
+  gateway: GitHubGateway,
+  owner: string,
+  name: string,
+  pullRequestNumber: number,
+  marker: string,
+  authenticatedUser?: string
+): Promise<string[]> {
+  try {
+    const expectedAuthor = authenticatedUser ?? await gateway.getAuthenticatedUser();
+    const comments = await gateway.listPullRequestReviewComments(owner, name, pullRequestNumber);
+    return comments
+      .filter((comment) =>
+        sameLogin(comment.user?.login, expectedAuthor) && comment.body?.includes(marker)
+      )
+      .map((comment) => String(comment.id));
+  } catch {
+    // Prefixing remains defense in depth if indexing inline IDs transiently fails.
+    return [];
+  }
+}
+
+function sameLogin(candidate: string | undefined, expected: string): boolean {
+  return candidate?.toLowerCase() === expected.toLowerCase();
 }
 
 function validateInlineCommentAnchor(

@@ -1252,6 +1252,10 @@ class TestGitHubGateway implements GitHubGateway {
     } = {}
   ) {}
 
+  async getAuthenticatedUser(): Promise<string> {
+    return "owner";
+  }
+
   async getRepositoryMetadata(): Promise<GitHubRepositoryMetadata> {
     return {
       id: "repo-meta",

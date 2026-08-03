@@ -183,6 +183,7 @@ export interface GitHubRepositoryMetadata {
 }
 
 export interface GitHubGateway {
+  getAuthenticatedUser(): Promise<string>;
   getRepositoryMetadata(owner: string, name: string): Promise<GitHubRepositoryMetadata>;
   getRepositoryDefaultBranch(owner: string, name: string): Promise<string>;
   getIssue(owner: string, name: string, issueNumber: number): Promise<GhIssueSummary>;
@@ -293,4 +294,3 @@ export interface GhCheckRun {
   startedAt: string | null;
   completedAt: string | null;
 }
-

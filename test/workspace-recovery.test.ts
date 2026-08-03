@@ -56,6 +56,13 @@ test("resolveTaskWorkspacePath returns path for respond_pr_comment", () => {
   assert.equal(service.resolveTaskWorkspacePath(task), "/code/_worktrees/repo-1");
 });
 
+test("resolveTaskWorkspacePath returns path for a failed review-cycle fix", () => {
+  const service = new WorkspaceRecoveryService();
+  const task = createTask({ kind: "fix_review_finding" });
+  assert.equal(service.resolveTaskWorkspacePath(task), "/code/_worktrees/repo-1");
+  assert.equal(service.isRecoveryNeeded(task), true);
+});
+
 test("resolveTaskWorkspacePath returns path for prepare_pr_for_merge", () => {
   const service = new WorkspaceRecoveryService();
   const task = createTask({

@@ -508,6 +508,10 @@ class StubGitHubGateway implements GitHubGateway {
     } = {}
   ) {}
 
+  async getAuthenticatedUser(): Promise<string> {
+    return "octocat";
+  }
+
   async getRepositoryMetadata(): Promise<GitHubRepositoryMetadata> {
     return {
       id: "repo-1",

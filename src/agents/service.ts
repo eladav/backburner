@@ -127,6 +127,8 @@ export interface DispatchCycleInput {
   capabilitiesByProvider?: ReadonlyMap<string, AgentVisibleCapabilities> | undefined;
   providerBrokerToolAllowLists?: ReadonlyMap<string, readonly string[]> | undefined;
   mcpBlockedTaskIds?: ReadonlySet<string> | undefined;
+  /** Restrict this dispatch pass to an explicit task subset. */
+  eligibleTaskIds?: ReadonlySet<string> | undefined;
   deferFailureNotifications?: boolean | undefined;
   brokerToolScope?: {
     bindAllowedTools(allowedToolNames: readonly string[]): void;
@@ -250,6 +252,8 @@ export async function dispatchPendingTasks(input: DispatchCycleInput): Promise<D
       t &&
       t.status === "pending" &&
       t.relevant !== false &&
+      (input.eligibleTaskIds === undefined || input.eligibleTaskIds.has(t.id)) &&
+      (t.context.reviewCycle === undefined || input.eligibleTaskIds?.has(t.id) === true) &&
       t.kind !== "sync_parent_branch" &&
       !input.mcpBlockedTaskIds?.has(t.id)
     ) {
@@ -665,7 +669,10 @@ export async function dispatchPendingTasks(input: DispatchCycleInput): Promise<D
             if (hasSessionId) {
               const existing = recordIdx !== -1 ? providerSessions[recordIdx] : undefined;
               const isFailed = result.taskStatus === "failed";
-              const isRetryable = isFailed ? isRetryableProviderSessionFailure(result.execution) : true;
+              const isRetryable = isFailed
+                ? preparingTask.context.reviewCycle === undefined &&
+                  isRetryableProviderSessionFailure(result.execution)
+                : true;
               const recordStatus = isRetryable ? "active" : "stale";
               const sessionName = result.providerSession!.providerSessionName ?? existing?.providerSessionName;
 
@@ -692,7 +699,9 @@ export async function dispatchPendingTasks(input: DispatchCycleInput): Promise<D
             } else if (result.taskStatus === "failed") {
               const existing = recordIdx !== -1 ? providerSessions[recordIdx] : undefined;
               if (existing && existing.status === "active") {
-                const isRetryable = isRetryableProviderSessionFailure(result.execution);
+                const isRetryable =
+                  preparingTask.context.reviewCycle === undefined &&
+                  isRetryableProviderSessionFailure(result.execution);
                 if (isRetryable) {
                   existing.lastFailedAt = nowStr;
                   existing.updatedAt = nowStr;
@@ -709,7 +718,11 @@ export async function dispatchPendingTasks(input: DispatchCycleInput): Promise<D
           }
         }
 
-        if (result.taskStatus === "completed" && preparingTask.kind === "review_pr") {
+        if (
+          result.taskStatus === "completed" &&
+          preparingTask.kind === "review_pr" &&
+          preparingTask.context.reviewCycle === undefined
+        ) {
           await safelyPublishReview(input.reviewPublisher, preparingTask, result.execution);
         }
         if (result.taskStatus === "completed" && preparingTask.kind === "plan_breakdown") {

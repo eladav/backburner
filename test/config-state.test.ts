@@ -262,6 +262,7 @@ test("StateStore initializes missing readable JSON files with defaults", async (
     assert.deepEqual(state.tasks, []);
     assert.deepEqual(state.executions, []);
     assert.deepEqual(state.workstreams, []);
+    assert.deepEqual(state.reviewSessions, []);
     assert.deepEqual(state.attention, []);
     assert.deepEqual(state.issueMetadata, { partialFailures: [] });
 
@@ -269,11 +270,16 @@ test("StateStore initializes missing readable JSON files with defaults", async (
     const issuesState = await readFile(path.join(tempDir, "issues.json"), "utf8");
     const executionsState = await readFile(path.join(tempDir, "executions.json"), "utf8");
     const workstreamsState = await readFile(path.join(tempDir, "workstreams.json"), "utf8");
+    const reviewSessionsState = await readFile(path.join(tempDir, "review-sessions.json"), "utf8");
     const attentionState = await readFile(path.join(tempDir, "attention.json"), "utf8");
 
     assert.equal(reposState, '{\n  "repos": []\n}\n');
     assert.equal(executionsState, '{\n  "executions": []\n}\n');
     assert.equal(workstreamsState, '{\n  "workstreams": []\n}\n');
+    assert.equal(
+      reviewSessionsState,
+      '{\n  "schemaVersion": 1,\n  "reviewSessions": []\n}\n'
+    );
     assert.equal(attentionState, '{\n  "attention": []\n}\n');
     assert.equal(
       issuesState,
