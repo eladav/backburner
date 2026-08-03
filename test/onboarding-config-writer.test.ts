@@ -75,6 +75,7 @@ test("ConfigWriter: fresh config generation writes both files", async () => {
     assert.equal(repos.repos[0].enabled, true);
     assert.equal(repos.repos[0].labels.agentInProgress, "backburner:in-progress");
     assert.equal(repos.repos[0].labels.agentProductApproved, "backburner:product-approved");
+    assert.equal(repos.repos[0].reviewAutomation.maxTurns, 5);
 
     assert.equal(agents.agents[0].id, "claude-strong");
     assert.equal(agents.agents[0].provider, "claude");

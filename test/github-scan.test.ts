@@ -1491,6 +1491,10 @@ class FakeGitHubGateway implements GitHubGateway {
     }
   ) {}
 
+  async getAuthenticatedUser(): Promise<string> {
+    return "owner";
+  }
+
   async getRepositoryMetadata(owner: string, name: string): Promise<GitHubRepositoryMetadata> {
     this.maybeFail(`${owner}/${name}`, "repo_metadata", "repo");
     return this.fixtures.repoMetadata.get(`${owner}/${name}`)!;

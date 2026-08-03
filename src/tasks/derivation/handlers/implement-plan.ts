@@ -1,6 +1,7 @@
 import type { NormalizedIssue, NormalizedPullRequest } from "../../../domain/entities.js";
 import type { WorktreeRecord } from "../../../state/types.js";
 import type { TaskRecord } from "../../types.js";
+import { isReviewOutstandingForHead } from "../../../workflows/review-cycle-machine/selectors.js";
 import {
   buildTaskRecord,
   createPullRequestTask
@@ -34,6 +35,20 @@ export function derivePacketImplementTask(
   }
 
   if (packetPullRequest && packetPullRequest.state !== "open") {
+    return undefined;
+  }
+
+  if (
+    packetPullRequest &&
+    context.repoConfig?.labels.agentReview &&
+    packetPullRequest.labels.includes(context.repoConfig.labels.agentReview) &&
+    isReviewOutstandingForHead(
+      env.input.previousState.reviewSessions ?? [],
+      packetPullRequest.repoId,
+      packetPullRequest.id,
+      packetPullRequest.headSha
+    )
+  ) {
     return undefined;
   }
 
@@ -90,7 +105,14 @@ function deriveImplementTask(
   }
 
   if (
-    attention.reasons.includes("pr_review_requested") ||
+    (
+      attention.reasons.includes("pr_review_requested") &&
+      (
+        attention.lastHandledReviewHeadSha === undefined ||
+        attention.currentPullRequestHeadSha === undefined ||
+        attention.lastHandledReviewHeadSha !== attention.currentPullRequestHeadSha
+      )
+    ) ||
     (!attention.reasons.includes("plan_approved") &&
       workstream.phase !== "implementation_ready" &&
       workstream.phase !== "implementing" &&

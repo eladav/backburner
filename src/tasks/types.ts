@@ -4,6 +4,11 @@ import type {
 } from "../workstreams/wave-assessment/types.js";
 import type { WorkstreamPhase } from "../state/types.js";
 import type { AgentProvider } from "../config/types.js";
+import type {
+  FixResultV1,
+  ReviewFindingV2,
+  ReviewResultV2
+} from "../reviews/contracts.js";
 
 export type TaskKind =
   | "product_discovery"
@@ -11,6 +16,7 @@ export type TaskKind =
   | "triage_issue"
   | "respond_issue_comment"
   | "review_pr"
+  | "fix_review_finding"
   | "respond_pr_comment"
   | "write_plan"
   | "implement_plan"
@@ -101,6 +107,28 @@ export interface WaveReassessmentContext {
   reason: string;
 }
 
+export interface ReviewCycleTaskLineage {
+  sessionId: string;
+  reviewOrdinal: number;
+  /** One-based number of the fix batch this task belongs to. */
+  turnNumber?: number;
+  findingId?: string;
+  targetHeadSha: string;
+  retryScope: "review_session";
+}
+
+export interface ReviewCycleFixContext {
+  finding: ReviewFindingV2;
+  findings: ReviewFindingV2[];
+  precedingDispositions: Array<{
+    findingId: string;
+    disposition: FixResultV1["disposition"];
+    summary: string;
+  }>;
+  review: ReviewResultV2;
+  reviewUrl?: string;
+}
+
 export interface TaskContextPacket {
   repoIdentifier: string;
   localRepoPath?: string;
@@ -141,6 +169,10 @@ export interface TaskContextPacket {
    * The agent must not use tools from the excluded MCP and must acknowledge the exclusion.
    */
   mcpSkipContexts?: McpSkipContext[] | undefined;
+  /** Durable parent-workflow lineage for automatic review-cycle children. */
+  reviewCycle?: ReviewCycleTaskLineage | undefined;
+  /** Per-finding implementation input; present only for fix_review_finding. */
+  reviewCycleFix?: ReviewCycleFixContext | undefined;
 }
 
 export interface TaskRecord {

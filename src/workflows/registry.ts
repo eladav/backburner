@@ -77,6 +77,14 @@ const WORKFLOW_TASK_DEFINITIONS: readonly WorkflowTaskDefinition[] = [
     sourceKinds: ["pull_request"]
   },
   {
+    kind: "fix_review_finding",
+    role: "implementation",
+    modelClass: "cheap",
+    executionPermission: "workspace-write",
+    handoffPolicy: WORKSPACE_WRITE_HANDOFF_POLICY,
+    sourceKinds: ["pull_request"]
+  },
+  {
     kind: "respond_pr_comment",
     role: "discussion",
     modelClass: "cheap",

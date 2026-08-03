@@ -2045,6 +2045,9 @@ test("dispatchPendingTasks publishes completed review outcomes as PR reviews", a
 
     const publisher = new GitHubPullRequestReviewPublisher(
       {
+        async getAuthenticatedUser() {
+          return "reviewer";
+        },
         async getRepositoryMetadata() {
           throw new Error("unused");
         },

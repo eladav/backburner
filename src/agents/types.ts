@@ -69,6 +69,8 @@ export interface PromptPacket {
   retrospectiveCandidate?: RetrospectiveCandidateRecord;
   retrospectiveProblem?: RetrospectiveProblemRecord;
   learningOpportunity?: LearningOpportunityRecord;
+  reviewCycle?: TaskRecord["context"]["reviewCycle"];
+  reviewCycleFix?: TaskRecord["context"]["reviewCycleFix"];
   nativeResumeRetry?: {
     previousExecutionFailed: true;
   };

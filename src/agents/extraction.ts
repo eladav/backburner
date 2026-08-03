@@ -10,6 +10,12 @@ import type {
 } from "../state/types.js";
 import type { TaskRecord } from "../tasks/types.js";
 import type { AgentProvider } from "../config/types.js";
+import {
+  parseFixResultV1,
+  parseReviewResultV2,
+  type FixResultV1,
+  type ReviewResultV2
+} from "../reviews/contracts.js";
 import { PlanBreakdownSessionStore } from "../workstreams/plan-breakdown-generator/store.js";
 import { exportSession } from "../workstreams/plan-breakdown-generator/export.js";
 import { buildPacketPlanFromPlanBreakdown } from "../workstreams/packet-plan.js";
@@ -335,7 +341,7 @@ export function extractTriageResult(task: TaskRecord, stdout: string): TriageDec
 }
 
 export function extractReviewResult(task: TaskRecord, stdout: string): ReviewDecisionResult | undefined {
-  if (task.kind !== "review_pr") {
+  if (task.kind !== "review_pr" || task.context.reviewCycle !== undefined) {
     return undefined;
   }
 
@@ -438,6 +444,51 @@ export function extractReviewResult(task: TaskRecord, stdout: string): ReviewDec
     }
 
     return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export function extractReviewCycleResult(
+  task: TaskRecord,
+  stdout: string
+): ReviewResultV2 | undefined {
+  if (task.kind !== "review_pr" || task.context.reviewCycle === undefined) {
+    return undefined;
+  }
+  const candidate = extractTrailingJsonObject(stdout.trim());
+  if (!candidate) {
+    return undefined;
+  }
+  try {
+    return parseReviewResultV2(candidate, {
+      targetHeadSha: task.context.reviewCycle.targetHeadSha
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+export function extractReviewFixResult(
+  task: TaskRecord,
+  stdout: string
+): FixResultV1 | undefined {
+  if (
+    task.kind !== "fix_review_finding" ||
+    task.context.reviewCycle?.findingId === undefined ||
+    task.context.reviewCycleFix === undefined
+  ) {
+    return undefined;
+  }
+  const candidate = extractTrailingJsonObject(stdout.trim());
+  if (!candidate) {
+    return undefined;
+  }
+  try {
+    return parseFixResultV1(candidate, {
+      findingId: task.context.reviewCycle.findingId,
+      knownFindingIds: task.context.reviewCycleFix.findings.map((finding) => finding.id)
+    });
   } catch {
     return undefined;
   }

@@ -8,6 +8,7 @@ import { GitHubWaveAssessmentPublisher, type WaveAssessmentPublisher } from "../
 import { GitHubTaskLifecycleNotifier, type TaskLifecycleNotifier } from "../../agents/lifecycle-feedback.js";
 import {
   buildSinglePreDispatchFailureExecution,
+  dispatchPendingTasks,
   materializePreDispatchFailure,
   safelyNotifyFailure
 } from "../../agents/service.js";
@@ -88,6 +89,7 @@ import {
   LocalParentBranchSyncService,
 } from "../../workstreams/parent-branch-sync.js";
 import { reconcileDurableWorktreeLocations } from "../../worktrees/workspace-relocation.js";
+import { ReviewCycleOrchestrator } from "../../reviews/controller.js";
 
 import {
   executeParentBranchSyncActions
@@ -654,6 +656,14 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
     now: generatedAt,
     ...(managementRepo ? { managementRepo } : {})
   });
+  // Automatic labeled reviews are owned by the durable review-session
+  // controller below. Preserve completed legacy history, but do not dispatch a
+  // parallel legacy review for the same authorization signal.
+  tasks = tasks.filter((task) => !(
+    task.kind === "review_pr" &&
+    task.status === "pending" &&
+    task.context.reviewCycle === undefined
+  ));
 
   const mcpSkipApplication = applyMcpSkipRequests({
     tasks,
@@ -1078,6 +1088,111 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         agentPool
       });
 
+      // Human discussion/implementation changes take precedence over the next
+      // automatic review child. Push those ordinary handoffs first; the review
+      // controller then observes the live terminal head and starts/resets its
+      // own budget there.
+      let reviewReadyWorktrees = await implementationWorkflowService.finalizePushableHandoffs(
+        projectionAwareTriageWorktrees,
+        dispatchResult.tasks,
+        logger
+      );
+      for (const pullRequest of scanResult.prs) {
+        const repo = enabledRepos.find((candidate) => candidate.id === pullRequest.repoId);
+        const repoSync = scanResult.repoResults.find((candidate) =>
+          candidate.repoId === pullRequest.repoId && candidate.status === "synced"
+        );
+        const workstream = dispatchResult.workstreams.find((candidate) =>
+          candidate.repoKey === pullRequest.repoKey &&
+          ((candidate.origin.type === "pr" && candidate.origin.number === pullRequest.number) ||
+            candidate.linkedPrs.some((linked) => linked.number === pullRequest.number))
+        );
+        if (
+          !repo ||
+          !repoSync ||
+          !workstream ||
+          !pullRequest.labels.includes(repo.labels.agentReview) ||
+          reviewReadyWorktrees.some((worktree) =>
+            worktree.repoId === pullRequest.repoId &&
+            (worktree.prId === pullRequest.id ||
+              worktree.prNumber === pullRequest.number ||
+              worktree.branchName === pullRequest.headBranch)
+          )
+        ) {
+          continue;
+        }
+        try {
+          const prepared = await implementationWorkflowService.ensureReviewWorktreeForPullRequest({
+            repo,
+            repoPath: repoSync.localPath,
+            codeRoot,
+            pullRequest,
+            existingWorktrees: reviewReadyWorktrees
+          });
+          reviewReadyWorktrees = [...reviewReadyWorktrees, prepared.worktree];
+        } catch (error) {
+          logger.warn(
+            `[review-cycle] Could not materialize PR #${pullRequest.number} review worktree: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+      await stateStore.writeWorktreeState(reviewReadyWorktrees);
+
+      const reviewCycleOrchestrator = new ReviewCycleOrchestrator(
+        stateStore,
+        gitHubGateway,
+        reviewPublisher,
+        implementationWorkflowService,
+        logger
+      );
+      const reviewCycleResult = await reviewCycleOrchestrator.run({
+        repos: enabledRepos,
+        pullRequests: scanResult.prs,
+        previousPullRequests: previousState.prs,
+        comments: scanResult.comments,
+        previousComments: previousState.comments,
+        workstreams: dispatchResult.workstreams,
+        worktrees: reviewReadyWorktrees,
+        sessions: previousState.reviewSessions ?? [],
+        tasks: dispatchResult.tasks,
+        executions: dispatchResult.executions,
+        allowedUsers: config.allowedUsers,
+        dispatchChild: async (taskId, cycleTasks, cycleExecutions) =>
+          dispatchPendingTasks({
+            tasks: cycleTasks,
+            agents: config.agents,
+            existingExecutions: cycleExecutions,
+            stateStore,
+            logDir,
+            agentRunner: dispatchAgentRunner,
+            jobMemoryRuntime: { store: memoryStore, toolService: memoryToolService },
+            logger,
+            promptsConfig: config.prompts,
+            managementRoot: managementDir,
+            ...(capabilitiesByProvider ? { capabilitiesByProvider } : {}),
+            ...(providerBrokerToolAllowLists ? { providerBrokerToolAllowLists } : {}),
+            ...(brokerToolScope ? { brokerToolScope } : {}),
+            eligibleTaskIds: new Set([taskId]),
+            deferFailureNotifications: true,
+            agentPool
+          })
+      });
+      dispatchResult = {
+        ...dispatchResult,
+        tasks: reviewCycleResult.tasks,
+        executions: reviewCycleResult.executions
+      };
+      previousState = {
+        ...previousState,
+        reviewSessions: reviewCycleResult.sessions
+      };
+      const reviewAwarePullRequests = scanResult.prs.map((pullRequest) => {
+        const observedHead = reviewCycleResult.observedPullRequestHeads[pullRequest.id];
+        return observedHead && observedHead !== pullRequest.headSha
+          ? { ...pullRequest, headSha: observedHead }
+          : pullRequest;
+      });
+
       // Journal new executions (dedup via executionIdsBeforeCycle)
       await journalNewExecutions({
         cycleId,
@@ -1156,7 +1271,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       await stateStore.writeManagementPrState(materializationResult.managementPrs);
 
       const reconciledWorktrees = implementationWorkflowService.reconcileTaskState(
-        projectionAwareTriageWorktrees,
+        reviewReadyWorktrees,
         dispatchResult.tasks
       );
       const projectionAwareReconciledWorktrees =
@@ -1166,18 +1281,18 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
           enabledRepos,
           dispatchResult.tasks,
           dispatchResult.workstreams,
-          scanResult.prs
+          reviewAwarePullRequests
         );
-      const finalWorktrees = await implementationWorkflowService.finalizePushableHandoffs(
-        projectionAwareReconciledWorktrees,
-        dispatchResult.tasks,
-        logger
-      );
+      // Ordinary pushable handoffs were finalized before automatic review so
+      // the controller could start from their remote head. Cycle fix handoffs
+      // are finalized explicitly by the controller; do not process either set
+      // a second time here.
+      const finalWorktrees = projectionAwareReconciledWorktrees;
       await stateStore.writeWorktreeState(finalWorktrees);
       const finalWorkstreams = deriveWorkstreams({
         repos: enabledRepos,
         currentIssues: scanResult.issues,
-        currentPullRequests: scanResult.prs,
+        currentPullRequests: reviewAwarePullRequests,
         previousPullRequests: previousState.prs,
         worktrees: finalWorktrees,
         previousWorkstreams: dispatchResult.workstreams
@@ -1188,7 +1303,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         workstreams: finalWorkstreams,
         previousState,
         currentIssues: scanResult.issues,
-        currentPullRequests: scanResult.prs,
+        currentPullRequests: reviewAwarePullRequests,
         currentComments: scanResult.comments,
         tasks: dispatchResult.tasks,
         now: finalAttentionObservedAt
@@ -1196,7 +1311,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       const finalPhaseAwareWorkstreams = deriveWorkstreams({
         repos: enabledRepos,
         currentIssues: scanResult.issues,
-        currentPullRequests: scanResult.prs,
+        currentPullRequests: reviewAwarePullRequests,
         previousPullRequests: previousState.prs,
         worktrees: finalWorktrees,
         previousWorkstreams: finalWorkstreams,
@@ -1354,7 +1469,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
       const parentBranchSyncPreflights = await collectParentBranchSyncPreflights({
         workstreams: currentWorkstreams,
         repos: enabledRepos,
-        pullRequests: scanResult.prs,
+        pullRequests: reviewAwarePullRequests,
         repoResults: scanResult.repoResults,
         tasks: [...dispatchResult.tasks, ...previousState.tasks],
         executions: dispatchResult.executions,
@@ -1409,7 +1524,7 @@ export async function runCli(argv: string[], options: RunCliOptions = {}): Promi
         workstreams: currentWorkstreams,
         previousState,
         currentIssues: scanResult.issues,
-        currentPullRequests: scanResult.prs,
+        currentPullRequests: reviewAwarePullRequests,
         currentComments: scanResult.comments,
         tasks: dispatchResult.tasks,
         now: persistedAttentionObservedAt

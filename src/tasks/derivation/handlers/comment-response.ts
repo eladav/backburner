@@ -7,6 +7,11 @@ import { classifyManagementPullRequest } from "../../../github/pr-classification
 import { workflowRegistry } from "../../../workflows/registry.js";
 import { isRetryLinkCommand } from "../../retry.js";
 import { parseWaveReassessCommand } from "../../wave-reassess.js";
+import { looksLikeReviewCycleCommand } from "../../../reviews/commands.js";
+import {
+  isOrchestratorOwnedReviewComment,
+  isTrackedReviewCycleThread
+} from "../../../reviews/comment-ownership.js";
 import type {
   PullRequestReviewCommentLocationContext,
   TaskKind,
@@ -53,7 +58,16 @@ function deriveCommentTasks(
 
   for (const commentId of [...attention.commentIds].sort((left, right) => left.localeCompare(right))) {
     const comment = env.currentCommentsById.get(commentId);
-    if (!comment || isAgentAuthoredComment(comment)) {
+    const reviewSessions = env.input.previousState.reviewSessions ?? [];
+    if (
+      !comment ||
+      isOrchestratorOwnedReviewComment(comment, reviewSessions) ||
+      (!isTrackedReviewCycleThread(comment, reviewSessions) && isAgentAuthoredComment(comment))
+    ) {
+      continue;
+    }
+
+    if (looksLikeReviewCycleCommand(comment.body)) {
       continue;
     }
 

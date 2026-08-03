@@ -18,7 +18,19 @@ import type {
 } from "./types.js";
 
 export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
+  private authenticatedUser?: Promise<string>;
+
   constructor(private readonly commandRunner: CommandRunner) {}
+
+  async getAuthenticatedUser(): Promise<string> {
+    this.authenticatedUser ??= this.runGhJson<{ login?: string }>(["api", "user"])
+      .then((user) => {
+        const login = user.login?.trim();
+        if (!login) throw new Error("gh api user did not return an authenticated login");
+        return login;
+      });
+    return this.authenticatedUser;
+  }
 
   async getRepositoryMetadata(owner: string, name: string): Promise<GitHubRepositoryMetadata> {
     const data = await this.runGhJson<{
@@ -615,6 +627,7 @@ export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
 
     const data = await this.runGhJson<{
       id?: number;
+      node_id?: string;
       html_url?: string;
       body?: string;
       state?: string;
@@ -636,6 +649,7 @@ export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
 
     return {
       id: data.id ?? 0,
+      ...(data.node_id ? { nodeId: data.node_id } : {}),
       url: data.html_url ?? "",
       body: data.body ?? input.body ?? "",
       state: data.state ?? input.event,

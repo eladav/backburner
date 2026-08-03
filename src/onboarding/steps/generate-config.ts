@@ -10,6 +10,7 @@ import type {
 } from "../types.js";
 import { ConfigWriter } from "../config-writer.js";
 import { DEFAULT_BACKBURNER_LABELS } from "../config-writer.js";
+import { DEFAULT_REVIEW_AUTOMATION_MAX_TURNS } from "../../config/schemas.js";
 
 export class GenerateConfigStep implements OnboardingStep {
   readonly name = "generate-config";
@@ -132,6 +133,9 @@ function buildRepoDraft(repo: DiscoveredRepo, codeRoot: string): RepoDraft {
     localPath,
     defaultBranch: repo.defaultBranch || "main",
     enabled: true,
-    labels: { ...DEFAULT_BACKBURNER_LABELS }
+    labels: { ...DEFAULT_BACKBURNER_LABELS },
+    reviewAutomation: {
+      maxTurns: DEFAULT_REVIEW_AUTOMATION_MAX_TURNS
+    }
   };
 }

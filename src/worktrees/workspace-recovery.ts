@@ -24,6 +24,7 @@ export class WorkspaceRecoveryService {
       case "implement_plan":
       case "write_plan":
       case "respond_pr_comment":
+      case "fix_review_finding":
         return task.context.localRepoPath ?? null;
       case "prepare_pr_for_merge":
         return task.context.prepareForMerge?.persistentWorktreePath ?? null;

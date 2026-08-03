@@ -440,5 +440,8 @@ function isPriorPullRequestImplementationFallback(context: WorkstreamMachineCont
 }
 
 function isReviewRequested(context: WorkstreamMachineContext): boolean {
+  if (context.reviewOutstandingForActiveHead !== undefined) {
+    return context.reviewOutstandingForActiveHead;
+  }
   return context.reviewLabel !== undefined && context.activePullRequestLabels.includes(context.reviewLabel);
 }

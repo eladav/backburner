@@ -8,6 +8,7 @@ import type {
 import type { JobName } from "../memory/types.js";
 import type { TaskRecord } from "../tasks/types.js";
 import type { BranchSyncComparison } from "../git/types.js";
+import type { FixResultV1, ReviewResultV2 } from "../reviews/contracts.js";
 import type {
   LearningOpportunityRecord,
   LearningProposalRecord,
@@ -15,6 +16,7 @@ import type {
   RetrospectiveCandidateRecord,
   RetrospectiveProblemRecord
 } from "../retrospectives/types.js";
+import type { ReviewSessionRecord } from "../reviews/session.js";
 export type { TaskRecord };
 
 export interface RepoScanFailure {
@@ -343,6 +345,11 @@ export interface WorkstreamStateFile {
   workstreams: WorkstreamRecord[];
 }
 
+export interface ReviewSessionStateFile {
+  schemaVersion: 1;
+  reviewSessions: ReviewSessionRecord[];
+}
+
 export type AttentionReason =
   | "new_issue"
   | "product_approval_observed"
@@ -604,6 +611,8 @@ export interface PersistedState {
   executions: ExecutionRecord[];
   worktrees: WorktreeRecord[];
   workstreams: WorkstreamRecord[];
+  /** Always populated by StateStore; optional for source-compatible in-memory fixtures. */
+  reviewSessions?: ReviewSessionRecord[];
   attention: AttentionRecord[];
   repos: RepoSyncRecord[];
   providerSessions: ProviderSessionRecord[];
@@ -628,6 +637,8 @@ export type ParentBranchSyncStatus =
 export interface AgentExecutionResult {
   triage?: TriageDecisionResult;
   review?: ReviewDecisionResult;
+  reviewCycleReview?: ReviewResultV2;
+  reviewCycleFix?: FixResultV1;
   planBreakdown?: PlanBreakdownResult;
   planBreakdownSessionId?: string;
   waveAssessment?: WaveAssessmentResult;

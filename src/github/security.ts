@@ -25,6 +25,10 @@ export class SecurityFilteredGitHubGateway implements GitHubGateway {
     return this.allowedUsers.includes(login || "");
   }
 
+  async getAuthenticatedUser(): Promise<string> {
+    return this.inner.getAuthenticatedUser();
+  }
+
   async getRepositoryMetadata(owner: string, name: string): Promise<GitHubRepositoryMetadata> {
     return this.inner.getRepositoryMetadata(owner, name);
   }

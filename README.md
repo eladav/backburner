@@ -145,7 +145,8 @@ Backburner uses configurable labels to turn GitHub into a small, phone-friendly 
 
 - `agentProductApproved` approves product direction and allows the worktree/PR flow to begin.
 - `agentPlanApproved` approves the implementation plan and allows implementation to run.
-- `agentReview` requests an explicit code review after the PR head SHA changes.
+- `agentReview` starts an automatic review/fix session for the PR head. Review
+  results, per-finding fix reports, and a terminal timeline are posted to the PR.
 - `agentSyncParentBranch` authorizes syncing a blocked parent branch from the default branch.
 - `agentInProgress`, `planBreakdownNeeded`, and `prepareForMerge` communicate other workflow states.
 
@@ -185,6 +186,9 @@ Minimal `repos.json`:
       "defaultBranch": "main",
       "localPath": "your-github-user/example-repo",
       "enabled": true,
+      "reviewAutomation": {
+        "maxTurns": 5
+      },
       "labels": {
         "agentInProgress": "backburner:in-progress",
         "agentProductApproved": "backburner:product-approved",
@@ -200,6 +204,12 @@ Minimal `repos.json`:
 ~~~
 
 `allowedUsers` limits which GitHub users can feed issues, comments, reviews, and pull requests into task derivation. It is a trust allowlist, not a sandbox. `localPath` must be relative to `--code-root`.
+
+`reviewAutomation.maxTurns` is the number of automatic fix batches allowed in a
+review session. It defaults to `5`; a final verification review may follow the
+last batch. See [Automatic review and fix cycles](docs/automatic-review-cycles.md)
+for turn semantics, GitHub visibility, steering, and the `continue:`/`retry:`
+commands.
 
 ## Agent configuration
 

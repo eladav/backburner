@@ -4,6 +4,8 @@ import type {
   PrepareForMergePreflight,
   PullRequestReviewCommentLocationContext,
   TaskContextPacket,
+  ReviewCycleFixContext,
+  ReviewCycleTaskLineage,
   TaskKind,
   TaskRecord,
   WaveReassessmentContext,
@@ -50,6 +52,8 @@ export interface ContextBuildInput {
   retrospectiveCandidate?: RetrospectiveCandidateRecord;
   retrospectiveProblem?: RetrospectiveProblemRecord;
   learningOpportunity?: LearningOpportunityRecord;
+  reviewCycle?: ReviewCycleTaskLineage;
+  reviewCycleFix?: ReviewCycleFixContext;
 }
 
 export interface BuiltContext extends TaskContextPacket {
@@ -89,7 +93,9 @@ export class DefaultContextBuilder implements ContextBuilder {
       ...(input.waveReassessment ? { waveReassessment: input.waveReassessment } : {}),
       ...(input.retrospectiveCandidate ? { retrospectiveCandidate: input.retrospectiveCandidate } : {}),
       ...(input.retrospectiveProblem ? { retrospectiveProblem: input.retrospectiveProblem } : {}),
-      ...(input.learningOpportunity ? { learningOpportunity: input.learningOpportunity } : {})
+      ...(input.learningOpportunity ? { learningOpportunity: input.learningOpportunity } : {}),
+      ...(input.reviewCycle ? { reviewCycle: input.reviewCycle } : {}),
+      ...(input.reviewCycleFix ? { reviewCycleFix: input.reviewCycleFix } : {})
     };
 
     switch (input.taskKind) {
@@ -144,8 +150,36 @@ export class DefaultContextBuilder implements ContextBuilder {
           ...base,
           pullRequestUrl: input.sourceUrl,
           instruction:
-            `Review the pull request at HEAD ${input.headSha ?? "unknown"} — re-read the current state of changed files from the local checkout; do not rely on prior session findings. Finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required. Use {"action":"COMMENT","summary":"..."} for non-blocking feedback. Findings must be actionable, use repo-relative paths, and use line numbers on the PR head version that are suitable for inline code review comments.`
+            input.reviewCycle
+              ? [
+                  `Review the pull request at exact HEAD ${input.reviewCycle.targetHeadSha}. Re-read the current state of changed files from the local checkout and do not rely on prior-session findings.`,
+                  "Finish with exactly one schemaVersion 2 JSON object containing action, reviewedHeadSha, summary, and findings.",
+                  'Use this exact strict shape (with no extra keys): {"schemaVersion":2,"action":"REQUEST_CHANGES","reviewedHeadSha":"<40-char SHA>","summary":"...","findings":[{"id":"F001","title":"...","category":"correctness|security|reliability|performance|maintainability|testing|documentation|accessibility|other","severity":"blocking|major|minor|advisory","actionable":true,"path":"repo/relative/file.ts","line":12,"side":"RIGHT","evidence":"...","impact":"...","instruction":"...","acceptanceCriteria":["..."],"verification":["..."],"dependsOn":[],"overlapsWith":[]}]}.',
+                  "Do not use decision, targetHeadSha, reviewSessionId, reviewOrdinal, blocking, location, dependencies, overlaps, or validation fields. Do not use high/medium/low severities. For a locationless finding, omit path, line, and side instead of setting a location to null.",
+                  "A location is optional, but when present path, line, and side must all be supplied and refer to the reviewed head. Locationless and cross-cutting actionable findings are valid and must not be omitted.",
+                  "Use APPROVE only with no actionable findings, COMMENT only for non-actionable advice, and REQUEST_CHANGES with at least one actionable blocking finding.",
+                  `Set reviewedHeadSha to exactly ${input.reviewCycle.targetHeadSha}. Do not post the review to GitHub; the orchestrator owns publication.`
+                ].join(" ")
+              : `Review the pull request at HEAD ${input.headSha ?? "unknown"} — re-read the current state of changed files from the local checkout; do not rely on prior session findings. Finish with JSON. Use {"action":"APPROVE","summary":"..."} when there are no actionable findings. Use {"action":"REQUEST_CHANGES","summary":"...","inlineComments":[{"path":"relative/file.ts","line":12,"body":"..."}]} when changes are required. Use {"action":"COMMENT","summary":"..."} for non-blocking feedback. Findings must be actionable, use repo-relative paths, and use line numbers on the PR head version that are suitable for inline code review comments.`
         };
+      case "fix_review_finding": {
+        if (!input.reviewCycle || !input.reviewCycleFix) {
+          throw new Error("fix_review_finding requires review-cycle lineage and finding context");
+        }
+        return {
+          ...base,
+          pullRequestUrl: input.sourceUrl,
+          instruction: [
+            `Fix review finding ${input.reviewCycleFix.finding.id}: ${input.reviewCycleFix.finding.title}.`,
+            `The review was performed on ${input.reviewCycle.reviewOrdinal === 1 ? "the initial" : "a later"} head ${input.reviewCycleFix.review.reviewedHeadSha}; the current expected head is ${input.reviewCycle.targetHeadSha}.`,
+            "This finding is one item in a longer ordered review. Re-read the current checkout because preceding fix agents may already have changed the code.",
+            "If prior work fully addressed this finding, return already_covered instead of making redundant edits.",
+            "Do not broaden scope merely to combine findings. You may identify related findings naturally covered by the same focused change.",
+            "Do not push or post to GitHub; the orchestrator commits, pushes, and publishes the canonical fix report after validating the handoff.",
+            'Finish with exactly one JSON object matching schemaVersion 1 with findingId, disposition (fixed, already_covered, or blocked), summary, filesChanged, checks (including bounded command duration/outcome), relatedFindingIds, and notes.'
+          ].join(" ")
+        };
+      }
       case "respond_pr_comment":
         return {
           ...base,

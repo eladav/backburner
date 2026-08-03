@@ -260,6 +260,9 @@ export function deriveWorkstreams(input: WorkstreamDerivationInput): WorkstreamR
         activePullRequestState: activePullRequest?.state,
         activePullRequestLabels: activePullRequest?.labels ?? [],
         attentionReasons: attentionByWorkstreamId.get(builder.id)?.reasons ?? [],
+        ...optionalReviewOutstandingForActiveHead(
+          attentionByWorkstreamId.get(builder.id)
+        ),
         inProgressLabel: repo?.labels.agentInProgress,
         reviewLabel: repo?.labels.agentReview,
         approvalLabel: repo?.labels.agentPlanApproved,
@@ -503,6 +506,9 @@ export function deriveWorkstreams(input: WorkstreamDerivationInput): WorkstreamR
           activePullRequestState: activePullRequest?.state,
           activePullRequestLabels: activePullRequest?.labels ?? [],
           attentionReasons: attentionByWorkstreamId.get(id)?.reasons ?? [],
+          ...optionalReviewOutstandingForActiveHead(
+            attentionByWorkstreamId.get(id)
+          ),
           inProgressLabel: repo?.labels.agentInProgress,
           reviewLabel: repo?.labels.agentReview,
           approvalLabel: repo?.labels.agentPlanApproved,
@@ -579,6 +585,32 @@ function deriveAttention(
   }
 
   return previousAttention ?? "idle";
+}
+
+function isReviewOutstandingForActiveHead(
+  attention: AttentionRecord | undefined
+): boolean | undefined {
+  if (!attention) {
+    return undefined;
+  }
+  if (!attention.reasons.includes("pr_review_requested")) {
+    return false;
+  }
+
+  return (
+    attention.lastHandledReviewHeadSha === undefined ||
+    attention.currentPullRequestHeadSha === undefined ||
+    attention.lastHandledReviewHeadSha !== attention.currentPullRequestHeadSha
+  );
+}
+
+function optionalReviewOutstandingForActiveHead(
+  attention: AttentionRecord | undefined
+): { reviewOutstandingForActiveHead?: boolean } {
+  const reviewOutstandingForActiveHead = isReviewOutstandingForActiveHead(attention);
+  return reviewOutstandingForActiveHead === undefined
+    ? {}
+    : { reviewOutstandingForActiveHead };
 }
 
 function deriveAttentionForPr(

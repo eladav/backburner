@@ -24,6 +24,8 @@ import {
   extractAndExportPlanBreakdownResult,
   extractAndExportWaveAssessmentResult,
   isRecord,
+  extractReviewCycleResult,
+  extractReviewFixResult,
   extractReviewResult,
   extractStderr,
   extractStdout,
@@ -160,6 +162,8 @@ export class GeminiCliAgent implements AgentRunner {
 
       const triageResult = extractTriageResult(task, stdout);
       const reviewResult = extractReviewResult(task, stdout);
+      const reviewCycleResult = extractReviewCycleResult(task, stdout);
+      const reviewFixResult = extractReviewFixResult(task, stdout);
       const planBreakdownExtraction = extractAndExportPlanBreakdownResult(
         task,
         stdout,
@@ -175,9 +179,13 @@ export class GeminiCliAgent implements AgentRunner {
       let errorMessage =
         result.exitCode === 0 ? undefined : stderr.trim() || "Gemini CLI exited with a non-zero status.";
 
-      if (task.kind === "review_pr" && result.exitCode === 0 && !reviewResult) {
+      if (task.kind === "review_pr" && result.exitCode === 0 && !(task.context.reviewCycle ? reviewCycleResult : reviewResult)) {
         taskStatus = "failed";
         errorMessage = "Agent output did not contain a valid structured review result.";
+      }
+      if (task.kind === "fix_review_finding" && result.exitCode === 0 && !reviewFixResult) {
+        taskStatus = "failed";
+        errorMessage = "Agent output did not contain a valid structured review-fix result.";
       }
 
       if ((task.kind === "plan_breakdown" || task.kind === "wave_plan_replanning") && result.exitCode === 0) {
@@ -220,11 +228,13 @@ export class GeminiCliAgent implements AgentRunner {
         endedAt,
         exitCode: result.exitCode,
         ...(errorMessage ? { errorMessage } : {}),
-        ...(triageResult || reviewResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
+        ...(triageResult || reviewResult || reviewCycleResult || reviewFixResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
           ? {
               result: {
                 ...(triageResult ? { triage: triageResult } : {}),
                 ...(reviewResult ? { review: reviewResult } : {}),
+                ...(reviewCycleResult ? { reviewCycleReview: reviewCycleResult } : {}),
+                ...(reviewFixResult ? { reviewCycleFix: reviewFixResult } : {}),
                 ...(planBreakdownExtraction.ok
                   ? {
                       planBreakdown: planBreakdownExtraction.planBreakdown,

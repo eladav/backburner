@@ -81,6 +81,26 @@ test("renderPrompt omits native resume retry guidance for an ordinary dispatch",
   assert.doesNotMatch(output, /Native resume retry context/);
 });
 
+test("review-fix prompt requires the owned finding ID verbatim", () => {
+  const task = buildMinimalTask("fix_review_finding");
+  task.context = {
+    ...task.context,
+    reviewCycle: {
+      sessionId: "review-session:owner/repo:pull_request:owner/repo:1:1",
+      reviewOrdinal: 1,
+      turnNumber: 1,
+      findingId: "session-auth-token-disclosure",
+      targetHeadSha: "a".repeat(40),
+      retryScope: "review_session"
+    }
+  };
+
+  const output = renderPrompt(task, buildPromptPacket(task, buildMinimalContext()));
+
+  assert.match(output, /"findingId":"session-auth-token-disclosure"/);
+  assert.doesNotMatch(output, /"findingId":"F001"/);
+});
+
 test("renderPrompt renders MCP skip contexts as explicit constraints", () => {
   const task = {
     ...buildMinimalTask("implement_plan"),

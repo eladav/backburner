@@ -26,6 +26,8 @@ import {
   extractAndExportPlanBreakdownResult,
   extractAndExportWaveAssessmentResult,
   extractExitCode,
+  extractReviewCycleResult,
+  extractReviewFixResult,
   extractReviewResult,
   extractStderr,
   extractStdout,
@@ -208,6 +210,8 @@ export class AntigravityCliAgent implements AgentRunner {
 
     const triageResult = extractTriageResult(task, stdout);
     const reviewResult = extractReviewResult(task, stdout);
+    const reviewCycleResult = extractReviewCycleResult(task, stdout);
+    const reviewFixResult = extractReviewFixResult(task, stdout);
     const planBreakdownExtraction = extractAndExportPlanBreakdownResult(
       task,
       stdout,
@@ -223,7 +227,7 @@ export class AntigravityCliAgent implements AgentRunner {
     let errorMessage =
       exitCode === 0 ? undefined : rawStderr.trim() || "Antigravity CLI exited with a non-zero status.";
 
-    if (task.kind === "review_pr" && exitCode === 0 && !reviewResult) {
+    if (task.kind === "review_pr" && exitCode === 0 && !(task.context.reviewCycle ? reviewCycleResult : reviewResult)) {
       taskStatus = "failed";
       const structuredReviewError =
         "Agent output did not contain a valid structured review result.";
@@ -234,6 +238,10 @@ export class AntigravityCliAgent implements AgentRunner {
           : stderr.length > 0
             ? `${structuredReviewError} Antigravity stderr: ${stderr}`
             : structuredReviewError;
+    }
+    if (task.kind === "fix_review_finding" && exitCode === 0 && !reviewFixResult) {
+      taskStatus = "failed";
+      errorMessage = "Agent output did not contain a valid structured review-fix result.";
     }
 
     if (
@@ -276,11 +284,13 @@ export class AntigravityCliAgent implements AgentRunner {
       endedAt,
       exitCode,
       ...(errorMessage ? { errorMessage } : {}),
-      ...(triageResult || reviewResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
+      ...(triageResult || reviewResult || reviewCycleResult || reviewFixResult || planBreakdownExtraction.ok || waveAssessmentExtraction.ok
         ? {
             result: {
               ...(triageResult ? { triage: triageResult } : {}),
               ...(reviewResult ? { review: reviewResult } : {}),
+              ...(reviewCycleResult ? { reviewCycleReview: reviewCycleResult } : {}),
+              ...(reviewFixResult ? { reviewCycleFix: reviewFixResult } : {}),
               ...(planBreakdownExtraction.ok
                 ? {
                     planBreakdown: planBreakdownExtraction.planBreakdown,

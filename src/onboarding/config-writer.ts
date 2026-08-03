@@ -2,6 +2,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { writeJsonFileAtomic } from "../utils/json.js";
 import type { AgentDraft, ConfigDraft, RepoDraft } from "./types.js";
+import { DEFAULT_REVIEW_AUTOMATION_MAX_TURNS } from "../config/schemas.js";
 
 export const DEFAULT_BACKBURNER_LABELS = {
   agentInProgress: "backburner:in-progress",
@@ -90,7 +91,10 @@ function buildRepoEntry(repo: RepoDraft): unknown {
     defaultBranch: repo.defaultBranch,
     localPath: repo.localPath,
     enabled: repo.enabled,
-    labels: repo.labels
+    labels: repo.labels,
+    reviewAutomation: repo.reviewAutomation ?? {
+      maxTurns: DEFAULT_REVIEW_AUTOMATION_MAX_TURNS
+    }
   };
 }
 
