@@ -13,7 +13,10 @@ import type {
 import type { StateStore } from "../state/loader.js";
 import type { TaskRecord } from "../tasks/types.js";
 import type { Logger } from "../utils/logger.js";
-import { ImplementationWorkflowService } from "../worktrees/service.js";
+import {
+  ImplementationWorkflowService,
+  type ReviewFixPushIntent
+} from "../worktrees/service.js";
 import {
   transitionReviewCycle
 } from "../workflows/review-cycle-machine/machine.js";
@@ -24,10 +27,13 @@ import type {
   ReviewCyclePublisher,
   ReviewCyclePublicationReceipt
 } from "../agents/review-feedback.js";
-import { parseReviewCycleCommand } from "./commands.js";
+import { roleForTask } from "../agents/selection.js";
+import { looksLikeReviewCycleCommand, parseReviewCycleCommand } from "./commands.js";
+import { MAX_REVIEW_FINDINGS } from "./contracts.js";
 import {
   createReviewSession,
   isTerminalReviewSessionStatus,
+  type GitHubCommentReceipt,
   type ReviewPublicationReceipt,
   type ReviewSessionFailure,
   type ReviewSessionRecord
@@ -59,6 +65,7 @@ export interface ReviewCycleRunInput {
 
 export interface ReviewCycleRunResult extends ReviewCycleDispatchResult {
   sessions: ReviewSessionRecord[];
+  observedPullRequestHeads: Record<string, string>;
 }
 
 interface ReviewTarget {
@@ -83,17 +90,23 @@ export class ReviewCycleOrchestrator {
     let sessions = [...input.sessions];
     let tasks = [...input.tasks];
     let executions = [...input.executions];
+    const observedPullRequestHeads = new Map<string, string>();
+    const handledCommandCommentIds = new Set<string>();
     const targets = resolveReviewTargets(input);
 
-    sessions = await this.reconcileSessions(input, targets, sessions);
+    sessions = await this.reconcileSessions(
+      input,
+      targets,
+      sessions,
+      tasks,
+      observedPullRequestHeads,
+      handledCommandCommentIds
+    );
     await this.stateStore.writeReviewSessionState(sessions);
 
     // One run may execute several sequential children, but the bound prevents a
     // malformed state/provider fixture from turning into an unbounded process.
-    const maxAdvances = Math.max(20, input.repos.reduce(
-      (total, repo) => total + (reviewMaxTurns(repo) + 1) * 100,
-      0
-    ));
+    const maxAdvances = reviewControllerAdvanceLimit(input, sessions);
 
     for (let pass = 0; pass < maxAdvances; pass += 1) {
       let progressed = false;
@@ -105,7 +118,26 @@ export class ReviewCycleOrchestrator {
         const target = targets.get(targetKey(session.repoId, session.pullRequestId));
 
         if (isTerminalReviewSessionStatus(session.status)) {
-          if (!session.terminalComment && target) {
+          if (!session.terminalComment && !session.terminalPublicationSuppressedAt && target) {
+            const terminalLive = await this.gitHubGateway.getPullRequest(
+              target.repo.owner,
+              target.repo.name,
+              target.pullRequest.number
+            );
+            if (terminalLive.headSha) {
+              observedPullRequestHeads.set(target.pullRequest.id, terminalLive.headSha);
+            }
+            if (terminalLive.headSha !== session.terminalHeadSha) {
+              session = {
+                ...session,
+                terminalPublicationSuppressedAt: this.now(),
+                updatedAt: this.now()
+              };
+              sessions[sessionIndex] = session;
+              await this.stateStore.writeReviewSessionState(sessions);
+              progressed = true;
+              continue;
+            }
             const published = await this.publishTerminalComment(session, target, executions);
             if (published) {
               sessions[sessionIndex] = published;
@@ -133,6 +165,7 @@ export class ReviewCycleOrchestrator {
           target.repo.name,
           target.pullRequest.number
         );
+        if (live.headSha) observedPullRequestHeads.set(target.pullRequest.id, live.headSha);
         const liveHead = live.headSha ?? target.pullRequest.headSha;
         if (live.state !== "OPEN") {
           session = applyTransition(session, { type: "PR_CLOSED", at: this.now(), liveHeadSha: liveHead });
@@ -267,6 +300,15 @@ export class ReviewCycleOrchestrator {
                 result: execution.result.reviewCycleReview
               });
             }
+            if (session.status === "failed" && task.status !== "failed") {
+              ({ tasks, executions } = await this.invalidateCycleChild(
+                task,
+                execution,
+                session.failure?.reason ?? "Review-cycle review child failed after execution.",
+                tasks,
+                executions
+              ));
+            }
             sessions[sessionIndex] = session;
             await this.stateStore.writeReviewSessionState(sessions);
             progressed = true;
@@ -293,6 +335,25 @@ export class ReviewCycleOrchestrator {
               break;
             }
             try {
+              const publicationLive = await this.gitHubGateway.getPullRequest(
+                target.repo.owner,
+                target.repo.name,
+                target.pullRequest.number
+              );
+              if (publicationLive.headSha) {
+                observedPullRequestHeads.set(target.pullRequest.id, publicationLive.headSha);
+              }
+              if (publicationLive.headSha !== session.expectedHeadSha) {
+                session = applyTransition(session, {
+                  type: "UNEXPECTED_HEAD_OBSERVED",
+                  at: this.now(),
+                  actualHeadSha: publicationLive.headSha ?? "unknown"
+                });
+                sessions[sessionIndex] = session;
+                await this.stateStore.writeReviewSessionState(sessions);
+                progressed = true;
+                break;
+              }
               const publication = await this.reviewPublisher.publishCycleReview(task, execution);
               const receipt = reviewReceipt(session, publication, this.now());
               session = applyTransition(session, {
@@ -351,12 +412,11 @@ export class ReviewCycleOrchestrator {
               worktree: target.worktree,
               review: session.currentReview,
               finding: finding.finding,
-              precedingDispositions: session.findings
-                .filter((candidate) => candidate.result && candidate.order < finding.order)
+              precedingDispositions: completedFindingDispositions(session, finding.finding.id)
                 .map((candidate) => ({
-                  findingId: candidate.finding.id,
-                  disposition: candidate.result!.disposition,
-                  summary: candidate.result!.summary
+                  findingId: candidate.findingId,
+                  disposition: candidate.disposition,
+                  summary: candidate.summary
                 })),
               ...(session.publicationReceipts.find((receipt) =>
                 receipt.kind === "review" && receipt.reviewOrdinal === session.reviewOrdinal
@@ -435,6 +495,15 @@ export class ReviewCycleOrchestrator {
                 result: execution.result.reviewCycleFix
               });
             }
+            if (session.status === "failed" && task.status !== "failed") {
+              ({ tasks, executions } = await this.invalidateCycleChild(
+                task,
+                execution,
+                session.failure?.reason ?? "Review-cycle fix child failed after execution.",
+                tasks,
+                executions
+              ));
+            }
             sessions[sessionIndex] = session;
             await this.stateStore.writeReviewSessionState(sessions);
             progressed = true;
@@ -446,6 +515,51 @@ export class ReviewCycleOrchestrator {
             const finding = session.findings[session.currentFindingIndex];
             const task = finding?.taskId ? tasks.find((candidate) => candidate.id === finding.taskId) : undefined;
             if (!finding?.result || !task) break;
+            const execution = finding.executionId
+              ? executions.find((candidate) => candidate.id === finding.executionId)
+              : undefined;
+            const pushIntent = reviewFixPushIntent(finding);
+            if (finding.pushCompletedAt) {
+              if (!pushIntent) {
+                const reason = "Durable review-fix push observation state is incomplete.";
+                ({ tasks, executions } = await this.invalidateCycleChild(
+                  task,
+                  execution,
+                  reason,
+                  tasks,
+                  executions
+                ));
+                session = applyTransition(session, {
+                  type: "SESSION_FAILED",
+                  at: this.now(),
+                  liveHeadSha: liveHead,
+                  failure: failure("orchestration", reason, this.now(), task, execution, finding.finding.id)
+                });
+              } else if (live.headSha === pushIntent.headAfter) {
+                session = applyTransition(session, {
+                  type: "FIX_HANDOFF_PUSHED",
+                  at: this.now(),
+                  findingId: finding.finding.id,
+                  ...pushIntent
+                });
+                observedPullRequestHeads.set(target.pullRequest.id, pushIntent.headAfter);
+              } else if (live.headSha && live.headSha !== pushIntent.headBefore) {
+                session = applyTransition(session, {
+                  type: "UNEXPECTED_HEAD_OBSERVED",
+                  at: this.now(),
+                  actualHeadSha: live.headSha
+                });
+              } else {
+                // The push succeeded locally and its durable receipt was stored,
+                // but GitHub still reports the old/unknown head. A later outer
+                // run will reconcile it without repushing or resetting budget.
+                break;
+              }
+              sessions[sessionIndex] = session;
+              await this.stateStore.writeReviewSessionState(sessions);
+              progressed = true;
+              break;
+            }
             try {
               const handoff = await this.implementationWorkflowService.finalizeReviewFixHandoff({
                 repo: target.repo,
@@ -453,9 +567,27 @@ export class ReviewCycleOrchestrator {
                 task,
                 worktree: target.worktree,
                 expectedRemoteHeadSha: session.expectedHeadSha,
-                result: finding.result
+                result: finding.result,
+                ...(pushIntent ? { pushIntent } : {}),
+                recordPushIntent: async (intent) => {
+                  session = applyTransition(session, {
+                    type: "FIX_HANDOFF_PUSH_INTENT_RECORDED",
+                    at: this.now(),
+                    findingId: finding.finding.id,
+                    ...intent
+                  });
+                  sessions[sessionIndex] = session;
+                  await this.stateStore.writeReviewSessionState(sessions);
+                }
               });
               if (handoff.outcome === "head_changed") {
+                ({ tasks, executions } = await this.invalidateCycleChild(
+                  task,
+                  execution,
+                  `Review-fix handoff observed unexpected PR head ${handoff.actual}.`,
+                  tasks,
+                  executions
+                ));
                 session = applyTransition(session, {
                   type: "UNEXPECTED_HEAD_OBSERVED",
                   at: this.now(),
@@ -468,6 +600,16 @@ export class ReviewCycleOrchestrator {
                   findingId: finding.finding.id,
                   headSha: handoff.headAfter
                 });
+              } else if (handoff.outcome === "push_observation_pending") {
+                session = applyTransition(session, {
+                  type: "FIX_HANDOFF_PUSH_AWAITING_OBSERVATION",
+                  at: this.now(),
+                  findingId: finding.finding.id,
+                  headBefore: handoff.headBefore,
+                  headAfter: handoff.headAfter,
+                  commitSha: handoff.commitSha,
+                  filesChanged: handoff.filesChanged
+                });
               } else {
                 session = applyTransition(session, {
                   type: "FIX_HANDOFF_PUSHED",
@@ -478,15 +620,24 @@ export class ReviewCycleOrchestrator {
                   commitSha: handoff.commitSha,
                   filesChanged: handoff.filesChanged
                 });
+                observedPullRequestHeads.set(target.pullRequest.id, handoff.headAfter);
               }
             } catch (error) {
+              const reason = error instanceof Error ? error.message : String(error);
+              ({ tasks, executions } = await this.invalidateCycleChild(
+                task,
+                execution,
+                reason,
+                tasks,
+                executions
+              ));
               session = applyTransition(session, {
                 type: "SESSION_FAILED",
                 at: this.now(),
                 liveHeadSha: session.expectedHeadSha,
                 failure: failure(
                   "handoff",
-                  error instanceof Error ? error.message : String(error),
+                  reason,
                   this.now(),
                   task,
                   finding.executionId ? executions.find((candidate) => candidate.id === finding.executionId) : undefined,
@@ -526,14 +677,26 @@ export class ReviewCycleOrchestrator {
       }
 
       const beforeCount = sessions.length;
-      sessions = await this.reconcileSessions(input, targets, sessions);
+      sessions = await this.reconcileSessions(
+        input,
+        targets,
+        sessions,
+        tasks,
+        observedPullRequestHeads,
+        handledCommandCommentIds
+      );
       if (sessions.length !== beforeCount) {
         await this.stateStore.writeReviewSessionState(sessions);
         progressed = true;
       }
 
       if (!progressed) {
-        return { sessions, tasks, executions };
+        return {
+          sessions,
+          tasks,
+          executions,
+          observedPullRequestHeads: Object.fromEntries(observedPullRequestHeads)
+        };
       }
     }
 
@@ -543,51 +706,90 @@ export class ReviewCycleOrchestrator {
   private async reconcileSessions(
     input: ReviewCycleRunInput,
     targets: Map<string, ReviewTarget>,
-    initial: ReviewSessionRecord[]
+    initial: ReviewSessionRecord[],
+    tasks: readonly TaskRecord[],
+    observedPullRequestHeads: Map<string, string>,
+    handledCommandCommentIds: Set<string>
   ): Promise<ReviewSessionRecord[]> {
     let sessions = [...initial];
     const previousCommentsById = new Map(input.previousComments.map((comment) => [comment.id, comment]));
     const allowedUsers = new Set(input.allowedUsers.map((user) => user.toLowerCase()));
 
     for (const comment of input.comments) {
-      const command = parseReviewCycleCommand(comment.body);
       if (
-        !command ||
+        !looksLikeReviewCycleCommand(comment.body) ||
         previousCommentsById.has(comment.id) ||
         !allowedUsers.has(comment.author.toLowerCase()) ||
-        sessions.some((session) => session.commandCommentId === comment.id)
+        sessions.some((session) => session.commandCommentId === comment.id) ||
+        handledCommandCommentIds.has(comment.id)
       ) {
         continue;
       }
+      handledCommandCommentIds.add(comment.id);
+      const command = parseReviewCycleCommand(comment.body);
       const target = [...targets.values()].find((candidate) =>
         candidate.pullRequest.repoId === comment.repoId &&
         candidate.pullRequest.number === comment.parentNumber
       );
-      if (!target || command.target.threadKind !== "pull") continue;
-      if (
-        command.target.owner !== target.repo.owner ||
-        command.target.name !== target.repo.name ||
+      if (!target) continue;
+
+      let rejectionReason: string | undefined;
+      if (!command) {
+        rejectionReason = "The command could not be parsed. Use `continue: <PR terminal comment URL>` or `retry: <PR terminal comment URL>`.";
+      } else if (
+        comment.parentType !== "pull_request" ||
+        comment.commentKind !== "pull_request_comment"
+      ) {
+        rejectionReason = "Review-cycle commands must be posted as a top-level comment on the pull request.";
+      } else if (command.target.threadKind !== "pull") {
+        rejectionReason = "The target URL must be a terminal comment URL under `/pull/<number>`.";
+      } else if (
+        command.target.owner.toLowerCase() !== target.repo.owner.toLowerCase() ||
+        command.target.name.toLowerCase() !== target.repo.name.toLowerCase() ||
         command.target.pullRequestNumber !== target.pullRequest.number
       ) {
-        continue;
+        rejectionReason = "The target comment URL must belong to this pull request.";
       }
-      const terminal = sessions.find((session) =>
-        session.terminalComment?.url === command.target.url &&
-        session.terminalComment.commentId === command.target.commentId &&
-        session.pullRequestId === target.pullRequest.id &&
-        ((command.kind === "continue" && session.status === "max_turns") ||
-          (command.kind === "retry" && session.status === "failed"))
-      );
-      if (!terminal || sessions.some((session) =>
-        session.pullRequestId === target.pullRequest.id && !isTerminalReviewSessionStatus(session.status)
-      )) {
-        continue;
-      }
+
       const live = await this.gitHubGateway.getPullRequest(
         target.repo.owner,
         target.repo.name,
         target.pullRequest.number
       );
+      if (live.headSha) observedPullRequestHeads.set(target.pullRequest.id, live.headSha);
+      if (!rejectionReason && (
+        live.state !== "OPEN" ||
+        !live.labels.some((label) => label.name === target.repo.labels.agentReview)
+      )) {
+        rejectionReason = "The pull request must be open with the automatic-review label before restarting a cycle.";
+      }
+
+      const terminal = command && !rejectionReason
+        ? sessions.find((session) =>
+            session.terminalComment?.url === command.target.url &&
+            session.terminalComment.commentId === command.target.commentId &&
+            session.pullRequestId === target.pullRequest.id &&
+            ((command.kind === "continue" && session.status === "max_turns") ||
+              (command.kind === "retry" && session.status === "failed"))
+          )
+        : undefined;
+      if (!rejectionReason && !terminal) {
+        rejectionReason = command?.kind === "continue"
+          ? "`continue` must target this pull request's max-turn terminal comment."
+          : "`retry` must target this pull request's failed-run terminal comment.";
+      }
+      if (!rejectionReason && hasPendingReviewCycleRecovery(tasks, target.pullRequest.id)) {
+        rejectionReason = "Workspace recovery is still pending; run Backburner again after recovery completes.";
+      }
+      if (!rejectionReason && sessions.some((session) =>
+        session.pullRequestId === target.pullRequest.id && !isTerminalReviewSessionStatus(session.status)
+      )) {
+        rejectionReason = "A review cycle is already active for this pull request.";
+      }
+      if (rejectionReason) {
+        sessions = await this.publishCommandRejection(sessions, target, comment, rejectionReason);
+        continue;
+      }
       const head = live.headSha ?? target.pullRequest.headSha;
       sessions.push(createReviewSession({
         repoId: target.repo.id,
@@ -597,11 +799,11 @@ export class ReviewCycleOrchestrator {
         pullRequestUrl: target.pullRequest.url,
         workstreamId: target.workstream.id,
         ...(target.packetId ? { packetId: target.packetId } : {}),
-        trigger: command.kind,
+        trigger: command!.kind,
         maxTurns: reviewMaxTurns(target.repo),
         headSha: head,
         ordinal: nextSessionOrdinal(sessions, target.repo.id, target.pullRequest.id),
-        ...(command.kind === "continue" ? { continuedFromSessionId: terminal.id } : { retriedFromSessionId: terminal.id }),
+        ...(command!.kind === "continue" ? { continuedFromSessionId: terminal!.id } : { retriedFromSessionId: terminal!.id }),
         commandCommentId: comment.id,
         commandCommentUrl: comment.url,
         now: this.now()
@@ -620,10 +822,14 @@ export class ReviewCycleOrchestrator {
         target.repo.name,
         target.pullRequest.number
       );
+      if (live.headSha) observedPullRequestHeads.set(target.pullRequest.id, live.headSha);
       if (
         live.state !== "OPEN" ||
         !live.labels.some((label) => label.name === target.repo.labels.agentReview)
       ) {
+        continue;
+      }
+      if (hasPendingReviewCycleRecovery(tasks, target.pullRequest.id)) {
         continue;
       }
       const liveHead = live.headSha ?? target.pullRequest.headSha;
@@ -664,6 +870,64 @@ export class ReviewCycleOrchestrator {
       }));
     }
     return sessions;
+  }
+
+  private async publishCommandRejection(
+    sessions: ReviewSessionRecord[],
+    target: ReviewTarget,
+    sourceComment: NormalizedComment,
+    reason: string
+  ): Promise<ReviewSessionRecord[]> {
+    const ownerSession = latestSession(
+      sessions,
+      target.repo.id,
+      target.pullRequest.id
+    );
+    const marker = `<!-- backburner-review-cycle-command:v1 source=${sourceComment.id} -->`;
+    const [authenticatedUser, comments] = await Promise.all([
+      this.gitHubGateway.getAuthenticatedUser(),
+      this.gitHubGateway.listIssueComments(
+        target.repo.owner,
+        target.repo.name,
+        sourceComment.parentNumber
+      )
+    ]);
+    const existing = comments.find((comment) =>
+      sameLogin(comment.author?.login, authenticatedUser) && comment.body.includes(marker)
+    );
+    const mutation = existing ?? await this.gitHubGateway.postIssueComment({
+      owner: target.repo.owner,
+      name: target.repo.name,
+      issueNumber: sourceComment.parentNumber,
+      body: [
+        "🤖 Review-cycle command was not accepted.",
+        "",
+        safeText(reason, 800),
+        "",
+        marker
+      ].join("\n")
+    });
+    if (!ownerSession || sourceComment.parentType !== "pull_request") return sessions;
+
+    const receipt: GitHubCommentReceipt = {
+      commentId: String(mutation.id),
+      url: mutation.url,
+      marker,
+      publishedAt: this.now(),
+      githubObjectKind: "pull_request_comment",
+      ...(mutation.author?.login ? { authorLogin: mutation.author.login } : {})
+    };
+    const updated = sessions.map((session) => session.id === ownerSession.id
+      ? {
+          ...session,
+          ownedComments: session.ownedComments.some((comment) => comment.commentId === receipt.commentId)
+            ? session.ownedComments
+            : [...session.ownedComments, receipt],
+          updatedAt: this.now()
+        }
+      : session);
+    await this.stateStore.writeReviewSessionState(updated);
+    return updated;
   }
 
   private async publishFixComment(
@@ -766,6 +1030,76 @@ export class ReviewCycleOrchestrator {
     }
   }
 
+  private async invalidateCycleChild(
+    task: TaskRecord,
+    execution: ExecutionRecord | undefined,
+    reason: string,
+    tasks: TaskRecord[],
+    executions: ExecutionRecord[]
+  ): Promise<ReviewCycleDispatchResult> {
+    const failedAt = this.now();
+    const requiresRecovery = task.executionPermission === "workspace-write" &&
+      task.context.localRepoPath !== undefined;
+    const updatedTask: TaskRecord = {
+      ...task,
+      status: "failed",
+      updatedAt: failedAt,
+      context: {
+        ...task.context,
+        ...(requiresRecovery ? { recoveryNeeded: true } : {})
+      }
+    };
+    const updatedTasks = tasks.map((candidate) =>
+      candidate.id === task.id ? updatedTask : candidate
+    );
+    const updatedExecutions = execution
+      ? executions.map((candidate): ExecutionRecord => candidate.id === execution.id
+        ? {
+            ...candidate,
+            taskStatus: "failed",
+            errorMessage: safeText(reason, 1200)
+          }
+        : candidate)
+      : executions;
+
+    await this.stateStore.writeTaskState(updatedTasks);
+    if (execution) await this.stateStore.writeExecutionState(updatedExecutions);
+
+    if (execution && execution.agentProvider !== "unassigned" && task.workstreamId) {
+      try {
+        const state = await this.stateStore.load();
+        const providerSessions = (state.providerSessions ?? []).map((record) => {
+          const scope = record.scope;
+          if (
+            scope.repoKey !== task.repoSlug ||
+            scope.workstreamId !== task.workstreamId ||
+            scope.job !== roleForTask(task) ||
+            scope.configuredAgentId !== execution.agentId ||
+            scope.provider !== execution.agentProvider ||
+            scope.localRepoPath !== task.context.localRepoPath ||
+            scope.branchName !== task.context.branchName
+          ) {
+            return record;
+          }
+          return {
+            ...record,
+            status: "stale" as const,
+            lastFailedAt: failedAt,
+            updatedAt: failedAt,
+            notes: `Marked stale after review-cycle post-execution failure: ${safeText(reason, 400)}`
+          };
+        });
+        await this.stateStore.writeProviderSessionState(providerSessions);
+      } catch (error) {
+        this.logger?.warn(
+          `[review-cycle] Failed to stale provider conversation for ${task.id}: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+
+    return { tasks: updatedTasks, executions: updatedExecutions };
+  }
+
   private async persistTasksAndSessions(tasks: TaskRecord[], sessions: ReviewSessionRecord[]): Promise<void> {
     await this.stateStore.writeTaskState(tasks);
     await this.stateStore.writeReviewSessionState(sessions);
@@ -789,12 +1123,14 @@ function resolveReviewTargets(input: ReviewCycleRunInput): Map<string, ReviewTar
         (worktree?.packet?.parentWorkstreamId === candidate.id)
       )
     );
-    if (!workstream) continue;
+    // Review sessions may dispatch workspace-writing fixes, so a target is not
+    // admitted until the CLI has materialized an isolated durable worktree.
+    if (!workstream || !worktree) continue;
     result.set(targetKey(repo.id, pullRequest.id), {
       pullRequest,
       repo,
       workstream,
-      ...(worktree ? { worktree } : {}),
+      worktree,
       ...(worktree?.packet?.packetId ? { packetId: worktree.packet.packetId } : {})
     });
   }
@@ -967,6 +1303,84 @@ function hasHumanPrTaskInFlight(tasks: TaskRecord[], pullRequestId: string): boo
     task.parentSourceId === pullRequestId &&
     (task.status === "pending" || task.status === "queued" || task.status === "dispatched")
   );
+}
+
+function hasPendingReviewCycleRecovery(tasks: readonly TaskRecord[], pullRequestId: string): boolean {
+  return tasks.some((task) =>
+    task.sourceId === pullRequestId &&
+    task.context.reviewCycle !== undefined &&
+    task.context.recoveryNeeded === true
+  );
+}
+
+function reviewFixPushIntent(
+  finding: ReviewSessionRecord["findings"][number]
+): ReviewFixPushIntent | undefined {
+  return finding.pushIntentRecordedAt &&
+    finding.headBefore &&
+    finding.headAfter &&
+    finding.commitSha &&
+    finding.filesChanged
+    ? {
+        headBefore: finding.headBefore,
+        headAfter: finding.headAfter,
+        commitSha: finding.commitSha,
+        filesChanged: finding.filesChanged
+      }
+    : undefined;
+}
+
+function completedFindingDispositions(
+  session: ReviewSessionRecord,
+  currentFindingId: string
+): Array<{
+  findingId: string;
+  disposition: NonNullable<ReviewSessionRecord["findings"][number]["result"]>["disposition"];
+  summary: string;
+}> {
+  const completionSequence = new Map<string, number>();
+  for (const event of session.events) {
+    if (
+      event.type === "fix_published" &&
+      event.reviewOrdinal === session.reviewOrdinal &&
+      event.findingId
+    ) {
+      completionSequence.set(event.findingId, event.sequence);
+    }
+  }
+  return session.findings
+    .filter((finding) =>
+      finding.finding.id !== currentFindingId &&
+      finding.result !== undefined &&
+      (finding.status === "fixed" || finding.status === "already_covered")
+    )
+    .sort((left, right) =>
+      (completionSequence.get(left.finding.id) ?? Number.MAX_SAFE_INTEGER) -
+      (completionSequence.get(right.finding.id) ?? Number.MAX_SAFE_INTEGER)
+    )
+    .map((finding) => ({
+      findingId: finding.finding.id,
+      disposition: finding.result!.disposition,
+      summary: finding.result!.summary
+    }));
+}
+
+function reviewControllerAdvanceLimit(
+  input: ReviewCycleRunInput,
+  sessions: readonly ReviewSessionRecord[]
+): number {
+  const transitionsPerFinding = 6;
+  const transitionsPerReview = 8;
+  const configuredRemainingWork = input.pullRequests.reduce((total, pullRequest) => {
+    const repo = input.repos.find((candidate) => candidate.id === pullRequest.repoId);
+    if (!repo) return total;
+    return total + (reviewMaxTurns(repo) + 1) *
+      (MAX_REVIEW_FINDINGS * transitionsPerFinding + transitionsPerReview);
+  }, 0);
+  const persistedWork = sessions.reduce((total, session) =>
+    total + Math.max(1, session.findings.length) * transitionsPerFinding + transitionsPerReview,
+  0);
+  return Math.max(50, configuredRemainingWork + persistedWork + 20);
 }
 
 function safeText(value: string, limit = 300): string {

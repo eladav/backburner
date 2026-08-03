@@ -83,6 +83,8 @@ export const ReviewTimelineEventSchema = z.object({
     "review_published",
     "fix_dispatched",
     "fix_completed",
+    "fix_handoff_push_intent",
+    "fix_handoff_push_pending",
     "fix_handoff_pushed",
     "fix_handoff_no_change",
     "fix_published",
@@ -133,6 +135,8 @@ export const ReviewFindingStateSchema = z.object({
   headAfter: headSha.optional(),
   commitSha: headSha.optional(),
   filesChanged: z.array(nonEmptyString).optional(),
+  pushIntentRecordedAt: timestamp.optional(),
+  pushCompletedAt: timestamp.optional(),
   publicationReceipt: ReviewPublicationReceiptSchema.optional()
 }).strict().superRefine((finding, context) => {
   if (finding.result !== undefined && finding.result.findingId !== finding.finding.id) {
@@ -159,7 +163,36 @@ export const ReviewFindingStateSchema = z.object({
       message: "already_covered state requires an already_covered result"
     });
   }
+  if (
+    finding.pushIntentRecordedAt !== undefined &&
+    (finding.headBefore === undefined ||
+      finding.headAfter === undefined ||
+      finding.commitSha === undefined ||
+      finding.filesChanged === undefined)
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["pushIntentRecordedAt"],
+      message: "durable push intent requires headBefore, headAfter, commitSha, filesChanged, and timestamp"
+    });
+  }
+  if (finding.pushCompletedAt !== undefined && finding.pushIntentRecordedAt === undefined) {
+    context.addIssue({
+      code: "custom",
+      path: ["pushCompletedAt"],
+      message: "push completion requires a previously recorded push intent"
+    });
+  }
 });
+
+export const ReviewTurnHistorySchema = z.object({
+  reviewOrdinal: z.number().int().positive(),
+  turnNumber: z.number().int().positive(),
+  headSha,
+  review: ReviewResultV2Schema,
+  findings: z.array(ReviewFindingStateSchema),
+  completedAt: timestamp
+}).strict();
 
 export const ReviewSessionRecordSchema = z.object({
   schemaVersion: z.literal(REVIEW_SESSION_SCHEMA_VERSION),
@@ -185,9 +218,12 @@ export const ReviewSessionRecordSchema = z.object({
   currentFindingIndex: z.number().int().nonnegative().optional(),
   currentReview: ReviewResultV2Schema.optional(),
   findings: z.array(ReviewFindingStateSchema),
+  turnHistory: z.array(ReviewTurnHistorySchema).default([]),
   events: z.array(ReviewTimelineEventSchema),
   publicationReceipts: z.array(ReviewPublicationReceiptSchema),
   terminalComment: GitHubCommentReceiptSchema.optional(),
+  ownedComments: z.array(GitHubCommentReceiptSchema).default([]),
+  terminalPublicationSuppressedAt: timestamp.optional(),
   failure: ReviewSessionFailureSchema.optional(),
   supersededBySessionId: nonEmptyString.optional(),
   continuedFromSessionId: nonEmptyString.optional(),
@@ -216,6 +252,8 @@ export const ReviewSessionRecordSchema = z.object({
   requireUnique(session.events.map((event) => `${event.sequence}`), "events", context);
   requireUnique(session.publicationReceipts.map((receipt) => receipt.id), "publicationReceipts", context);
   requireUnique(session.findings.map((finding) => finding.finding.id), "findings", context);
+  requireUnique(session.turnHistory.map((turn) => `${turn.reviewOrdinal}`), "turnHistory", context);
+  requireUnique(session.ownedComments.map((comment) => comment.commentId), "ownedComments", context);
 
   const terminal = isTerminalReviewSessionStatus(session.status);
   if (terminal !== (session.terminalAt !== undefined)) {
@@ -225,10 +263,7 @@ export const ReviewSessionRecordSchema = z.object({
       message: terminal ? "is required for terminal sessions" : "is allowed only for terminal sessions"
     });
   }
-  if (
-    ["approved", "no_actionable", "max_turns"].includes(session.status) &&
-    session.terminalHeadSha === undefined
-  ) {
+  if (terminal && session.terminalHeadSha === undefined) {
     context.addIssue({
       code: "custom",
       path: ["terminalHeadSha"],
@@ -301,6 +336,7 @@ export type ReviewPublicationReceipt = z.infer<typeof ReviewPublicationReceiptSc
 export type ReviewTimelineEvent = z.infer<typeof ReviewTimelineEventSchema>;
 export type ReviewSessionFailure = z.infer<typeof ReviewSessionFailureSchema>;
 export type ReviewFindingState = z.infer<typeof ReviewFindingStateSchema>;
+export type ReviewTurnHistory = z.infer<typeof ReviewTurnHistorySchema>;
 export type ReviewSessionRecord = z.infer<typeof ReviewSessionRecordSchema>;
 export type ReviewSessionStateFile = z.infer<typeof ReviewSessionStateFileSchema>;
 
@@ -342,6 +378,7 @@ export function createReviewSession(input: CreateReviewSessionInput): ReviewSess
     startHeadSha: input.headSha,
     expectedHeadSha: input.headSha,
     findings: [],
+    turnHistory: [],
     events: [{
       sequence: 0,
       type: "session_started",
@@ -350,6 +387,7 @@ export function createReviewSession(input: CreateReviewSessionInput): ReviewSess
       headSha: input.headSha
     }],
     publicationReceipts: [],
+    ownedComments: [],
     ...(input.continuedFromSessionId === undefined
       ? {}
       : { continuedFromSessionId: input.continuedFromSessionId }),

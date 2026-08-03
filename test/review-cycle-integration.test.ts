@@ -5,6 +5,7 @@ import type { RepoConfig } from "../src/config/types.js";
 import type { NormalizedPullRequest } from "../src/domain/entities.js";
 import type { GitHubGateway } from "../src/github/types.js";
 import { ReviewCycleOrchestrator } from "../src/reviews/controller.js";
+import { isOrchestratorOwnedReviewComment } from "../src/reviews/comment-ownership.js";
 import { createReviewSession } from "../src/reviews/session.js";
 import { buildReviewCycleReviewTask } from "../src/reviews/task-builders.js";
 import type { StateStore } from "../src/state/loader.js";
@@ -17,6 +18,7 @@ import type { TaskRecord } from "../src/tasks/types.js";
 import type { ImplementationWorkflowService } from "../src/worktrees/service.js";
 
 const HEAD = "a".repeat(40);
+const FIXED_HEAD = "b".repeat(40);
 const NOW = "2026-08-03T10:00:00.000Z";
 
 test("automatic review publication is marker-idempotent and indexes owned inline comments", async () => {
@@ -127,6 +129,51 @@ test("automatic review publication ignores a copied marker from another author",
 
   assert.equal(submitCalls, 1);
   assert.equal(receipt.id, "93");
+});
+
+test("review-cycle ownership uses receipt ID and author, never the robot prefix alone", () => {
+  const base = createReviewSession({
+    repoId: "repo-1",
+    repoSlug: "example/repo",
+    pullRequestId: pullRequest().id,
+    pullRequestNumber: 7,
+    pullRequestUrl: pullRequest().url,
+    workstreamId: workstream().id,
+    trigger: "label",
+    maxTurns: 5,
+    headSha: HEAD,
+    ordinal: 1,
+    now: NOW
+  });
+  const sessions = [{
+    ...base,
+    publicationReceipts: [{
+      id: "receipt-1",
+      kind: "review" as const,
+      reviewOrdinal: 1,
+      headSha: HEAD,
+      githubId: "201",
+      url: "https://github.com/example/repo/pull/7#pullrequestreview-201",
+      marker: "marker",
+      publishedAt: NOW,
+      authorLogin: "example",
+      githubObjectKind: "pull_request_review" as const,
+      ownedCommentIds: ["202"]
+    }]
+  }];
+  const comment = (sourceId: string, author: string, body: string) => ({
+    id: `comment:${sourceId}`,
+    sourceId,
+    repoId: "repo-1",
+    parentType: "pull_request" as const,
+    parentNumber: 7,
+    author,
+    body
+  }) as Parameters<typeof isOrchestratorOwnedReviewComment>[0];
+
+  assert.equal(isOrchestratorOwnedReviewComment(comment("999", "human", "🤖 Please also change this."), sessions), false);
+  assert.equal(isOrchestratorOwnedReviewComment(comment("202", "example", "unprefixed owned inline"), sessions), true);
+  assert.equal(isOrchestratorOwnedReviewComment(comment("202", "attacker", "copied"), sessions), false);
 });
 
 test("maxTurns zero publishes the review and a terminal timeline without dispatching a fix", async () => {
@@ -285,6 +332,350 @@ test("a newly applied persistent label creates only one session when its review 
   assert.equal(terminalCommentCount, 1);
   assert.equal(result.sessions.length, 1);
   assert.equal(result.sessions[0]?.status, "failed");
+});
+
+test("review, fix, and approval complete in one durable session with one consumed turn", async () => {
+  let liveHead = HEAD;
+  let commentId = 600;
+  const gateway = {
+    async getAuthenticatedUser() { return "example"; },
+    async getPullRequest() { return { ...livePullRequest(), headSha: liveHead }; },
+    async listIssueComments() { return []; },
+    async postIssueComment(input: { body: string }) {
+      commentId += 1;
+      return {
+        id: commentId,
+        url: `https://github.com/example/repo/pull/7#issuecomment-${commentId}`,
+        body: input.body,
+        createdAt: NOW,
+        updatedAt: NOW,
+        author: { login: "example" }
+      };
+    }
+  } as unknown as GitHubGateway;
+  const worktreeService = {
+    async prepareReviewCycleWorkspace() {},
+    async finalizeReviewFixHandoff(input: {
+      recordPushIntent(intent: {
+        headBefore: string;
+        headAfter: string;
+        commitSha: string;
+        filesChanged: string[];
+      }): Promise<void>;
+    }) {
+      const intent = {
+        headBefore: HEAD,
+        headAfter: FIXED_HEAD,
+        commitSha: FIXED_HEAD,
+        filesChanged: ["src/fix.ts"]
+      };
+      await input.recordPushIntent(intent);
+      liveHead = FIXED_HEAD;
+      return { outcome: "pushed" as const, ...intent };
+    }
+  } as unknown as ImplementationWorkflowService;
+  const orchestrator = new ReviewCycleOrchestrator(
+    { async writeReviewSessionState() {}, async writeTaskState() {} } as unknown as StateStore,
+    gateway,
+    {
+      async publishCycleReview(task: TaskRecord) {
+        return {
+          id: `review-${task.context.reviewCycle?.reviewOrdinal}`,
+          url: `https://github.com/example/repo/pull/7#pullrequestreview-${task.context.reviewCycle?.reviewOrdinal}`,
+          commentKind: "pull_request_review" as const,
+          author: "example",
+          ownedReviewCommentIds: []
+        };
+      }
+    },
+    worktreeService,
+    undefined,
+    () => NOW
+  );
+  let reviewCount = 0;
+  const result = await orchestrator.run({
+    repos: [repo()],
+    pullRequests: [pullRequest()],
+    previousPullRequests: [],
+    comments: [],
+    previousComments: [],
+    workstreams: [workstream()],
+    worktrees: [worktree()],
+    sessions: [],
+    tasks: [],
+    executions: [],
+    allowedUsers: ["example"],
+    async dispatchChild(taskId, tasks, executions) {
+      const task = tasks.find((candidate) => candidate.id === taskId)!;
+      if (task.kind === "review_pr") {
+        reviewCount += 1;
+        const execution = reviewExecution(
+          task,
+          reviewCount === 1 ? "REQUEST_CHANGES" : "APPROVE",
+          reviewCount === 1 ? [finding()] : []
+        );
+        return {
+          tasks: tasks.map((candidate): TaskRecord => candidate.id === taskId
+            ? { ...candidate, status: "completed", lastExecutionId: execution.id }
+            : candidate),
+          executions: [...executions, execution]
+        };
+      }
+      const execution: ExecutionRecord = {
+        ...reviewExecution(task, "APPROVE", []),
+        taskKind: "fix_review_finding",
+        result: {
+          reviewCycleFix: {
+            schemaVersion: 1,
+            findingId: "F001",
+            disposition: "fixed",
+            summary: "Fixed the finding.",
+            filesChanged: ["src/fix.ts"],
+            checks: [{ command: "npm test", outcome: "passed", durationMs: 10 }],
+            relatedFindingIds: [],
+            notes: []
+          }
+        }
+      };
+      return {
+        tasks: tasks.map((candidate): TaskRecord => candidate.id === taskId
+          ? { ...candidate, status: "completed", lastExecutionId: execution.id }
+          : candidate),
+        executions: [...executions, execution]
+      };
+    }
+  });
+
+  assert.equal(result.sessions.length, 1);
+  assert.equal(result.sessions[0]?.status, "approved");
+  assert.equal(result.sessions[0]?.turnsCompleted, 1);
+  assert.equal(result.sessions[0]?.reviewOrdinal, 2);
+  assert.equal(result.sessions[0]?.startHeadSha, HEAD);
+  assert.equal(result.sessions[0]?.terminalHeadSha, FIXED_HEAD);
+  assert.equal(result.sessions[0]?.turnHistory[0]?.findings[0]?.commitSha, FIXED_HEAD);
+  assert.equal(result.observedPullRequestHeads[pullRequest().id], FIXED_HEAD);
+});
+
+test("a blocked completed fix becomes non-resumable and requests workspace recovery", async () => {
+  let persistedTasks: TaskRecord[] = [];
+  let persistedExecutions: ExecutionRecord[] = [];
+  let providerStatus = "active";
+  const stateStore = {
+    async writeReviewSessionState() {},
+    async writeTaskState(tasks: TaskRecord[]) { persistedTasks = tasks; },
+    async writeExecutionState(executions: ExecutionRecord[]) { persistedExecutions = executions; },
+    async load() {
+      return {
+        providerSessions: [{
+          id: "provider-session-1",
+          scope: {
+            repoKey: "example/repo",
+            workstreamId: workstream().id,
+            job: "implementation",
+            modelClass: "strong",
+            configuredAgentId: "fix-agent",
+            provider: "codex",
+            localRepoPath: worktree().path,
+            branchName: worktree().branchName
+          },
+          capability: "verified_headless_resume",
+          status: "active",
+          providerSessionId: "conversation-1",
+          createdAt: NOW,
+          updatedAt: NOW
+        }]
+      };
+    },
+    async writeProviderSessionState(records: Array<{ status: string }>) {
+      providerStatus = records[0]?.status ?? "missing";
+    }
+  } as unknown as StateStore;
+  const gateway = {
+    async getAuthenticatedUser() { return "example"; },
+    async getPullRequest() { return livePullRequest(); },
+    async listIssueComments() { return []; },
+    async postIssueComment(input: { body: string }) {
+      return {
+        id: 701,
+        url: "https://github.com/example/repo/pull/7#issuecomment-701",
+        body: input.body,
+        createdAt: NOW,
+        updatedAt: NOW,
+        author: { login: "example" }
+      };
+    }
+  } as unknown as GitHubGateway;
+  const orchestrator = new ReviewCycleOrchestrator(
+    stateStore,
+    gateway,
+    {
+      async publishCycleReview() {
+        return {
+          id: "review-1",
+          url: "https://github.com/example/repo/pull/7#pullrequestreview-1",
+          commentKind: "pull_request_review" as const,
+          author: "example",
+          ownedReviewCommentIds: []
+        };
+      }
+    },
+    { async prepareReviewCycleWorkspace() {} } as unknown as ImplementationWorkflowService,
+    undefined,
+    () => NOW
+  );
+  const result = await orchestrator.run({
+    repos: [repo()],
+    pullRequests: [pullRequest()],
+    previousPullRequests: [],
+    comments: [],
+    previousComments: [],
+    workstreams: [workstream()],
+    worktrees: [worktree()],
+    sessions: [],
+    tasks: [],
+    executions: [],
+    allowedUsers: ["example"],
+    async dispatchChild(taskId, tasks, executions) {
+      const task = tasks.find((candidate) => candidate.id === taskId)!;
+      const execution = task.kind === "review_pr"
+        ? reviewExecution(task, "REQUEST_CHANGES", [finding()])
+        : {
+            ...reviewExecution(task, "APPROVE", []),
+            taskKind: "fix_review_finding" as const,
+            agentId: "fix-agent",
+            result: {
+              reviewCycleFix: {
+                schemaVersion: 1 as const,
+                findingId: "F001",
+                disposition: "blocked" as const,
+                summary: "The safe fix requires human direction.",
+                filesChanged: [],
+                checks: [{ command: "npm test", outcome: "failed" as const, durationMs: 10 }],
+                relatedFindingIds: [],
+                notes: []
+              }
+            }
+          };
+      return {
+        tasks: tasks.map((candidate): TaskRecord => candidate.id === taskId
+          ? { ...candidate, status: "completed", lastExecutionId: execution.id }
+          : candidate),
+        executions: [...executions, execution]
+      };
+    }
+  });
+
+  const failedTask = result.tasks.find((task) => task.kind === "fix_review_finding")!;
+  const failedExecution = result.executions.find((execution) => execution.taskId === failedTask.id)!;
+  assert.equal(result.sessions.length, 1);
+  assert.equal(result.sessions[0]?.status, "failed");
+  assert.equal(result.sessions[0]?.terminalHeadSha, HEAD);
+  assert.equal(failedTask.status, "failed");
+  assert.equal(failedTask.context.recoveryNeeded, true);
+  assert.equal(failedExecution.taskStatus, "failed");
+  assert.equal(providerStatus, "stale");
+  assert.equal(persistedTasks.find((task) => task.id === failedTask.id)?.status, "failed");
+  assert.equal(persistedExecutions.find((execution) => execution.id === failedExecution.id)?.taskStatus, "failed");
+});
+
+test("invalid review-cycle commands receive one marker-indexed explanation", async () => {
+  const publishedBodies: string[] = [];
+  const gateway = {
+    async getAuthenticatedUser() { return "example"; },
+    async getPullRequest() { return livePullRequest(); },
+    async listIssueComments() { return []; },
+    async postIssueComment(input: { body: string }) {
+      publishedBodies.push(input.body);
+      return {
+        id: 801,
+        url: "https://github.com/example/repo/pull/7#issuecomment-801",
+        body: input.body,
+        createdAt: NOW,
+        updatedAt: NOW,
+        author: { login: "example" }
+      };
+    }
+  } as unknown as GitHubGateway;
+  const base = createReviewSession({
+    repoId: "repo-1",
+    repoSlug: "example/repo",
+    pullRequestId: pullRequest().id,
+    pullRequestNumber: 7,
+    pullRequestUrl: pullRequest().url,
+    workstreamId: workstream().id,
+    trigger: "label",
+    maxTurns: 0,
+    headSha: HEAD,
+    ordinal: 1,
+    now: NOW
+  });
+  const terminalUrl = "https://github.com/example/repo/pull/7#issuecomment-800";
+  const terminal = {
+    ...base,
+    status: "max_turns" as const,
+    currentReview: {
+      schemaVersion: 2 as const,
+      action: "REQUEST_CHANGES" as const,
+      reviewedHeadSha: HEAD,
+      summary: "Changes required.",
+      findings: [finding()]
+    },
+    lastReviewedHeadSha: HEAD,
+    terminalHeadSha: HEAD,
+    terminalAt: NOW,
+    terminalComment: {
+      commentId: "800",
+      url: terminalUrl,
+      marker: "terminal-marker",
+      publishedAt: NOW,
+      authorLogin: "example",
+      githubObjectKind: "pull_request_comment" as const
+    }
+  };
+  const orchestrator = new ReviewCycleOrchestrator(
+    { async writeReviewSessionState() {}, async writeTaskState() {} } as unknown as StateStore,
+    gateway,
+    { async publishCycleReview() { throw new Error("not reached"); } },
+    { async prepareReviewCycleWorkspace() {} } as unknown as ImplementationWorkflowService,
+    undefined,
+    () => NOW
+  );
+  const result = await orchestrator.run({
+    repos: [repo()],
+    pullRequests: [pullRequest()],
+    previousPullRequests: [pullRequest()],
+    comments: [{
+      id: "comment:retry-wrong-state",
+      sourceId: "900",
+      repoId: "repo-1",
+      repoKey: "example/repo",
+      repoOwner: "example",
+      repoName: "repo",
+      repoSlug: "example/repo",
+      kind: "comment",
+      commentKind: "pull_request_comment",
+      parentType: "pull_request",
+      parentNumber: 7,
+      parentKey: "example/repo#7",
+      url: "https://github.com/example/repo/pull/7#issuecomment-900",
+      body: `retry: ${terminalUrl}`,
+      author: "example",
+      createdAt: NOW,
+      updatedAt: NOW
+    }],
+    previousComments: [],
+    workstreams: [workstream()],
+    worktrees: [worktree()],
+    sessions: [terminal],
+    tasks: [],
+    executions: [],
+    allowedUsers: ["example"],
+    async dispatchChild(_taskId, tasks, executions) { return { tasks, executions }; }
+  });
+  assert.equal(publishedBodies.length, 1);
+  assert.match(publishedBodies[0] ?? "", /retry.*failed-run terminal comment/i);
+  assert.match(publishedBodies[0] ?? "", /backburner-review-cycle-command:v1/);
+  assert.equal(result.sessions[0]?.ownedComments[0]?.commentId, "801");
 });
 
 test("an unexpected head starts a fresh session instead of suppressing that head", async () => {

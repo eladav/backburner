@@ -223,7 +223,7 @@ export function transitionReviewCycle(
           executionId: event.executionId,
           findingId: event.result.findingId,
           failedAt: event.at
-        }, event.at);
+        }, event.at, session.expectedHeadSha);
         break;
       }
       next = appendEvent({
@@ -256,6 +256,83 @@ export function transitionReviewCycle(
       break;
     }
 
+    case "FIX_HANDOFF_PUSH_INTENT_RECORDED": {
+      const activeFinding = currentFinding(session);
+      if (
+        session.status !== "fix_handoff_pending" ||
+        activeFinding === undefined ||
+        activeFinding.finding.id !== event.findingId
+      ) {
+        reason = "push intent does not belong to the active finding";
+        break;
+      }
+      if (
+        activeFinding.result?.disposition !== "fixed" ||
+        event.headBefore !== session.expectedHeadSha ||
+        event.headAfter === event.headBefore ||
+        activeFinding.pushIntentRecordedAt !== undefined
+      ) {
+        reason = "push intent is inconsistent with the fix result or expected head";
+        break;
+      }
+      next = appendEvent({
+        ...session,
+        findings: updateCurrentFinding(session, {
+          headAfter: event.headAfter,
+          commitSha: event.commitSha,
+          filesChanged: event.filesChanged,
+          pushIntentRecordedAt: event.at
+        }),
+        updatedAt: event.at
+      }, {
+        type: "fix_handoff_push_intent",
+        at: event.at,
+        turnNumber: session.turnsCompleted + 1,
+        findingId: event.findingId,
+        headSha: event.headAfter
+      });
+      break;
+    }
+
+    case "FIX_HANDOFF_PUSH_AWAITING_OBSERVATION": {
+      const activeFinding = currentFinding(session);
+      if (
+        session.status !== "fix_handoff_pending" ||
+        activeFinding === undefined ||
+        activeFinding.finding.id !== event.findingId
+      ) {
+        reason = "pending push observation does not belong to the active finding";
+        break;
+      }
+      if (
+        activeFinding.result?.disposition !== "fixed" ||
+        activeFinding.pushIntentRecordedAt === undefined ||
+        activeFinding.pushCompletedAt !== undefined ||
+        activeFinding.headBefore !== event.headBefore ||
+        activeFinding.headAfter !== event.headAfter ||
+        activeFinding.commitSha !== event.commitSha ||
+        event.headBefore !== session.expectedHeadSha ||
+        !samePaths(activeFinding.filesChanged, event.filesChanged)
+      ) {
+        reason = "pending push observation is inconsistent with the durable push intent";
+        break;
+      }
+      next = appendEvent({
+        ...session,
+        findings: updateCurrentFinding(session, {
+          pushCompletedAt: event.at
+        }),
+        updatedAt: event.at
+      }, {
+        type: "fix_handoff_push_pending",
+        at: event.at,
+        turnNumber: session.turnsCompleted + 1,
+        findingId: event.findingId,
+        headSha: event.headAfter
+      });
+      break;
+    }
+
     case "FIX_HANDOFF_PUSHED": {
       const activeFinding = currentFinding(session);
       if (
@@ -268,8 +345,13 @@ export function transitionReviewCycle(
       }
       if (
         activeFinding.result?.disposition !== "fixed" ||
+        activeFinding.pushIntentRecordedAt === undefined ||
+        event.headAfter === event.headBefore ||
         event.headBefore !== session.expectedHeadSha ||
-        event.headAfter === event.headBefore
+        activeFinding.headBefore !== event.headBefore ||
+        activeFinding.headAfter !== event.headAfter ||
+        activeFinding.commitSha !== event.commitSha ||
+        !samePaths(activeFinding.filesChanged, event.filesChanged)
       ) {
         reason = "pushed handoff is inconsistent with the fix result or expected head";
         break;
@@ -382,6 +464,14 @@ export function transitionReviewCycle(
           status: "review_pending",
           turnsCompleted: completedTurn,
           reviewOrdinal: session.reviewOrdinal + 1,
+          turnHistory: [...session.turnHistory, {
+            reviewOrdinal: session.reviewOrdinal,
+            turnNumber: completedTurn,
+            headSha: session.expectedHeadSha,
+            review: session.currentReview!,
+            findings: completedFindings,
+            completedAt: event.at
+          }],
           findings: [],
           updatedAt: event.at
         }, {
@@ -503,11 +593,12 @@ function failSession(
   at: string,
   terminalHeadSha?: string
 ): ReviewSessionRecord {
+  const handledHeadSha = terminalHeadSha ?? session.expectedHeadSha;
   return appendEvent({
     ...session,
     status: "failed",
     failure,
-    ...(terminalHeadSha === undefined ? {} : { terminalHeadSha }),
+    terminalHeadSha: handledHeadSha,
     terminalAt: at,
     updatedAt: at
   }, {
@@ -516,7 +607,7 @@ function failSession(
     ...(failure.findingId === undefined ? {} : { findingId: failure.findingId }),
     ...(failure.taskId === undefined ? {} : { taskId: failure.taskId }),
     ...(failure.executionId === undefined ? {} : { executionId: failure.executionId }),
-    ...(terminalHeadSha === undefined ? {} : { headSha: terminalHeadSha }),
+    headSha: handledHeadSha,
     message: failure.reason
   });
 }
@@ -543,6 +634,11 @@ function updateFinding(
   return findings.map((finding, findingIndex) =>
     findingIndex === index ? { ...finding, ...patch } : finding
   );
+}
+
+function samePaths(left: readonly string[] | undefined, right: readonly string[]): boolean {
+  if (left === undefined || left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
 }
 
 function omitActiveReviewTask(session: ReviewSessionRecord): Omit<ReviewSessionRecord, "activeReviewTaskId"> {

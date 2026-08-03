@@ -9,6 +9,8 @@ import {
   RepoConfigSchema
 } from "../src/config/schemas.js";
 import {
+  MAX_REVIEW_FINDINGS,
+  MAX_REVIEW_TEXT_LENGTH,
   parseFixResultV1,
   parseReviewResultV2,
   type ReviewResultV2
@@ -27,6 +29,7 @@ import {
 } from "../src/workflows/review-cycle-machine/selectors.js";
 
 const HEAD_A = "a".repeat(40);
+const HEAD_B = "b".repeat(40);
 const NOW = "2026-08-03T10:00:00.000Z";
 
 test("repo review automation defaults, accepts bounds, and rejects unsafe values", () => {
@@ -143,6 +146,47 @@ test("fix result v1 validates finding identity and task-attributable changed pat
   );
 });
 
+test("successful fix results require bounded passing verification with no failures or timeouts", () => {
+  const base = {
+    schemaVersion: 1 as const,
+    findingId: "F001",
+    disposition: "fixed" as const,
+    summary: "Fixed.",
+    filesChanged: ["src/fix.ts"],
+    checks: [{ command: "npm test", outcome: "passed" as const, durationMs: 10 }],
+    relatedFindingIds: [],
+    notes: []
+  };
+  assert.throws(() => parseFixResultV1({ ...base, checks: [] }, { findingId: "F001" }), /passed bounded verification/);
+  for (const outcome of ["failed", "timed_out"] as const) {
+    assert.throws(() => parseFixResultV1({
+      ...base,
+      checks: [{ command: "npm test", outcome, durationMs: 10 }]
+    }, { findingId: "F001" }), /must not contain failed or timed-out checks|passed bounded verification/);
+  }
+  assert.equal(parseFixResultV1({
+    ...base,
+    disposition: "blocked",
+    filesChanged: [],
+    checks: [{ command: "npm test", outcome: "timed_out", durationMs: 1_000 }]
+  }, { findingId: "F001" }).disposition, "blocked");
+});
+
+test("review contracts reject oversized finding sets and text", () => {
+  const base = reviewResult("REQUEST_CHANGES", "F001");
+  assert.throws(() => parseReviewResultV2({
+    ...base,
+    findings: Array.from({ length: MAX_REVIEW_FINDINGS + 1 }, (_, index) => ({
+      ...base.findings[0]!,
+      id: `F${index}`
+    }))
+  }, { targetHeadSha: HEAD_A }), /Too big|at most/i);
+  assert.throws(() => parseReviewResultV2({
+    ...base,
+    summary: "x".repeat(MAX_REVIEW_TEXT_LENGTH + 1)
+  }, { targetHeadSha: HEAD_A }), /Too big|at most/i);
+});
+
 test("review session state is versioned, round-trips, and rejects duplicate active PR sessions", async () => {
   const tempDir = await mkdtemp(path.join(os.tmpdir(), "review-cycle-state-"));
   try {
@@ -244,7 +288,7 @@ test("five successful fix batches permit a sixth verification review but no sixt
         disposition: "already_covered",
         summary: "An earlier change already covers this finding.",
         filesChanged: [],
-        checks: [],
+        checks: [{ command: "npm test -- review cycle", outcome: "passed", durationMs: 10 }],
         relatedFindingIds: [],
         notes: []
       }
@@ -266,6 +310,8 @@ test("five successful fix batches permit a sixth verification review but no sixt
   assert.equal(session.status, "review_pending");
   assert.equal(session.turnsCompleted, 5);
   assert.equal(session.reviewOrdinal, 6);
+  assert.equal(session.turnHistory.length, 5);
+  assert.equal(session.turnHistory[0]?.findings[0]?.result?.disposition, "already_covered");
 
   session = accepted(session, {
     type: "REVIEW_TASK_DISPATCHED",
@@ -289,6 +335,87 @@ test("five successful fix batches permit a sixth verification review but no sixt
 
   assert.equal(session.status, "max_turns");
   assert.equal(session.turnsCompleted, 5);
+});
+
+test("durable push intent survives stale observation without changing session or turn identity", () => {
+  let session = makeSession();
+  session = accepted(session, { type: "REVIEW_TASK_DISPATCHED", at: NOW, taskId: "review-1", targetHeadSha: HEAD_A });
+  session = accepted(session, {
+    type: "REVIEW_TASK_SUCCEEDED",
+    at: NOW,
+    taskId: "review-1",
+    executionId: "review-execution-1",
+    result: reviewResult("REQUEST_CHANGES", "F001")
+  });
+  session = accepted(session, { type: "REVIEW_PUBLISHED", at: NOW, liveHeadSha: HEAD_A, receipt: reviewReceipt(1, HEAD_A) });
+  session = accepted(session, { type: "FIX_TASK_DISPATCHED", at: NOW, findingId: "F001", taskId: "fix-1", headBefore: HEAD_A });
+  session = accepted(session, {
+    type: "FIX_TASK_SUCCEEDED",
+    at: NOW,
+    taskId: "fix-1",
+    executionId: "fix-execution-1",
+    result: {
+      schemaVersion: 1,
+      findingId: "F001",
+      disposition: "fixed",
+      summary: "Fixed.",
+      filesChanged: ["src/fix.ts"],
+      checks: [{ command: "npm test", outcome: "passed", durationMs: 10 }],
+      relatedFindingIds: [],
+      notes: []
+    }
+  });
+  const intent = {
+    findingId: "F001",
+    headBefore: HEAD_A,
+    headAfter: HEAD_B,
+    commitSha: HEAD_B,
+    filesChanged: ["src/fix.ts"]
+  };
+  session = accepted(session, { type: "FIX_HANDOFF_PUSH_INTENT_RECORDED", at: NOW, ...intent });
+  session = accepted(session, { type: "FIX_HANDOFF_PUSH_AWAITING_OBSERVATION", at: NOW, ...intent });
+
+  assert.equal(session.status, "fix_handoff_pending");
+  assert.equal(session.expectedHeadSha, HEAD_A);
+  assert.equal(session.turnsCompleted, 0);
+  assert.equal(session.reviewOrdinal, 1);
+  assert.equal(session.findings[0]?.pushCompletedAt, NOW);
+
+  session = accepted(session, { type: "FIX_HANDOFF_PUSHED", at: NOW, ...intent });
+  assert.equal(session.status, "fix_publication_pending");
+  assert.equal(session.expectedHeadSha, HEAD_B);
+});
+
+test("a blocked fix records the handled head and remains failed until explicit retry", () => {
+  let session = makeSession();
+  session = accepted(session, { type: "REVIEW_TASK_DISPATCHED", at: NOW, taskId: "review-1", targetHeadSha: HEAD_A });
+  session = accepted(session, {
+    type: "REVIEW_TASK_SUCCEEDED",
+    at: NOW,
+    taskId: "review-1",
+    executionId: "review-execution-1",
+    result: reviewResult("REQUEST_CHANGES", "F001")
+  });
+  session = accepted(session, { type: "REVIEW_PUBLISHED", at: NOW, liveHeadSha: HEAD_A, receipt: reviewReceipt(1, HEAD_A) });
+  session = accepted(session, { type: "FIX_TASK_DISPATCHED", at: NOW, findingId: "F001", taskId: "fix-1", headBefore: HEAD_A });
+  session = accepted(session, {
+    type: "FIX_TASK_SUCCEEDED",
+    at: NOW,
+    taskId: "fix-1",
+    executionId: "fix-execution-1",
+    result: {
+      schemaVersion: 1,
+      findingId: "F001",
+      disposition: "blocked",
+      summary: "Cannot fix safely.",
+      filesChanged: [],
+      checks: [{ command: "npm test", outcome: "failed", durationMs: 10 }],
+      relatedFindingIds: [],
+      notes: []
+    }
+  });
+  assert.equal(session.status, "failed");
+  assert.equal(session.terminalHeadSha, HEAD_A);
 });
 
 test("illegal events do not mutate a session and terminal head is the freshness marker", () => {

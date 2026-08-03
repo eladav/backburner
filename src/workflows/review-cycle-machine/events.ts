@@ -46,6 +46,22 @@ export type ReviewCycleEvent =
       failure: ReviewSessionFailure;
     })
   | (TimedEvent & {
+      type: "FIX_HANDOFF_PUSH_INTENT_RECORDED";
+      findingId: string;
+      headBefore: string;
+      headAfter: string;
+      commitSha: string;
+      filesChanged: string[];
+    })
+  | (TimedEvent & {
+      type: "FIX_HANDOFF_PUSH_AWAITING_OBSERVATION";
+      findingId: string;
+      headBefore: string;
+      headAfter: string;
+      commitSha: string;
+      filesChanged: string[];
+    })
+  | (TimedEvent & {
       type: "FIX_HANDOFF_PUSHED";
       findingId: string;
       headBefore: string;

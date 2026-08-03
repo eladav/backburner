@@ -3,14 +3,23 @@ import { z } from "zod";
 
 const SHA_40 = /^[0-9a-f]{40}$/i;
 
-const nonEmptyString = z.string().trim().min(1);
+export const MAX_REVIEW_FINDINGS = 25;
+export const MAX_REVIEW_LIST_ITEMS = 20;
+export const MAX_REVIEW_TEXT_LENGTH = 8_000;
+export const MAX_REVIEW_ID_LENGTH = 128;
+export const MAX_REVIEW_PATH_LENGTH = 1_000;
+export const MAX_FIX_CHANGED_FILES = 200;
+
+const nonEmptyString = z.string().trim().min(1).max(MAX_REVIEW_TEXT_LENGTH);
+const idString = z.string().trim().min(1).max(MAX_REVIEW_ID_LENGTH);
+const titleString = z.string().trim().min(1).max(500);
 const headSha = z.string().regex(SHA_40, "must be a 40-character Git commit SHA");
 const nonEmptyStringList = z.preprocess(
   (value) => typeof value === "string" ? [value] : value,
-  z.array(nonEmptyString)
+  z.array(nonEmptyString).max(MAX_REVIEW_LIST_ITEMS)
 );
 
-const repoRelativePath = z.string().trim().min(1).superRefine((value, context) => {
+const repoRelativePath = z.string().trim().min(1).max(MAX_REVIEW_PATH_LENGTH).superRefine((value, context) => {
   if (
     path.posix.isAbsolute(value) ||
     path.win32.isAbsolute(value) ||
@@ -64,8 +73,8 @@ export const ReviewFindingSeveritySchema = z.enum([
 ]);
 
 export const ReviewFindingV2Schema = z.object({
-  id: nonEmptyString,
-  title: nonEmptyString,
+  id: idString,
+  title: titleString,
   category: ReviewFindingCategorySchema,
   severity: ReviewFindingSeveritySchema,
   actionable: z.boolean(),
@@ -75,10 +84,10 @@ export const ReviewFindingV2Schema = z.object({
   evidence: nonEmptyString.optional(),
   impact: nonEmptyString.optional(),
   instruction: nonEmptyString.optional(),
-  acceptanceCriteria: z.array(nonEmptyString).default([]),
+  acceptanceCriteria: z.array(nonEmptyString).max(MAX_REVIEW_LIST_ITEMS).default([]),
   verification: nonEmptyStringList.default([]),
-  dependsOn: z.array(nonEmptyString).default([]),
-  overlapsWith: z.array(nonEmptyString).default([])
+  dependsOn: z.array(idString).max(MAX_REVIEW_FINDINGS).default([]),
+  overlapsWith: z.array(idString).max(MAX_REVIEW_FINDINGS).default([])
 }).strict().superRefine((finding, context) => {
   const locationParts = [finding.path, finding.line, finding.side];
   const locationPartCount = locationParts.filter((value) => value !== undefined).length;
@@ -118,7 +127,7 @@ export const ReviewResultV2Schema = z.object({
   action: ReviewActionSchema,
   reviewedHeadSha: headSha,
   summary: nonEmptyString,
-  findings: z.array(ReviewFindingV2Schema)
+  findings: z.array(ReviewFindingV2Schema).max(MAX_REVIEW_FINDINGS)
 }).strict().superRefine((result, context) => {
   const findingIds = new Set<string>();
   result.findings.forEach((finding, index) => {
@@ -185,7 +194,7 @@ export const ReviewResultV2Schema = z.object({
 });
 
 export const FixCheckResultSchema = z.object({
-  command: nonEmptyString,
+  command: z.string().trim().min(1).max(2_000),
   outcome: z.enum(["passed", "failed", "timed_out", "skipped"]),
   durationMs: z.number().int().nonnegative()
 }).strict();
@@ -195,10 +204,10 @@ export const FixResultV1Schema = z.object({
   findingId: nonEmptyString,
   disposition: z.enum(["fixed", "already_covered", "blocked"]),
   summary: nonEmptyString,
-  filesChanged: z.array(repoRelativePath),
-  checks: z.array(FixCheckResultSchema),
-  relatedFindingIds: z.array(nonEmptyString).default([]),
-  notes: z.array(nonEmptyString).default([])
+  filesChanged: z.array(repoRelativePath).max(MAX_FIX_CHANGED_FILES),
+  checks: z.array(FixCheckResultSchema).max(MAX_REVIEW_LIST_ITEMS),
+  relatedFindingIds: z.array(idString).max(MAX_REVIEW_FINDINGS).default([]),
+  notes: z.array(nonEmptyString).max(MAX_REVIEW_LIST_ITEMS).default([])
 }).strict().superRefine((result, context) => {
   requireUniqueIds(result.filesChanged, "filesChanged", context);
   requireUniqueIds(result.relatedFindingIds, "relatedFindingIds", context);
@@ -222,6 +231,24 @@ export const FixResultV1Schema = z.object({
       code: "custom",
       path: ["filesChanged"],
       message: "already_covered results must not report changed files"
+    });
+  }
+  if (result.disposition !== "blocked") {
+    if (!result.checks.some((check) => check.outcome === "passed")) {
+      context.addIssue({
+        code: "custom",
+        path: ["checks"],
+        message: "successful fix results require at least one passed bounded verification check"
+      });
+    }
+    result.checks.forEach((check, index) => {
+      if (check.outcome === "failed" || check.outcome === "timed_out") {
+        context.addIssue({
+          code: "custom",
+          path: ["checks", index, "outcome"],
+          message: "successful fix results must not contain failed or timed-out checks"
+        });
+      }
     });
   }
 });

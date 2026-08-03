@@ -36,3 +36,7 @@ export function parseReviewCycleCommand(body: string): ReviewCycleCommand | unde
 export function isReviewCycleCommand(body: string): boolean {
   return parseReviewCycleCommand(body) !== undefined;
 }
+
+export function looksLikeReviewCycleCommand(body: string): boolean {
+  return /^\s*(?:continue|retry)\s*:/iu.test(body);
+}

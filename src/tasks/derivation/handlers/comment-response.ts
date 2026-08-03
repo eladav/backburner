@@ -7,8 +7,11 @@ import { classifyManagementPullRequest } from "../../../github/pr-classification
 import { workflowRegistry } from "../../../workflows/registry.js";
 import { isRetryLinkCommand } from "../../retry.js";
 import { parseWaveReassessCommand } from "../../wave-reassess.js";
-import { isReviewCycleCommand } from "../../../reviews/commands.js";
-import { isOrchestratorOwnedReviewComment } from "../../../reviews/comment-ownership.js";
+import { looksLikeReviewCycleCommand } from "../../../reviews/commands.js";
+import {
+  isOrchestratorOwnedReviewComment,
+  isTrackedReviewCycleThread
+} from "../../../reviews/comment-ownership.js";
 import type {
   PullRequestReviewCommentLocationContext,
   TaskKind,
@@ -55,15 +58,16 @@ function deriveCommentTasks(
 
   for (const commentId of [...attention.commentIds].sort((left, right) => left.localeCompare(right))) {
     const comment = env.currentCommentsById.get(commentId);
+    const reviewSessions = env.input.previousState.reviewSessions ?? [];
     if (
       !comment ||
-      isAgentAuthoredComment(comment) ||
-      isOrchestratorOwnedReviewComment(comment, env.input.previousState.reviewSessions ?? [])
+      isOrchestratorOwnedReviewComment(comment, reviewSessions) ||
+      (!isTrackedReviewCycleThread(comment, reviewSessions) && isAgentAuthoredComment(comment))
     ) {
       continue;
     }
 
-    if (isReviewCycleCommand(comment.body)) {
+    if (looksLikeReviewCycleCommand(comment.body)) {
       continue;
     }
 

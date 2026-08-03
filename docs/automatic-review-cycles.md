@@ -7,7 +7,12 @@ which a session ends, so commits pushed by the cycle do not create an unbounded
 label loop.
 
 This behavior applies to regular workstream pull requests and packet pull
-requests. Each pull request has its own review session and turn budget.
+requests. For a regular PR that does not already have a Backburner worktree,
+Backburner first materializes an isolated, PR-scoped checkout of the exact
+`origin/<head-branch>` SHA. A session is not admitted without that durable
+checkout; fork or otherwise unpushable heads are left untouched and retried on
+a later scan after checkout access is resolved. Each pull request has its own
+review session and turn budget.
 
 ## Lifecycle
 
@@ -95,21 +100,38 @@ finding without turning the review's own comments into discussion tasks.
 A fix result identifies its finding, reports `fixed`, `already_covered`, or
 `blocked`, lists changed paths and bounded checks, and can flag other findings
 that the work also covered. A fix agent sees the complete review, the finding it
-owns, and earlier dispositions. It must re-check the current worktree because a
-previous fix may already have resolved its finding.
+owns, and every finding disposition completed before it (including a dependency
+that appeared later in the reviewer's original list). It must re-check the
+current worktree because a previous fix may already have resolved its finding.
+`fixed` and `already_covered` require at least one passing check and may not
+contain failed or timed-out checks; an agent that cannot obtain passing evidence
+must return `blocked`.
 
 Backburner verifies the task-attributable diff, requires the expected remote
-head, uses normal non-force pushes, and observes the pushed head before
-continuing. A blocked or malformed result fails the entire session.
+head, and stores an exact push intent before it uses a normal non-force push.
+The successful push is then stored separately from GitHub's observation of the
+new PR head. If GitHub is temporarily stale, the same session waits without
+repushing or resetting its turn budget. A clean remote commit is accepted as
+crash recovery only when it matches the durable orchestrator push intent; an
+agent self-push is never inferred from local/remote ancestry alone. A blocked or
+malformed result fails the entire session. Completed turn snapshots retain the
+full review and final finding results, checks, files, and commit SHAs after the
+next review begins.
 
 ## GitHub visibility and comment ownership
 
 Review-cycle output starts with `🤖` and carries a hidden, session-scoped marker.
-Backburner stores the GitHub IDs and URLs of review bodies, inline comments, fix
-reports, and the terminal timeline. The comment index is authoritative for this
-flow; the visible prefix is defense in depth and helps users recognize the
-team's output. Indexed orchestrator comments never dispatch ordinary
+Backburner stores the GitHub IDs, authors, and URLs of review bodies, inline
+comments, fix reports, command explanations, and the terminal timeline. The
+receipt ID plus author index is authoritative for this flow; the visible prefix
+is defense in depth and helps users recognize the team's output. A human comment
+that starts with `🤖` is still steering unless it matches an owned receipt.
+Indexed orchestrator comments never dispatch ordinary
 `respond_pr_comment` work.
+
+Malformed, stale, inline, wrong-state, or wrong-target `continue:`/`retry:`
+commands receive one marker-idempotent explanation on GitHub instead of being
+silently discarded.
 
 Publication is reconciled by the hidden marker before posting, so a process
 restart after a GitHub write does not intentionally duplicate output. A failed
@@ -122,6 +144,12 @@ verification failure makes the session `failed`. Individual cycle children are
 not resumable or addressable by the generic failed-task retry command. Use the
 terminal `retry:` command to restart the whole process, or push a human-directed
 change and let the new head start a fresh session.
+
+If a child finishes but its result, handoff, or post-edit verification fails,
+Backburner rewrites that child and execution as failed, marks its provider
+conversation stale, and requires workspace recovery before another session can
+start. This prevents retrying a partially trusted child conversation or carrying
+dirty/ahead state into the whole-session retry.
 
 Every implementation prompt requires local commands to have explicit wall-clock
 bounds below the agent timeout. Agents should use the platform's available

@@ -45,6 +45,13 @@ export interface WorktreePreparationResult {
   created: boolean;
 }
 
+export interface ReviewFixPushIntent {
+  headBefore: string;
+  headAfter: string;
+  commitSha: string;
+  filesChanged: string[];
+}
+
 export type ReviewFixHandoffResult =
   | {
       outcome: "pushed";
@@ -52,6 +59,14 @@ export type ReviewFixHandoffResult =
       headAfter: string;
       commitSha: string;
       filesChanged: string[];
+    }
+  | {
+      outcome: "push_observation_pending";
+      headBefore: string;
+      headAfter: string;
+      commitSha: string;
+      filesChanged: string[];
+      lastObservedHead?: string;
     }
   | {
       outcome: "no_change";
@@ -72,6 +87,77 @@ export class ImplementationWorkflowService {
     private readonly now: () => string = () => new Date().toISOString(),
     private readonly delay: (milliseconds: number) => Promise<void> = boundedDelay
   ) {}
+
+  async ensureReviewWorktreeForPullRequest(input: {
+    repo: RepoConfig;
+    repoPath: string;
+    codeRoot: string;
+    pullRequest: NormalizedPullRequest;
+    existingWorktrees: WorktreeRecord[];
+  }): Promise<WorktreePreparationResult> {
+    const existing = input.existingWorktrees.find((worktree) =>
+      worktree.repoId === input.repo.id &&
+      (worktree.prId === input.pullRequest.id ||
+        worktree.prNumber === input.pullRequest.number ||
+        worktree.branchName === input.pullRequest.headBranch)
+    );
+    if (existing) return { worktree: existing, created: false };
+
+    await this.gitGateway.fetchRepository(input.repoPath);
+    const checkedOutPath = await this.gitGateway.getWorktreeForBranch(
+      input.repoPath,
+      input.pullRequest.headBranch
+    );
+    if (checkedOutPath) {
+      throw new Error(
+        `Cannot materialize isolated review worktree for PR #${input.pullRequest.number}: branch ${input.pullRequest.headBranch} is already checked out at ${checkedOutPath}.`
+      );
+    }
+
+    const relativePath = buildReviewWorktreeRelativePath(input.repo, input.pullRequest.number);
+    const worktreePath = this.gitGateway.validatePathWithinCodeRoot(input.codeRoot, relativePath);
+    await mkdir(path.dirname(worktreePath), { recursive: true });
+    const createdPath = await this.gitGateway.createWorktree(
+      input.repoPath,
+      input.codeRoot,
+      worktreePath,
+      input.pullRequest.headBranch,
+      `origin/${input.pullRequest.headBranch}`,
+      { reuseExistingBranch: true }
+    );
+    const actualHead = await this.gitGateway.getHeadCommitSha(createdPath);
+    if (actualHead !== input.pullRequest.headSha) {
+      throw new Error(
+        `Materialized review worktree head ${actualHead} does not match PR #${input.pullRequest.number} head ${input.pullRequest.headSha}; the source branch may be external or unpushable from origin.`
+      );
+    }
+    const timestamp = this.now();
+    const docsRoot = path.join(
+      createdPath,
+      AGENT_DOCS_ROOT_DIR,
+      `agent-review-pr-${input.pullRequest.number}`
+    );
+    return {
+      created: true,
+      worktree: {
+        id: `worktree:${input.pullRequest.repoSlug}:pr:${input.pullRequest.number}`,
+        repoId: input.repo.id,
+        repoSlug: input.pullRequest.repoSlug,
+        repoName: input.pullRequest.repoName,
+        prId: input.pullRequest.id,
+        prNumber: input.pullRequest.number,
+        prUrl: input.pullRequest.url,
+        baseBranch: input.pullRequest.baseBranch,
+        branchName: input.pullRequest.headBranch,
+        path: createdPath,
+        planDocumentPath: path.join(docsRoot, "review-plan.md"),
+        logDocumentPath: path.join(docsRoot, "review-log.md"),
+        status: "implementation_done",
+        createdAt: timestamp,
+        updatedAt: timestamp
+      }
+    };
+  }
 
   async ensureWorktreeForIssue(input: StartImplementationInput): Promise<WorktreePreparationResult> {
     const branchName = buildWorktreeBranchName(input.repo, input.issue.number);
@@ -697,6 +783,8 @@ export class ImplementationWorkflowService {
     worktree: WorktreeRecord;
     expectedRemoteHeadSha: string;
     result: FixResultV1;
+    pushIntent?: ReviewFixPushIntent;
+    recordPushIntent?: (intent: ReviewFixPushIntent) => Promise<void>;
   }): Promise<ReviewFixHandoffResult> {
     if (input.task.kind !== "fix_review_finding" || !input.task.context.reviewCycle?.findingId) {
       throw new Error(`Task ${input.task.id} is not a review-cycle fix task.`);
@@ -728,8 +816,12 @@ export class ImplementationWorkflowService {
     if (before.headSha !== input.expectedRemoteHeadSha) {
       const localHead = await this.gitGateway.getHeadCommitSha(input.worktree.path);
       if (
+        input.pushIntent !== undefined &&
         clean &&
         input.result.disposition === "fixed" &&
+        input.pushIntent.headBefore === input.expectedRemoteHeadSha &&
+        input.pushIntent.headAfter === localHead &&
+        input.pushIntent.commitSha === localHead &&
         before.headSha === localHead &&
         await this.gitGateway.isAncestorOf(
           input.worktree.path,
@@ -741,6 +833,12 @@ export class ImplementationWorkflowService {
           ? await this.gitGateway.getChangedPathsSince(input.worktree.path, input.expectedRemoteHeadSha)
           : [...input.result.filesChanged].sort((left, right) => left.localeCompare(right));
         assertReportedReviewFixPaths(input.task, input.result, recoveredFiles);
+        assertMatchingPushIntent(input.pushIntent, {
+          headBefore: input.expectedRemoteHeadSha,
+          headAfter: localHead,
+          commitSha: localHead,
+          filesChanged: recoveredFiles
+        });
         return {
           outcome: "pushed",
           headBefore: input.expectedRemoteHeadSha,
@@ -795,12 +893,33 @@ export class ImplementationWorkflowService {
 
     assertReportedReviewFixPaths(input.task, input.result, filesChanged);
 
+    const pushIntent: ReviewFixPushIntent = {
+      headBefore: input.expectedRemoteHeadSha,
+      headAfter: localHead,
+      commitSha: localHead,
+      filesChanged
+    };
+    if (input.pushIntent) {
+      assertMatchingPushIntent(input.pushIntent, pushIntent);
+    } else {
+      if (!input.recordPushIntent) {
+        throw new Error(`Review-cycle handoff ${input.task.id} cannot push without a durable push-intent recorder.`);
+      }
+      await input.recordPushIntent(pushIntent);
+    }
+
     const liveBeforePush = await this.gitHubGateway.getPullRequest(
       input.repo.owner,
       input.repo.name,
       input.pullRequestNumber
     );
     if (liveBeforePush.headSha !== input.expectedRemoteHeadSha) {
+      if (liveBeforePush.headSha === localHead && (input.pushIntent || input.recordPushIntent)) {
+        return {
+          outcome: "pushed",
+          ...pushIntent
+        };
+      }
       return {
         outcome: "head_changed",
         expected: input.expectedRemoteHeadSha,
@@ -809,35 +928,46 @@ export class ImplementationWorkflowService {
     }
 
     await this.gitGateway.pushBranch(input.worktree.path, input.worktree.branchName);
-    let after: GhPullRequestSummary = await this.gitHubGateway.getPullRequest(
-      input.repo.owner,
-      input.repo.name,
-      input.pullRequestNumber
-    );
-    for (
-      let attempt = 1;
-      after.headSha !== localHead && attempt < REVIEW_PUSH_CONFIRMATION_ATTEMPTS;
-      attempt += 1
-    ) {
-      await this.delay(REVIEW_PUSH_CONFIRMATION_DELAY_MS);
-      after = await this.gitHubGateway.getPullRequest(
-        input.repo.owner,
-        input.repo.name,
-        input.pullRequestNumber
-      );
-    }
-    if (after.headSha !== localHead) {
-      throw new Error(
-        `Review-cycle push for ${input.task.id} did not produce expected remote head ${localHead}; observed ${after.headSha ?? "unknown"}.`
-      );
+    let lastObservedHead: string | undefined;
+    for (let attempt = 0; attempt < REVIEW_PUSH_CONFIRMATION_ATTEMPTS; attempt += 1) {
+      if (attempt > 0) await this.delay(REVIEW_PUSH_CONFIRMATION_DELAY_MS);
+      try {
+        const after = await this.gitHubGateway.getPullRequest(
+          input.repo.owner,
+          input.repo.name,
+          input.pullRequestNumber
+        );
+        lastObservedHead = after.headSha;
+        if (after.headSha === localHead) {
+          return {
+            outcome: "pushed",
+            headBefore: input.expectedRemoteHeadSha,
+            headAfter: localHead,
+            commitSha: localHead,
+            filesChanged
+          };
+        }
+        if (after.headSha && after.headSha !== input.expectedRemoteHeadSha) {
+          return {
+            outcome: "head_changed",
+            expected: localHead,
+            actual: after.headSha
+          };
+        }
+      } catch {
+        // A successful git push is durable even if GitHub observation is
+        // temporarily unavailable. The session records the expected new head
+        // and reconciles it on a later orchestrator run.
+      }
     }
 
     return {
-      outcome: "pushed",
+      outcome: "push_observation_pending",
       headBefore: input.expectedRemoteHeadSha,
       headAfter: localHead,
       commitSha: localHead,
-      filesChanged
+      filesChanged,
+      ...(lastObservedHead ? { lastObservedHead } : {})
     };
   }
 
@@ -871,6 +1001,21 @@ export class ImplementationWorkflowService {
       worktreePath,
       `chore(agent): initialize packet ${packetId} planning workflow`
     );
+  }
+}
+
+function assertMatchingPushIntent(
+  expected: ReviewFixPushIntent,
+  actual: ReviewFixPushIntent
+): void {
+  if (
+    expected.headBefore !== actual.headBefore ||
+    expected.headAfter !== actual.headAfter ||
+    expected.commitSha !== actual.commitSha ||
+    expected.filesChanged.length !== actual.filesChanged.length ||
+    expected.filesChanged.some((value, index) => value !== actual.filesChanged[index])
+  ) {
+    throw new Error("Review-cycle push intent does not match the current local handoff.");
   }
 }
 
@@ -1008,6 +1153,15 @@ export function buildWorktreeRelativePath(repo: RepoConfig, issueNumber: number)
     slugify(repo.owner),
     slugify(repo.name),
     `issue-${issueNumber}`
+  );
+}
+
+export function buildReviewWorktreeRelativePath(repo: RepoConfig, pullRequestNumber: number): string {
+  return path.join(
+    WORKTREE_ROOT_DIR,
+    slugify(repo.owner),
+    slugify(repo.name),
+    `pr-${pullRequestNumber}`
   );
 }
 

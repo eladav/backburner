@@ -15,7 +15,10 @@ import type {
 import type { TaskRecord } from "../tasks/types.js";
 import { extractRetryCommentId } from "../tasks/retry.js";
 import { extractMcpSkipCommand } from "../tasks/mcp-skip.js";
-import { isOrchestratorOwnedReviewComment } from "../reviews/comment-ownership.js";
+import {
+  isOrchestratorOwnedReviewComment,
+  isTrackedReviewCycleThread
+} from "../reviews/comment-ownership.js";
 import { hasGeneratedPlanBreakdown, isParentSyncNeededBeforeNextWave } from "../workstreams/packet-plan.js";
 import {
   collectPacketPullRequestCommentProjections,
@@ -193,9 +196,10 @@ export function deriveAttentionRecords(input: AttentionDerivationInput): Attenti
   }
 
   for (const comment of [...input.currentComments].sort(compareComments)) {
+    const reviewSessions = input.previousState.reviewSessions ?? [];
     if (
-      isAgentAuthoredComment(comment.body) ||
-      isOrchestratorOwnedReviewComment(comment, input.previousState.reviewSessions ?? [])
+      isOrchestratorOwnedReviewComment(comment, reviewSessions) ||
+      (!isTrackedReviewCycleThread(comment, reviewSessions) && isAgentAuthoredComment(comment.body))
     ) {
       continue;
     }
