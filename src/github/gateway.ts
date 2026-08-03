@@ -627,6 +627,7 @@ export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
 
     const data = await this.runGhJson<{
       id?: number;
+      node_id?: string;
       html_url?: string;
       body?: string;
       state?: string;
@@ -648,6 +649,7 @@ export class UnsecuredGhCliGitHubGateway implements GitHubGateway {
 
     return {
       id: data.id ?? 0,
+      ...(data.node_id ? { nodeId: data.node_id } : {}),
       url: data.html_url ?? "",
       body: data.body ?? input.body ?? "",
       state: data.state ?? input.event,

@@ -126,6 +126,9 @@ comments, fix reports, command explanations, and the terminal timeline. The
 receipt ID plus author index is authoritative for this flow; the visible prefix
 is defense in depth and helps users recognize the team's output. A human comment
 that starts with `🤖` is still steering unless it matches an owned receipt.
+For submitted PR reviews the receipt records both GitHub's REST numeric ID and
+GraphQL node alias, because scans expose the latter while review creation returns
+the former.
 Indexed orchestrator comments never dispatch ordinary
 `respond_pr_comment` work.
 

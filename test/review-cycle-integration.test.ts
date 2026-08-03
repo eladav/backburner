@@ -45,7 +45,6 @@ test("automatic review publication is marker-idempotent and indexes owned inline
     async listPullRequestReviews() {
       return [{
         id: "91",
-        url: "https://github.com/example/repo/pull/7#pullrequestreview-91",
         body: `🤖 Review result: approved\n\n${marker}`,
         author: { login: "example" }
       }];
@@ -73,6 +72,7 @@ test("automatic review publication is marker-idempotent and indexes owned inline
 
   assert.equal(submitCalls, 0);
   assert.equal(receipt.id, "91");
+  assert.equal(receipt.url, "https://github.com/example/repo/pull/7");
   assert.deepEqual(receipt.ownedReviewCommentIds, ["92"]);
 });
 
@@ -94,6 +94,13 @@ test("automatic review publication ignores a copied marker from another author",
     async getAuthenticatedUser() { return "example"; },
     async getPullRequest() { return livePullRequest(); },
     async listPullRequestReviews() {
+      if (submitCalls > 0) {
+        return [{
+          id: "PRR_review-93",
+          body: `🤖 Review result: approved\n\n${marker}`,
+          author: { login: "example" }
+        }];
+      }
       return [{
         id: "91",
         url: "https://github.com/example/repo/pull/7#pullrequestreview-91",
@@ -115,6 +122,7 @@ test("automatic review publication ignores a copied marker from another author",
       submitCalls += 1;
       return {
         id: 93,
+        nodeId: "PRR_review-93",
         url: "https://github.com/example/repo/pull/7#pullrequestreview-93",
         body: "approved",
         state: "COMMENTED",
@@ -128,7 +136,8 @@ test("automatic review publication ignores a copied marker from another author",
     .publishCycleReview(task, execution);
 
   assert.equal(submitCalls, 1);
-  assert.equal(receipt.id, "93");
+  assert.equal(receipt.id, "PRR_review-93");
+  assert.deepEqual(receipt.ownedReviewCommentIds, ["93", "PRR_review-93"]);
 });
 
 test("review-cycle ownership uses receipt ID and author, never the robot prefix alone", () => {
@@ -167,6 +176,7 @@ test("review-cycle ownership uses receipt ID and author, never the robot prefix 
     repoId: "repo-1",
     parentType: "pull_request" as const,
     parentNumber: 7,
+    commentKind: "pull_request_review" as const,
     author,
     body
   }) as Parameters<typeof isOrchestratorOwnedReviewComment>[0];
@@ -174,6 +184,51 @@ test("review-cycle ownership uses receipt ID and author, never the robot prefix 
   assert.equal(isOrchestratorOwnedReviewComment(comment("999", "human", "🤖 Please also change this."), sessions), false);
   assert.equal(isOrchestratorOwnedReviewComment(comment("202", "example", "unprefixed owned inline"), sessions), true);
   assert.equal(isOrchestratorOwnedReviewComment(comment("202", "attacker", "copied"), sessions), false);
+  assert.equal(isOrchestratorOwnedReviewComment(comment("PRR_201", "example", "marker"), sessions), true);
+  assert.equal(isOrchestratorOwnedReviewComment(comment("PRR_201", "attacker", "marker"), sessions), false);
+});
+
+test("review-cycle ownership recognizes a submitted review GraphQL alias", () => {
+  const base = createReviewSession({
+    repoId: "repo-1",
+    repoSlug: "example/repo",
+    pullRequestId: pullRequest().id,
+    pullRequestNumber: 7,
+    pullRequestUrl: pullRequest().url,
+    workstreamId: workstream().id,
+    trigger: "label",
+    maxTurns: 5,
+    headSha: HEAD,
+    ordinal: 1,
+    now: NOW
+  });
+  const sessions = [{
+    ...base,
+    publicationReceipts: [{
+      id: "receipt-1",
+      kind: "review" as const,
+      reviewOrdinal: 1,
+      headSha: HEAD,
+      githubId: "201",
+      url: "https://github.com/example/repo/pull/7#pullrequestreview-201",
+      marker: "marker",
+      publishedAt: NOW,
+      authorLogin: "example",
+      githubObjectKind: "pull_request_review" as const,
+      ownedCommentIds: ["PRR_review-201"]
+    }]
+  }];
+  const comment = {
+    id: "comment:PRR_review-201",
+    sourceId: "PRR_review-201",
+    repoId: "repo-1",
+    parentType: "pull_request" as const,
+    parentNumber: 7,
+    author: "example",
+    body: "unprefixed owned review"
+  } as Parameters<typeof isOrchestratorOwnedReviewComment>[0];
+
+  assert.equal(isOrchestratorOwnedReviewComment(comment, sessions), true);
 });
 
 test("maxTurns zero publishes the review and a terminal timeline without dispatching a fix", async () => {

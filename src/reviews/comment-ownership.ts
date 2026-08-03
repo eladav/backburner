@@ -24,7 +24,14 @@ export function isOrchestratorOwnedReviewComment(
     )) return true;
     return session.publicationReceipts.some((receipt) =>
       receiptAuthorMatches(receipt.authorLogin, comment.author) &&
-      (receipt.githubId === comment.sourceId || receipt.ownedCommentIds.includes(comment.sourceId))
+      (
+        receipt.githubId === comment.sourceId ||
+        receipt.ownedCommentIds.includes(comment.sourceId) ||
+        (
+          receipt.githubObjectKind === comment.commentKind &&
+          comment.body.includes(receipt.marker)
+        )
+      )
     );
   });
 }

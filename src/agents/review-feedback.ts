@@ -221,6 +221,23 @@ export class GitHubPullRequestReviewPublisher implements ReviewPublisher {
         commitId: lineage.targetHeadSha,
         comments: validation.validInlineComments
       });
+      const observedSubmission = await findExistingCycleReview(
+        this.gitHubGateway,
+        repo.owner,
+        repo.name,
+        pullRequestNumber,
+        marker
+      );
+      if (observedSubmission?.commentKind === "pull_request_review") {
+        return {
+          ...observedSubmission,
+          ownedReviewCommentIds: uniqueStrings([
+            String(submission.id),
+            ...(submission.nodeId ? [submission.nodeId] : []),
+            ...observedSubmission.ownedReviewCommentIds
+          ])
+        };
+      }
       const ownedReviewCommentIds = await findOwnedInlineCommentIds(
         this.gitHubGateway,
         repo.owner,
@@ -228,6 +245,9 @@ export class GitHubPullRequestReviewPublisher implements ReviewPublisher {
         pullRequestNumber,
         marker
       );
+      if (submission.nodeId && !ownedReviewCommentIds.includes(submission.nodeId)) {
+        ownedReviewCommentIds.push(submission.nodeId);
+      }
       return {
         id: String(submission.id),
         url: submission.url,
@@ -334,10 +354,10 @@ async function findExistingCycleReview(
   const review = reviews.find((candidate) =>
     sameLogin(candidate.author?.login, authenticatedUser) && candidate.body?.includes(marker)
   );
-  if (review?.url) {
+  if (review) {
     return {
       id: String(review.id),
-      url: review.url,
+      url: review.url ?? `https://github.com/${owner}/${name}/pull/${pullRequestNumber}`,
       commentKind: "pull_request_review",
       ...(review.author?.login ? { author: review.author.login } : {}),
       ownedReviewCommentIds: await findOwnedInlineCommentIds(
@@ -362,6 +382,10 @@ async function findExistingCycleReview(
     ...(comment.author?.login ? { author: comment.author.login } : {}),
     ownedReviewCommentIds: []
   };
+}
+
+function uniqueStrings(values: readonly string[]): string[] {
+  return [...new Set(values)];
 }
 
 interface CycleReviewValidation {

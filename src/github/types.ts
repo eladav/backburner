@@ -129,6 +129,7 @@ export interface GhPullRequestReviewCommentReplyResult {
 
 export interface GhPullRequestReviewSubmissionResult {
   id: number;
+  nodeId?: string;
   url: string;
   body: string;
   state: string;
