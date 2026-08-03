@@ -85,5 +85,19 @@ export function renderWaveAssessmentComment(assessment: WaveAssessmentResult): s
     }
   }
 
+  if (assessment.decision === "blocked") {
+    lines.push(
+      "",
+      "## Reassess this checkpoint",
+      "",
+      "After providing new clarification or evidence, an allowed user can request a fresh assessment without changing the parent PR head:",
+      "",
+      "```text",
+      "wave-reassess",
+      "reason: <non-empty reason>",
+      "```"
+    );
+  }
+
   return lines.join("\n").trim();
 }

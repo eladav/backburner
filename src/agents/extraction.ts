@@ -207,6 +207,13 @@ export function extractAndExportWaveAssessmentResult(
   }
 
   const sessionId = parsed.sessionId.trim();
+  if (task.context.waveReassessment && sessionId !== checkpoint.sessionId) {
+    return {
+      ok: false,
+      reason: "checkpoint_mismatch",
+      message: `Wave reassessment must export its assigned session "${checkpoint.sessionId}", received "${sessionId}".`
+    };
+  }
   const session = sessionStore.getSessionSync(sessionId);
   if (!session) {
     return {
@@ -240,7 +247,9 @@ export function extractAndExportWaveAssessmentResult(
     ok: true,
     sessionId,
     waveAssessment: {
-      id: `assessment:${checkpoint.id}`,
+      id: task.context.waveReassessment
+        ? `assessment:${checkpoint.id}:reassess:${task.context.waveReassessment.sourceCommentId}`
+        : `assessment:${checkpoint.id}`,
       sessionId,
       checkpoint,
       decision: exported.decision,

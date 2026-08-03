@@ -265,6 +265,68 @@ test("extractAndExportWaveAssessmentResult rejects sessions with stale planNodeI
   assert.match(result.message, /planNodeIds/);
 });
 
+test("extractAndExportWaveAssessmentResult gives reassessments unique result identity and requires the assigned attempt session", async () => {
+  const sessionId = "checkpoint-1:reassess:7001";
+  const reassessmentTask = {
+    ...baseWaveAssessmentTask,
+    context: {
+      ...baseWaveAssessmentTask.context,
+      waveAssessmentCheckpoint: {
+        ...baseWaveAssessmentTask.context.waveAssessmentCheckpoint,
+        sessionId
+      },
+      waveReassessment: {
+        sourceCommentId: "7001",
+        sourceCommentUrl: "https://github.com/owner/repo/pull/1#issuecomment-7001",
+        sourceCommentAuthor: "owner",
+        commentText: "wave-reassess\nreason: New evidence.",
+        reason: "New evidence."
+      }
+    }
+  } as TaskRecord;
+  const store = new WaveAssessmentSessionStore();
+  const session: WaveAssessmentSession = {
+    sessionId,
+    workstreamId: "owner/repo:issue:1",
+    waveId: "wave-0",
+    parentPrNumber: 1,
+    assessedParentHeadSha: "sha1",
+    originalPlanningSessionId: "planner-1",
+    currentPlanRevision: "rev1",
+    planNodeIds: ["T1", "T2"],
+    status: "completed",
+    decision: "continue",
+    summary: "New evidence clears the gate.",
+    findings: [],
+    validationIssues: [],
+    timestamps: {
+      createdAt: "2026-04-18T10:00:00.000Z",
+      updatedAt: "2026-04-18T10:05:00.000Z",
+      finalizedAt: "2026-04-18T10:05:00.000Z"
+    }
+  };
+  await store.saveSession(session);
+
+  const result = extractAndExportWaveAssessmentResult(
+    reassessmentTask,
+    JSON.stringify({ sessionId }),
+    store
+  );
+
+  assert.ok(result.ok);
+  assert.equal(result.waveAssessment.id, "assessment:checkpoint-1:reassess:7001");
+  assert.equal(result.waveAssessment.checkpoint.identity.parentHeadSha, "sha1");
+
+  const wrongAttempt = extractAndExportWaveAssessmentResult(
+    reassessmentTask,
+    JSON.stringify({ sessionId: "checkpoint-1" }),
+    store
+  );
+  assert.equal(wrongAttempt.ok, false);
+  assert.equal(wrongAttempt.reason, "checkpoint_mismatch");
+  assert.match(wrongAttempt.message, /assigned session/);
+});
+
 test("extractAndExportPlanBreakdownResult fails if session export fails (e.g. invalid session)", async () => {
   const sessionId = "invalid-session";
   const store = new PlanBreakdownSessionStore();

@@ -6,7 +6,8 @@ import type {
   ParentBranchSyncPreflight,
   PrepareForMergePreflight,
   PullRequestReviewCommentLocationContext,
-  TaskRecord
+  TaskRecord,
+  WaveReassessmentContext
 } from "../tasks/types.js";
 import type {
   WaveAssessmentCheckpoint,
@@ -64,6 +65,7 @@ export interface PromptPacket {
   prepareForMerge?: PrepareForMergePreflight;
   waveAssessmentCheckpoint?: WaveAssessmentCheckpoint;
   finalizedWaveAssessment?: WaveAssessmentResult;
+  waveReassessment?: WaveReassessmentContext;
   retrospectiveCandidate?: RetrospectiveCandidateRecord;
   retrospectiveProblem?: RetrospectiveProblemRecord;
   learningOpportunity?: LearningOpportunityRecord;

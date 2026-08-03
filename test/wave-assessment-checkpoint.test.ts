@@ -183,6 +183,38 @@ describe("packet wave assessment checkpoint gating", () => {
     assert.equal(evaluation.result.workstreams["W1"]?.packetPlan?.currentWaveIndex, 1);
   });
 
+  it("uses the newest published same-checkpoint reassessment as the authoritative gate result", () => {
+    const preflightInput = preflight("W1");
+    const blocked = waveAssessment(preflightInput, {
+      decision: "blocked",
+      id: "assessment:original",
+      updatedAt: "2026-04-18T09:00:00.000Z"
+    });
+    const reassessed = waveAssessment(preflightInput, {
+      id: "assessment:reassess:7001",
+      sessionId: `${blocked.checkpoint.sessionId}:reassess:7001`,
+      checkpoint: {
+        ...blocked.checkpoint,
+        sessionId: `${blocked.checkpoint.sessionId}:reassess:7001`
+      },
+      decision: "continue",
+      postedCommentId: "7002",
+      updatedAt: "2026-04-18T10:00:00.000Z"
+    });
+
+    const evaluation = evaluatePacketWaveAdvancement({
+      workstreams: [workstream("W1")],
+      parentBranchSyncPreflights: [
+        { preflight: preflightInput, branchSyncComparison: branchComparison("up_to_date") }
+      ],
+      waveAssessments: [blocked, reassessed]
+    });
+
+    assert.deepEqual(evaluation.readyWorkstreamIds, ["W1"]);
+    assert.equal(evaluation.waveAssessmentGates[0]?.assessment?.id, reassessed.id);
+    assert.equal(evaluation.result.workstreams["W1"]?.packetPlan?.currentWaveIndex, 1);
+  });
+
   it("does not advance replan, blocked, unposted, or stale assessments", () => {
     const cases: Array<{
       name: string;

@@ -161,6 +161,15 @@ The default label names are:
 
 Custom names are supported in `repos.json` and are used in generated plans and PR instructions.
 
+When a packet-wave assessment is published with a `blocked` decision, an allowed user can ask the strong planning agent to assess the same checkpoint again by posting this exact top-level comment on the parent integration PR:
+
+~~~text
+wave-reassess
+reason: <non-empty reason>
+~~~
+
+The command must contain exactly those two non-empty lines. Extra text or malformed syntax is treated as an ordinary PR discussion comment. Reassessment does not override the prior decision: it preserves the earlier report, runs a fresh `wave_plan_assessment` attempt against the unchanged checkpoint, and only a newly published `continue` result opens the existing wave gate.
+
 Minimal `repos.json`:
 
 ~~~json
